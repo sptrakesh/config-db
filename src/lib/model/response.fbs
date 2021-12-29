@@ -1,0 +1,32 @@
+namespace spt.configdb.model;
+
+table Value
+{
+  value:string;
+}
+
+table Children
+{
+  value:[string];
+}
+
+table Success
+{
+  value:bool;
+}
+
+table Error
+{
+  value:bool;
+  message:string;
+}
+
+union ResponseValue{ Value, Children, Success, Error }
+
+table Response
+{
+  value:ResponseValue;
+}
+
+root_type Response;
+

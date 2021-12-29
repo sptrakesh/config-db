@@ -1,0 +1,8 @@
+namespace spt.configdb.model;
+
+table Node
+{
+  children: [string];
+}
+
+root_type Node;
