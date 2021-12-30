@@ -13,10 +13,6 @@
 #include <boost/algorithm/string/trim.hpp>
 
 //https://stackoverflow.com/questions/2924697/how-does-one-output-bold-text-in-bash
-//Down Arrow  0x1B 0x5B 0x42
-//Left Arrow  0x1B 0x5B 0x44
-//Right Arrow 0x1B 0x5B 0x43
-//Up Arrow    0x1B 0x5B 0x41
 
 namespace spt::configdb::client::pclient
 {

@@ -31,6 +31,19 @@ list the child node names under each level in the hierarchy.
 **Note:** When listing child node names, the full path of the parent *has* to
 be specified.  Relative path names are not supported.
 
+
+## Commands
+The following *actions/commands* are supported by the service:
+* **Put** - Set a *key-value* pair.  The *key* should comply with the above
+  mentioned scheme.  The *value* is an arbitrary length value.  Can be large
+  values such as JSON, BSON, base64 encoded binary data etc. as appropriate.
+* **Get** - Get a stored *value* for the specified *key*.
+* **Delete** - Delete the *key-value* pair (and path components as appropriate)
+  identified by the *key*.
+* **List** - List child node names under a specified *parent path*.  Leaf nodes
+  will return an error.  **Note** that parent paths are recursively removed during
+  a *Delete* action if no other child nodes exist.
+
 ## Protocols
 Service supports both TCP/IP and HTTP/2 connections.  The TCP service uses
 [flatbuffers](https://google.github.io/flatbuffers/) as the data interchange
@@ -130,7 +143,8 @@ for a *key*, or a `boolean` indicating success or failure of the action.
 * **Value** - The string value associated with the specified *key* for a `Get` request.
 * **Children** - A list of child node names for the specified *key/path* for a `List` request.
 * **Success** - A boolean value indicating success or failure when setting (`Put`)
-or deleting (`Delete`) a *key*.
+or deleting (`Delete`) a *key*.  A `false` value usually indicates a **transaction**
+*commit* or *rollback* error.
 * **Error** - A boolean value indicating the specified *key* does not exist for
 a `Get` request.
 
@@ -190,6 +204,36 @@ Bye
 ```
 
 ### CLI
+The `configctl` application provides a simple means for interacting with the
+database server.  Use it to execute single actions against the service when
+required.
+
+**Note:** Unlike the **shell** application, values specified as command line
+argument must be quoted if they contain spaces or other special characters.
+
+The server should be running and the TCP port open for the application to connect.
+
+The following shows a simple CRUD type interaction via the cli. These were using
+the default values for `server [-s|--server]` and `port [-p|--port]` options.
+
+```shell
+spt:/home/spt $ /opt/spt/bin/configctl -a list -k /
+Error retrieving path /
+spt:/home/spt $ /opt/spt/bin/configctl -a set -k /test -v value
+Set value for key /test
+spt:/home/spt $ /opt/spt/bin/configctl -a list -k /            
+test
+spt:/home/spt $ /opt/spt/bin/configctl -a set -k /test -v value
+Set value for key /test
+spt:/home/spt $ /opt/spt/bin/configctl -a set -k /test -v "value modified"                      
+Set value for key /test
+spt:/home/spt $ /opt/spt/bin/configctl -a get -k /test 
+value modified         
+spt:/home/spt $ /opt/spt/bin/configctl -a delete -k /test
+Removed key /test
+spt:/home/spt $ /opt/spt/bin/configctl -a list -k /
+Error retrieving path /
+```
 
 ## Docker
 Docker images are available on [Docker hub](https://hub.docker.com/repository/docker/sptrakesh/config-db).

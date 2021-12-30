@@ -7,6 +7,7 @@
 #include "../lib/log/NanoLog.h"
 #include "../lib/util/clara.h"
 
+#include <algorithm>
 #include <iostream>
 #include <thread>
 #include <vector>
@@ -15,6 +16,7 @@
 
 int main( int argc, char const * const * argv )
 {
+  using namespace std::string_literals;
   using clara::Opt;
   std::string server{ "localhost" };
 #ifdef __APPLE__
@@ -25,11 +27,17 @@ int main( int argc, char const * const * argv )
   std::string logLevel{"info"};
 #endif
   std::string dir{"/tmp/"};
+  std::string action{};
+  std::string key{};
+  std::string value{};
   bool help = false;
 
   auto options = clara::Help(help) |
       Opt(server, "localhost")["-s"]["--server"]("Server to connect to (default localhost).") |
       Opt(port, "2020")["-p"]["--port"]("TCP port for the server (default 2020)") |
+      Opt(action, "set")["-a"]["--action"]("Action to perform against the database.") |
+      Opt(key, "/key")["-k"]["--key"]("Key or path to apply action to") |
+      Opt(value, "value")["-v"]["--value"]("Value to set.  Only applies to 'set' action") |
       Opt(logLevel, "info")["-l"]["--log-level"]("Log level to use [debug|info|warn|critical] (default info).") |
       Opt(dir, "/tmp/")["-o"]["--log-dir"]("Log directory (default /tmp/)");
 
@@ -46,39 +54,54 @@ int main( int argc, char const * const * argv )
     exit( 0 );
   }
 
+  if ( action.empty() )
+  {
+    std::cout << "Action not specified" << '\n';
+    options.writeToStream( std::cout );
+    exit( 1 );
+  }
+
+  const std::vector<std::string> actions{ "delete"s ,"get"s, "list"s, "set"s };
+  if ( std::find( std::begin( actions ), std::end( actions ), action ) == std::end( actions ) )
+  {
+    std::cout << "Unsupported action" << '\n';
+    std::cout << "Valid values get|set|list|delete" << '\n';
+    exit( 1 );
+  }
+
+  if ( key.empty() )
+  {
+    std::cout << "Key not specified" << '\n';
+    options.writeToStream( std::cout );
+    exit( 1 );
+  }
+
+  if ( action == "set"s && value.empty() )
+  {
+    std::cout << "Value not specified" << '\n';
+    options.writeToStream( std::cout );
+    exit( 1 );
+  }
+
   if ( logLevel == "debug" ) nanolog::set_log_level( nanolog::LogLevel::DEBUG );
   else if ( logLevel == "info" ) nanolog::set_log_level( nanolog::LogLevel::INFO );
   else if ( logLevel == "warn" ) nanolog::set_log_level( nanolog::LogLevel::WARN );
   else if ( logLevel == "critical" ) nanolog::set_log_level( nanolog::LogLevel::CRIT );
-  nanolog::initialize( nanolog::GuaranteedLogger(), dir, "configdb-shell", false );
+  nanolog::initialize( nanolog::GuaranteedLogger(), dir, "configdb-cli", false );
 
   boost::asio::signal_set signals( spt::configdb::ContextHolder::instance().ioc, SIGINT, SIGTERM );
   signals.async_wait( [&](auto const&, int ) { spt::configdb::ContextHolder::instance().ioc.stop(); } );
 
-  const auto run = []
-  {
-    for (;;)
-    {
-      try
-      {
-        spt::configdb::ContextHolder::instance().ioc.run();
-        break;
-      }
-      catch ( std::exception& e )
-      {
-        LOG_CRIT << "Unhandled exception " << e.what();
-        spt::configdb::ContextHolder::instance().ioc.run();
-      }
-    }
-  };
-
   std::vector<std::thread> v;
   v.reserve( 1 );
-  v.emplace_back( [&run] { run(); } );
+  v.emplace_back( []{ spt::configdb::ContextHolder::instance().ioc.run(); } );
 
   try
   {
-    spt::configdb::client::run( server, port );
+    if ( action == "get"s ) spt::configdb::client::get( server, port, key );
+    else if ( action == "set"s ) spt::configdb::client::set( server, port, key, value );
+    else if ( action == "list"s ) spt::configdb::client::list( server, port, key );
+    else if ( action == "delete"s ) spt::configdb::client::remove( server, port, key );
   }
   catch ( const std::exception& ex )
   {
