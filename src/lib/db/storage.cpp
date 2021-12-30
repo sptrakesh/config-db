@@ -232,20 +232,13 @@ namespace spt::configdb::db::internal
     static std::string getKey( std::string_view key )
     {
       if ( key.empty() ) return "/"s;
+      if ( key[0] == '/' ) return { key.data(), key.size() };
 
-      std::string ks;
-      if ( key[0] == '/' )
-      {
-        ks.reserve( key.size() );
-        ks += key;
-      }
-      else
-      {
-        ks.reserve( key.size() + 1 );
-        ks[0] = '/';
-        ks += key;
-      }
-
+      auto ks = std::string{};
+      ks.reserve( key.size() + 1 );
+      ks.push_back( '/' );
+      ks.append( key.data(), key.size() );
+      LOG_DEBUG << "Corrected key " << ks;
       return ks;
     }
 

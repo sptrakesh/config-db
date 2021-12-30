@@ -30,6 +30,8 @@ if (APPLE)
 endif()
 
 find_package(Boost)
+find_package(RocksDB)
+find_package(flatbuffers)
 find_package(Threads)
 
 if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")

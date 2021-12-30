@@ -4,6 +4,7 @@ FROM sptrakesh/nghttp2 as base
 
 COPY --from=rocksdb /opt/local /opt/local
 COPY --from=flatbuffers /opt/local /opt/local
+RUN apk add --no-cache readline-dev
 
 COPY CMakeLists.txt /opt/spt/config-db/CMakeLists.txt
 COPY src /opt/spt/config-db/src
@@ -16,7 +17,7 @@ RUN rm -rf * \
 
 FROM sptrakesh/cppruntime
 
-RUN apk add --no-cache libcurl snappy \
+RUN apk add --no-cache libcurl snappy readline \
   && addgroup spt \
   && adduser -DS -g "SPT User" -G spt -s /bin/sh -h /home/spt spt \
   && mkdir -p /opt/spt/logs /opt/spt/data \
@@ -26,6 +27,7 @@ COPY --from=base /opt/spt/bin /opt/spt/bin
 COPY docker/scripts/*.sh /opt/spt/bin/
 
 WORKDIR /opt/spt
-ENV LD_LIBRARY_PATH=/usr/lib
+ENV LD_LIBRARY_PATH=/usr/lib \
+  PATH=$PATH:/opt/spt/bin
 USER spt
 ENTRYPOINT [ "/opt/spt/bin/entrypoint.sh" ]

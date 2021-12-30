@@ -4,11 +4,11 @@ add_executable(configdb-shell ${configdb_SRCS} )
 
 if (APPLE)
   target_link_libraries(configdb-shell
-    PRIVATE configdb-lib Boost::boost flatbuffers ${OPENSSL_LIBRARIES} z
+    PRIVATE configdb-lib Boost::boost flatbuffers ${OPENSSL_LIBRARIES} readline z
   )
 else()
   target_link_libraries(configdb-shell
-    PRIVATE configdb-lib Boost::boost flatbuffers crypto ssl z
+    PRIVATE configdb-lib Boost::boost flatbuffers crypto ssl readline z
   )
 endif()
 

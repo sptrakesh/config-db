@@ -6,11 +6,12 @@
 #include "connection.h"
 #include "../lib/pool/pool.h"
 
+#include <cctype>
 #include <iostream>
-#include <string>
 #include <string_view>
 
-#include <boost/algorithm/string/trim.hpp>
+#include <readline/readline.h>
+#include <readline/history.h>
 
 //https://stackoverflow.com/questions/2924697/how-does-one-output-bold-text-in-bash
 
@@ -25,9 +26,17 @@ namespace spt::configdb::client::pclient
     std::cout << "  \033[1mrm\033[0m \033[3m<key>\033[0m - To remove configured key.  Eg. [rm /key1/key2/key3]" << '\n';
   }
 
-  void prompt()
+  std::string_view trim( std::string_view in )
   {
-    std::cout << "configdb> ";
+    auto left = in.begin();
+    for ( ;; ++left )
+    {
+      if ( left == in.end() ) return in;
+      if ( !std::isspace( *left ) ) break;
+    }
+    auto right = in.end() - 1;
+    for ( ; right > left && std::isspace( *right ); --right );
+    return { left, static_cast<std::size_t>(std::distance( left, right ) + 1) };
   }
 
   struct PoolHolder
@@ -186,20 +195,31 @@ int spt::configdb::client::run( std::string_view server, std::string_view port )
   std::cout << "Enter commands followed by <ENTER>" << '\n';
   std::cout << "Enter \033[1mhelp\033[0m for help about commands" << '\n';
   std::cout << "Enter \033[1mexit\033[0m or \033[1mquit\033[0m to exit shell\n";
-  pclient::prompt();
 
-  std::string line;
-  while ( true )
+  // Disable tab completion
+  rl_bind_key( '\t', rl_insert );
+
+  char* buf;
+  while ( ( buf = readline("configdb> " ) ) != nullptr )
   {
-    std::getline( std::cin, line );
-    boost::algorithm::trim( line );
+    auto len = strlen( buf );
+    if ( len == 0 )
+    {
+      free( buf );
+      continue;
+    }
 
-    if ( line == "exit"s || line == "quit"s )
+    add_history( buf );
+
+    auto line = std::string_view{ buf, len };
+    line = pclient::trim( line );
+
+    if ( line == "exit"sv || line == "quit"sv )
     {
       std::cout << "Bye\n";
       break;
     }
-    else if ( line == "help"s ) pclient::help();
+    else if ( line == "help"sv ) pclient::help();
     else if ( line.empty() ) { /* noop */ }
     else
     {
@@ -227,9 +247,8 @@ int spt::configdb::client::run( std::string_view server, std::string_view port )
       }
     }
 
-    pclient::prompt();
+    free( buf );
   }
 
   return 0;
 }
-
