@@ -1,0 +1,16 @@
+file(GLOB_RECURSE configdb_SRCS *.cpp *.h)
+set(configdb_SRCS ${configdb_SRCS})
+add_executable(configdb-shell ${configdb_SRCS} )
+
+if (APPLE)
+  target_link_libraries(configdb-shell
+    PRIVATE configdb-lib Boost::boost flatbuffers ${OPENSSL_LIBRARIES} z
+  )
+else()
+  target_link_libraries(configdb-shell
+    PRIVATE configdb-lib Boost::boost flatbuffers crypto ssl z
+  )
+endif()
+
+set_target_properties(configdb-shell PROPERTIES OUTPUT_NAME configsh)
+install(TARGETS configdb-shell DESTINATION bin)

@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "log/NanoLog.h"
+#include "../log/NanoLog.h"
 
 #include <atomic>
 #include <chrono>

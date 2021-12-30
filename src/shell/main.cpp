@@ -1,0 +1,87 @@
+//
+// Created by Rakesh on 25/12/2021.
+//
+
+#include "contextholder.h"
+#include "client/client.h"
+#include "../lib/log/NanoLog.h"
+#include "../lib/util/clara.h"
+
+#include <iostream>
+#include <thread>
+#include <vector>
+
+#include <boost/asio/signal_set.hpp>
+
+int main( int argc, char const * const * argv )
+{
+  using clara::Opt;
+  std::string server{ "localhost" };
+#ifdef __APPLE__
+  std::string port{ "2022" };
+  std::string logLevel{ "debug" };
+#else
+  std::string port{ "2020" };
+  std::string logLevel{"info"};
+#endif
+  std::string dir{"/tmp/"};
+  bool help = false;
+
+  auto options = clara::Help(help) |
+      Opt(port, "2020")["-t"]["--tcp-port"]("Port on which to listen for tcp traffic (default 2020)") |
+      Opt(server, "localhost")["-s"]["--server"]("Server to connect to (default localhost).") |
+      Opt(logLevel, "info")["-l"]["--log-level"]("Log level to use [debug|info|warn|critical] (default info).") |
+      Opt(dir, "/tmp/")["-o"]["--dir"]("Log directory (default /tmp/)");
+
+  auto result = options.parse(clara::Args(argc, argv));
+  if ( !result )
+  {
+    std::cerr << "Error in command line: " << result.errorMessage() << std::endl;
+    exit( 1 );
+  }
+
+  if ( help )
+  {
+    options.writeToStream( std::cout );
+    exit( 0 );
+  }
+
+  if ( logLevel == "debug" ) nanolog::set_log_level( nanolog::LogLevel::DEBUG );
+  else if ( logLevel == "info" ) nanolog::set_log_level( nanolog::LogLevel::INFO );
+  else if ( logLevel == "warn" ) nanolog::set_log_level( nanolog::LogLevel::WARN );
+  else if ( logLevel == "critical" ) nanolog::set_log_level( nanolog::LogLevel::CRIT );
+  nanolog::initialize( nanolog::GuaranteedLogger(), dir, "configdb-shell", false );
+
+  boost::asio::signal_set signals( spt::configdb::ContextHolder::instance().ioc, SIGINT, SIGTERM );
+  signals.async_wait( [&](auto const&, int ) { spt::configdb::ContextHolder::instance().ioc.stop(); } );
+
+  const auto run = []
+  {
+    for (;;)
+    {
+      try
+      {
+        spt::configdb::ContextHolder::instance().ioc.run();
+        break;
+      }
+      catch ( std::exception& e )
+      {
+        LOG_CRIT << "Unhandled exception " << e.what();
+        spt::configdb::ContextHolder::instance().ioc.run();
+      }
+    }
+  };
+
+  std::vector<std::thread> v;
+  v.reserve( 1 );
+  v.emplace_back( [&run] { run(); } );
+
+  spt::configdb::client::run( server, port );
+  spt::configdb::ContextHolder::instance().ioc.stop();
+
+  for ( auto&& t : v )
+  {
+    if ( t.joinable() ) t.join();
+  }
+}
+

@@ -24,15 +24,9 @@ Connection::~Connection()
 
 auto Connection::write( const flatbuffers::FlatBufferBuilder& fb, std::string_view context ) -> Tuple
 {
-  uint8_t bytes[4];
   auto n = fb.GetSize();
-  bytes[0] = (n >> 24) & 0xFF;
-  bytes[1] = (n >> 16) & 0xFF;
-  bytes[2] = (n >> 8) & 0xFF;
-  bytes[3] = n & 0xFF;
-
   std::ostream os{ &buffer };
-  os.write( reinterpret_cast<const char*>( bytes ), 4 );
+  os.write( reinterpret_cast<const char*>( &n ), sizeof(flatbuffers::uoffset_t) );
   os.write( reinterpret_cast<const char*>( fb.GetBufferPointer() ), fb.GetSize() );
 
   const auto isize = s.send( buffer.data() );
@@ -61,7 +55,8 @@ auto Connection::write( const flatbuffers::FlatBufferBuilder& fb, std::string_vi
     read += osize;
   }
 
-  auto verifier = flatbuffers::Verifier(  d + sizeof(len), len );
+  const auto d1 = reinterpret_cast<const uint8_t*>( buffer.data().data() );
+  auto verifier = flatbuffers::Verifier(  d1 + sizeof(len), len );
   auto ok = model::VerifyResponseBuffer( verifier );
   buffer.consume( buffer.size() );
   if ( !ok )
@@ -69,8 +64,9 @@ auto Connection::write( const flatbuffers::FlatBufferBuilder& fb, std::string_vi
     LOG_WARN << "Invalid buffer";
     return { nullptr, isize, read };
   }
-  LOG_INFO << context << ' ' << flatbuffers::FlatBufferToString( d + sizeof(len), model::ResponseTypeTable() );
-  return { model::GetResponse( d + sizeof(len) ), isize, read };
+
+  LOG_INFO << context << ' ' << flatbuffers::FlatBufferToString( d1 + sizeof(len), model::ResponseTypeTable() );
+  return { model::GetResponse( d1 + sizeof(len) ), isize, read };
 }
 
 std::size_t Connection::noop()

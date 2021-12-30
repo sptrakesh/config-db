@@ -70,6 +70,7 @@ set(CMAKE_INSTALL_PREFIX /opt/spt)
 
 add_subdirectory(src/lib)
 add_subdirectory(src/service)
+add_subdirectory(src/shell)
 
 if (BUILD_TESTING)
   enable_testing()

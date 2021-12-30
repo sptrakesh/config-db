@@ -41,7 +41,7 @@ namespace spt::configdb::tcp::coroutine
       const model::Request* request )
   {
     auto value = db::get( request->key()->string_view() );
-    auto fb = flatbuffers::FlatBufferBuilder{ 128 };
+    auto fb = flatbuffers::FlatBufferBuilder{};
     if ( value )
     {
       auto v = fb.CreateString( *value );
@@ -64,7 +64,7 @@ namespace spt::configdb::tcp::coroutine
       const model::Request* request )
   {
     auto value = db::list( request->key()->string_view() );
-    auto fb = flatbuffers::FlatBufferBuilder{ 128 };
+    auto fb = flatbuffers::FlatBufferBuilder{};
     if ( value )
     {
       auto vt = model::CreateChildren( fb, fb.CreateVectorOfStrings( *value ) );
@@ -86,7 +86,7 @@ namespace spt::configdb::tcp::coroutine
       const model::Request* request )
   {
     auto value = db::set( request->key()->string_view(), request->value()->string_view() );
-    auto fb = flatbuffers::FlatBufferBuilder{ 128 };
+    auto fb = flatbuffers::FlatBufferBuilder{};
     auto vt = model::CreateSuccess( fb, value );
     auto r = model::CreateResponse( fb, model::ResponseValue::Success, vt.Union() );
     fb.Finish( r );
@@ -97,7 +97,7 @@ namespace spt::configdb::tcp::coroutine
       const model::Request* request )
   {
     auto value = db::remove( request->key()->string_view() );
-    auto fb = flatbuffers::FlatBufferBuilder{ 128 };
+    auto fb = flatbuffers::FlatBufferBuilder{};
     auto vt = model::CreateSuccess( fb, value );
     auto r = model::CreateResponse( fb, model::ResponseValue::Success, vt.Union() );
     fb.Finish( r );
@@ -162,6 +162,7 @@ namespace spt::configdb::tcp::coroutine
     rbuf.reserve( docSize - sizeof(uint32_t) );
     rbuf.insert( rbuf.end(), data + sizeof(uint32_t), data + osize );
 
+    LOG_INFO << "Read " << int(osize) << " bytes, total size " << int(docSize);
     while ( docSize < maxBytes && read != docSize )
     {
       osize = co_await socket.async_read_some( boost::asio::buffer( data ), use_awaitable );
