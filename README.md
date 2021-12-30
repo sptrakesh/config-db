@@ -8,6 +8,9 @@
     * [Request](#request)
     * [Response](#response)
     * [Ping](#ping)
+* [Utilities](#utilities)
+  * [Shell](#shell)
+  * [CLI](#cli)
 * [Docker](#docker)
 * [Acknowledgements](#acknowledgements)
 
@@ -141,6 +144,52 @@ example.
 Short (less than 5 bytes) messages may be sent to the service as a *keep-alive*
 message.  Service will echo the message back to the client.  Examples include
 `ping`, `noop`, etc.
+
+
+## Utilities
+Utility applications to interact with the database are provided.  These are
+deployed to the `/opt/spt/bin` directory.
+
+### Shell
+The `configsh` application provides a *shell* to interact with the database.
+The server should be running and the TCP port open for the application to connect.
+
+The following shows a simple CRUD type interaction via the shell.
+
+```shell
+/opt/spt/bin/configsh --server localhost --port 2022 --log-level debug --log-dir /tmp/
+Enter commands followed by <ENTER>
+Enter help for help about commands
+Enter exit or quit to exit shell
+configdb> help
+Available commands
+  ls <path> - To list child node names.  Eg. [ls /]
+  get <key> - To get configured value for key.  Eg. [get /key1/key2/key3]
+  set <key> <value> - To set value for key.  Eg. [set /key1/key2/key3 Some long value. Note no surrounding quotes]
+  rm <key> - To remove configured key.  Eg. [rm /key1/key2/key3]
+configdb> set /key1/key2/key3 {"glossary":{"title":"example glossary","GlossDiv":{"title":"S","GlossList":{"GlossEntry":{"ID":"SGML","SortAs":"SGML","GlossTerm":"Standard Generalized Markup Language","Acronym":"SGML","Abbrev":"ISO 8879:1986","GlossDef":{"para":"A meta-markup language, used to create markup languages such as DocBook.","GlossSeeAlso":["GML","XML"]},"GlossSee":"markup"}}}}}
+Set key /key1/key2/key3
+configdb> ls /
+key1
+configdb> ls /key1
+key2
+configdb> ls /key1/key2
+key3
+configdb> get /key1/key2/key3
+{"glossary":{"title":"example glossary","GlossDiv":{"title":"S","GlossList":{"GlossEntry":{"ID":"SGML","SortAs":"SGML","GlossTerm":"Standard Generalized Markup Language","Acronym":"SGML","Abbrev":"ISO 8879:1986","GlossDef":{"para":"A meta-markup language, used to create markup languages such as DocBook.","GlossSeeAlso":["GML","XML"]},"GlossSee":"markup"}}}}}
+configdb> set /key1/key2/key3 some long value with spaces and "quoted" text.
+Set key /key1/key2/key3
+configdb> get /key1/key2/key3
+some long value with spaces and "quoted" text.
+configdb> rm /key1/key2/key3
+Removed key /key1/key2/key3
+configdb> ls /
+Error retrieving path /
+configdb> exit
+Bye
+```
+
+### CLI
 
 ## Docker
 Docker images are available on [Docker hub](https://hub.docker.com/repository/docker/sptrakesh/config-db).
