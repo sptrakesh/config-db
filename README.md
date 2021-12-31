@@ -12,6 +12,7 @@
   * [Shell](#shell)
   * [CLI](#cli)
 * [Docker](#docker)
+* [Build](#build)
 * [Acknowledgements](#acknowledgements)
 
 A simple configuration database similar to Apache Zookeeper, Etcd, etc., built
@@ -170,6 +171,9 @@ The server should be running and the TCP port open for the application to connec
 
 The following shows a simple CRUD type interaction via the shell.
 
+<details>
+  <summary>Click to expand!</summary>
+
 ```shell
 /opt/spt/bin/configsh --server localhost --port 2022 --log-level debug --log-dir /tmp/
 Enter commands followed by <ENTER>
@@ -203,6 +207,8 @@ configdb> exit
 Bye
 ```
 
+</details>
+
 ### CLI
 The `configctl` application provides a simple means for interacting with the
 database server.  Use it to execute single actions against the service when
@@ -215,6 +221,9 @@ The server should be running and the TCP port open for the application to connec
 
 The following shows a simple CRUD type interaction via the cli. These were using
 the default values for `server [-s|--server]` and `port [-p|--port]` options.
+
+<details>
+  <summary>Click to expand!</summary>
 
 ```shell
 spt:/home/spt $ /opt/spt/bin/configctl -a list -k /
@@ -235,6 +244,8 @@ spt:/home/spt $ /opt/spt/bin/configctl -a list -k /
 Error retrieving path /
 ```
 
+</details>
+
 ## Docker
 Docker images are available on [Docker hub](https://hub.docker.com/repository/docker/sptrakesh/config-db).
 
@@ -247,6 +258,14 @@ of the service running locally.
 ```shell
 docker run -d --rm -p 6006:6000 -p 2022:2020 --name config-db sptrakesh/config-db
 ```
+
+
+## Build
+Standard cmake build procedure.  See [Dockerfile](docker/Dockerfile) for build
+sequence.  Ensure the dependencies are available under the following paths:
+* **MacOSX** - Various dependencies installed under the `/usr/local/<dependency>` path.
+  See [dependencies](dependencies.md) for scripts used to install the dependencies.
+* **UNIX** - All dependencies installed under the `/opt/local` path.
 
 ## Acknowledgements
 This software has been developed mainly using work other people/projects have contributed.

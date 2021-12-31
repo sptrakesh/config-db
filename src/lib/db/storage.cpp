@@ -283,12 +283,7 @@ namespace spt::configdb::db::internal
       {
         auto vec = std::vector<std::string_view>{};
         vec.reserve( response->children()->size() + 1 );
-
-        for ( flatbuffers::uoffset_t i = 0; i < response->children()->size(); ++i )
-        {
-          auto item = response->children()->Get( i );
-          vec.push_back( item->string_view() );
-        }
+        for ( auto&& item : *response->children() ) vec.push_back( item->string_view() );
 
         if ( std::find( std::begin( vec ), std::end( vec ), child ) == std::end( vec ) )
         {

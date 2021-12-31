@@ -67,13 +67,24 @@ namespace spt::configdb::client::pclient
   std::tuple<std::string_view, std::size_t> key( std::string_view line, std::size_t begin )
   {
     auto idx = line.find( ' ', begin + 1 );
-    if ( idx == std::string_view::npos ) return { line, idx };
+    while ( idx != std::string::npos && line.substr( begin + 1, idx - begin - 1 ).empty() )
+    {
+      ++begin;
+      idx = line.find( ' ', begin + 1 );
+    }
+
+    //if ( idx == std::string_view::npos ) return { line, idx };
     return { line.substr( begin + 1, idx - begin - 1 ), idx };
   }
 
   void processList( std::string_view line, std::size_t idx )
   {
-    auto key = line.substr( idx + 1 );
+    auto [key, end] = pclient::key( line, idx );
+    if ( end <= idx )
+    {
+      std::cout << "Cannot parse key from " << line << '\n';
+      return;
+    }
 
     auto popt = pclient::PoolHolder::instance().pool.acquire();
     if ( !popt )
@@ -98,7 +109,12 @@ namespace spt::configdb::client::pclient
 
   void processGet( std::string_view line, std::size_t idx )
   {
-    auto key = line.substr( idx + 1 );
+    auto [key, end] = pclient::key( line, idx );
+    if ( end <= idx )
+    {
+      std::cout << "Cannot parse key from " << line << '\n';
+      return;
+    }
 
     auto popt = pclient::PoolHolder::instance().pool.acquire();
     if ( !popt )
@@ -128,8 +144,15 @@ namespace spt::configdb::client::pclient
     auto [key, end] = pclient::key( line, idx );
     if ( end == std::string_view::npos )
     {
-      std::cout << "Cannot parse key " << line.substr( idx + 1, line.size() - 1 ) << '\n';
+      std::cout << "Cannot parse key from " << line << '\n';
       return;
+    }
+
+    auto vidx = line.find( ' ', end + 1 );
+    while ( vidx != std::string::npos && line.substr( end + 1, vidx - end - 1 ).empty() )
+    {
+      ++end;
+      vidx = line.find( ' ', end + 1 );
     }
 
     auto popt = pclient::PoolHolder::instance().pool.acquire();
@@ -159,7 +182,12 @@ namespace spt::configdb::client::pclient
 
   void processRemove( std::string_view line, std::size_t idx )
   {
-    auto key = line.substr( idx + 1 );
+    auto [key, end] = pclient::key( line, idx );
+    if ( end <= idx )
+    {
+      std::cout << "Cannot parse key from " << line << '\n';
+      return;
+    }
 
     auto popt = pclient::PoolHolder::instance().pool.acquire();
     if ( !popt )
