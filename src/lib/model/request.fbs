@@ -1,12 +1,19 @@
+include "keyvalue.fbs";
+
 namespace spt.configdb.model;
 
 enum Action:byte { Get = 0, Put, Delete, List = 3 }
 
+table KeyValue
+{
+  key:string;
+  value:string;
+}
+
 table Request
 {
   action:Action = Get;
-  key:string;
-  value:string;
+  data:[KeyValue];
 }
 
 root_type Request;

@@ -82,6 +82,7 @@ namespace spt::configdb::client::pclient
     auto [key, end] = pclient::key( line, idx );
     if ( end <= idx )
     {
+      LOG_WARN << "Cannot parse key from " << line;
       std::cout << "Cannot parse key from " << line << '\n';
       return;
     }
@@ -89,19 +90,44 @@ namespace spt::configdb::client::pclient
     auto popt = pclient::PoolHolder::instance().pool.acquire();
     if ( !popt )
     {
+      LOG_WARN << "Error acquiring connection from pool";
       std::cout << "Error acquiring connection from pool\n";
       return;
     }
 
     auto response = (*popt)->list( key );
-    if ( response->value_type() != model::ResponseValue::Children )
+    if ( response->value_type() != model::ResultVariant::KeyValueResults )
     {
+      LOG_WARN << "Error retrieving path " << key;
       std::cout << "Error retrieving path " << key << '\n';
       return;
     }
 
-    auto resp = response->value_as<model::Children>();
-    for ( auto&& v : *resp->value() )
+    auto resp = response->value_as<model::KeyValueResults>();
+    if ( resp->value()->size() != 1 )
+    {
+      LOG_WARN << "Error retrieving path " << key;
+      std::cout << "Error retrieving path " << key << '\n';
+      return;
+    }
+
+    if ( resp->value()->Get( 0 )->value_type() != model::ValueVariant::Children )
+    {
+      LOG_WARN << "Error listing path " << key;
+      std::cout << "Error listing path " << key << '\n';
+      return;
+    }
+
+    auto value = resp->value()->Get( 0 )->value_as<model::Children>();
+    if ( value->value()->size() == 0 )
+    {
+      LOG_WARN << "Error listing path " << key;
+      std::cout << "Error listing path " << key << '\n';
+      return;
+    }
+
+    LOG_INFO << "Retrieved children for path " << key;
+    for ( auto&& v : *value->value() )
     {
       std::cout << v->string_view() << '\n';
     }
@@ -126,17 +152,35 @@ namespace spt::configdb::client::pclient
     auto response = (*popt)->get( key );
     if ( !response )
     {
+      LOG_WARN << "Error retrieving value for key " << key;
       std::cout << "Error retrieving value for key " << key << '\n';
       return;
     }
-    if ( response->value_type() != model::ResponseValue::Value )
+
+    if ( response->value_type() != model::ResultVariant::KeyValueResults )
     {
+      LOG_WARN << "Error retrieving key " << key;
       std::cout << "Error retrieving key " << key << '\n';
       return;
     }
 
-    auto resp = response->value_as<model::Value>();
-    std::cout << resp->value()->string_view() << '\n';
+    auto resp = response->value_as<model::KeyValueResults>();
+    if ( resp->value()->size() != 1 )
+    {
+      LOG_WARN << "Error retrieving key " << key;
+      std::cout << "Error retrieving key " << key << '\n';
+      return;
+    }
+
+    if ( resp->value()->Get( 0 )->value_type() != model::ValueVariant::Value )
+    {
+      LOG_WARN << "Error retrieving key " << key;
+      std::cout << "Error retrieving key " << key << '\n';
+      return;
+    }
+    auto value = resp->value()->Get( 0 )->value_as<model::Value>();
+    LOG_INFO << "Retrieved value for key " << key;
+    std::cout << value->value()->string_view() << '\n';
   }
 
   void processSet( std::string_view line, std::size_t idx )
@@ -169,7 +213,7 @@ namespace spt::configdb::client::pclient
       return;
     }
 
-    if ( response->value_type() != model::ResponseValue::Success ||
+    if ( response->value_type() != model::ResultVariant::Success ||
         !response->value_as<model::Success>()->value() )
     {
       std::cout << "Error setting key " << key << '\n';
@@ -197,15 +241,17 @@ namespace spt::configdb::client::pclient
     }
 
     auto response = ( *popt )->remove( key );
-    if ( response->value_type() != model::ResponseValue::Success )
+    if ( !response )
     {
-      std::cout << "Error removing key " << key << '\n';
+      LOG_WARN << "Error removing key " << key;
+      std::cout << "Unable to remove key " << key << '\n';
       return;
     }
 
-    auto resp = response->value_as<model::Success>();
-    if ( !resp->value())
+    if ( response->value_type() != model::ResultVariant::Success ||
+        !response->value_as<model::Success>()->value() )
     {
+      LOG_WARN << "Error removing key " << key;
       std::cout << "Error removing key " << key << '\n';
     }
     else

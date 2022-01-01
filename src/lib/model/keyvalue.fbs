@@ -1,0 +1,16 @@
+namespace spt.configdb.model;
+
+table Value
+{
+  value:string;
+}
+
+table Children
+{
+  value:[string];
+}
+
+table Success
+{
+  value:bool;
+}

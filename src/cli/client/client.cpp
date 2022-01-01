@@ -20,9 +20,30 @@ void spt::configdb::client::get( std::string_view server,
     return;
   }
 
-  auto resp = response->value_as<model::Value>();
+  if ( response->value_type() != model::ResultVariant::KeyValueResults )
+  {
+    LOG_WARN << "Error retrieving key " << key;
+    std::cout << "Error retrieving key " << key << '\n';
+    return;
+  }
+
+  auto resp = response->value_as<model::KeyValueResults>();
+  if ( resp->value()->size() != 1 )
+  {
+    LOG_WARN << "Error retrieving key " << key;
+    std::cout << "Error retrieving key " << key << '\n';
+    return;
+  }
+
+  if ( resp->value()->Get( 0 )->value_type() != model::ValueVariant::Value )
+  {
+    LOG_WARN << "Error retrieving key " << key;
+    std::cout << "Error retrieving key " << key << '\n';
+    return;
+  }
+  auto value = resp->value()->Get( 0 )->value_as<model::Value>();
   LOG_INFO << "Retrieved value for key " << key;
-  std::cout << resp->value()->string_view() << '\n';
+  std::cout << value->value()->string_view() << '\n';
 }
 
 void spt::configdb::client::set( std::string_view server,
@@ -37,12 +58,23 @@ void spt::configdb::client::set( std::string_view server,
     return;
   }
 
+  if ( response->value_type() != model::ResultVariant::Success )
+  {
+    LOG_WARN << "Error setting key " << key;
+    std::cout << "Error setting key " << key << '\n';
+    return;
+  }
+
   auto resp = response->value_as<model::Success>();
   if ( resp->value() )
   {
     LOG_INFO << "Set value for key " << key;
     std::cout << "Set value for key " << key << '\n';
+    return;
   }
+
+  LOG_WARN << "Error setting key " << key;
+  std::cout << "Error setting key " << key << '\n';
 }
 
 void spt::configdb::client::list( std::string_view server,
@@ -57,14 +89,37 @@ void spt::configdb::client::list( std::string_view server,
     return;
   }
 
-  if ( response->value_type() != model::ResponseValue::Children )
+  if ( response->value_type() != model::ResultVariant::KeyValueResults )
   {
     std::cout << "Error retrieving path " << path << '\n';
     return;
   }
 
-  auto resp = response->value_as<model::Children>();
-  for ( auto&& v : *resp->value() )
+  auto resp = response->value_as<model::KeyValueResults>();
+  if ( resp->value()->size() != 1 )
+  {
+    LOG_WARN << "Error listing path " << path;
+    std::cout << "Error listing path " << path << '\n';
+    return;
+  }
+
+  if ( resp->value()->Get( 0 )->value_type() != model::ValueVariant::Children )
+  {
+    LOG_WARN << "Error listing path " << path;
+    std::cout << "Error listing path " << path << '\n';
+    return;
+  }
+
+  auto value = resp->value()->Get( 0 )->value_as<model::Children>();
+  if ( value->value()->size() == 0 )
+  {
+    LOG_WARN << "Error listing path " << path;
+    std::cout << "Error listing path " << path << '\n';
+    return;
+  }
+
+  LOG_INFO << "Retrieved children for path " << path;
+  for ( auto&& v : *value->value() )
   {
     std::cout << v->string_view() << '\n';
   }
@@ -82,15 +137,17 @@ void spt::configdb::client::remove( std::string_view server,
     return;
   }
 
-  if ( response->value_type() != model::ResponseValue::Success )
+  if ( response->value_type() != model::ResultVariant::Success )
   {
+    LOG_WARN << "Error removing key " << key;
     std::cout << "Error removing key " << key << '\n';
     return;
   }
 
   auto resp = response->value_as<model::Success>();
-  if ( !resp->value())
+  if ( !resp->value() )
   {
+    LOG_WARN << "Error removing key " << key;
     std::cout << "Error removing key " << key << '\n';
   }
   else

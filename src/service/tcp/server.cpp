@@ -40,22 +40,36 @@ namespace spt::configdb::tcp::coroutine
   boost::asio::awaitable<void> get( boost::asio::ip::tcp::socket& socket,
       const model::Request* request )
   {
-    auto value = db::get( request->key()->string_view() );
+    std::vector<std::string_view> keys;
+    for ( auto&& kv : *request->data() ) keys.emplace_back( kv->key()->string_view() );
+
+    auto value = db::mget( keys );
     auto fb = flatbuffers::FlatBufferBuilder{};
-    if ( value )
+    auto vec = std::vector<flatbuffers::Offset<model::KeyValueResult>>{};
+
+    if ( !value.empty() )
     {
-      auto v = fb.CreateString( *value );
-      auto vt = model::CreateValue( fb, v );
-      auto r = model::CreateResponse( fb, model::ResponseValue::Value, vt.Union() );
-      fb.Finish( r );
+      vec.reserve( value.size() );
+      for ( auto&& [k, v] : value )
+      {
+        if ( v )
+        {
+          auto vt = model::CreateValue( fb, fb.CreateString( *v ) );
+          vec.push_back( model::CreateKeyValueResult(
+              fb, fb.CreateString( k ), model::ValueVariant::Value, vt.Union() ) );
+        }
+        else
+        {
+          auto vt = model::CreateSuccess( fb, false );
+          vec.push_back( model::CreateKeyValueResult(
+              fb, fb.CreateString( k ), model::ValueVariant::Success, vt.Union() ) );
+        }
+      }
     }
-    else
-    {
-      auto msg = fb.CreateString( "Key not found" );
-      auto vt = model::CreateError( fb, true, msg );
-      auto r = model::CreateResponse( fb, model::ResponseValue::Error, vt.Union() );
-      fb.Finish( r );
-    }
+
+    auto rv = model::CreateKeyValueResults( fb, fb.CreateVector( vec ) );
+    auto r = model::CreateResponse( fb, model::ResultVariant::KeyValueResults, rv.Union() );
+    fb.Finish( r );
 
     co_await write( socket, fb );
   }
@@ -63,21 +77,36 @@ namespace spt::configdb::tcp::coroutine
   boost::asio::awaitable<void> list( boost::asio::ip::tcp::socket& socket,
       const model::Request* request )
   {
-    auto value = db::list( request->key()->string_view() );
+    std::vector<std::string_view> keys;
+    for ( auto&& kv : *request->data() ) keys.emplace_back( kv->key()->string_view() );
+
+    auto value = db::mlist( keys );
     auto fb = flatbuffers::FlatBufferBuilder{};
-    if ( value )
+    auto vec = std::vector<flatbuffers::Offset<model::KeyValueResult>>{};
+
+    if ( !value.empty() )
     {
-      auto vt = model::CreateChildren( fb, fb.CreateVectorOfStrings( *value ) );
-      auto r = model::CreateResponse( fb, model::ResponseValue::Children, vt.Union() );
-      fb.Finish( r );
+      vec.reserve( value.size() );
+      for ( auto&& [k, v] : value )
+      {
+        if ( v )
+        {
+          auto vt = model::CreateChildren( fb, fb.CreateVectorOfStrings( *v ) );
+          vec.push_back( model::CreateKeyValueResult(
+              fb, fb.CreateString( k ), model::ValueVariant::Children, vt.Union() ) );
+        }
+        else
+        {
+          auto vt = model::CreateSuccess( fb, false );
+          vec.push_back( model::CreateKeyValueResult(
+              fb, fb.CreateString( k ), model::ValueVariant::Success, vt.Union() ) );
+        }
+      }
     }
-    else
-    {
-      auto msg = fb.CreateString( "Path not found" );
-      auto vt = model::CreateError( fb, true, msg );
-      auto r = model::CreateResponse( fb, model::ResponseValue::Error, vt.Union() );
-      fb.Finish( r );
-    }
+
+    auto rv = model::CreateKeyValueResults( fb, fb.CreateVector( vec ) );
+    auto r = model::CreateResponse( fb, model::ResultVariant::KeyValueResults, rv.Union() );
+    fb.Finish( r );
 
     co_await write( socket, fb );
   }
@@ -85,10 +114,13 @@ namespace spt::configdb::tcp::coroutine
   boost::asio::awaitable<void> put( boost::asio::ip::tcp::socket& socket,
       const model::Request* request )
   {
-    auto value = db::set( request->key()->string_view(), request->value()->string_view() );
+    std::vector<db::Pair> pairs;
+    for ( auto&& kv : *request->data() ) pairs.emplace_back( kv->key()->string_view(), kv->value()->string_view() );
+
+    auto value = db::mset( pairs );
     auto fb = flatbuffers::FlatBufferBuilder{};
     auto vt = model::CreateSuccess( fb, value );
-    auto r = model::CreateResponse( fb, model::ResponseValue::Success, vt.Union() );
+    auto r = model::CreateResponse( fb, model::ResultVariant::Success, vt.Union() );
     fb.Finish( r );
     co_await write( socket, fb );
   }
@@ -96,10 +128,13 @@ namespace spt::configdb::tcp::coroutine
   boost::asio::awaitable<void> remove( boost::asio::ip::tcp::socket& socket,
       const model::Request* request )
   {
-    auto value = db::remove( request->key()->string_view() );
+    std::vector<std::string_view> keys;
+    for ( auto&& kv : *request->data() ) keys.emplace_back( kv->key()->string_view() );
+
+    auto value = db::mremove( keys );
     auto fb = flatbuffers::FlatBufferBuilder{};
     auto vt = model::CreateSuccess( fb, value );
-    auto r = model::CreateResponse( fb, model::ResponseValue::Success, vt.Union() );
+    auto r = model::CreateResponse( fb, model::ResultVariant::Success, vt.Union() );
     fb.Finish( r );
     co_await write( socket, fb );
   }

@@ -6,12 +6,19 @@
 
 #include "flatbuffers/flatbuffers.h"
 
+#include "keyvalue_generated.h"
+
 namespace spt {
 namespace configdb {
 namespace model {
 
+struct KeyValue;
+struct KeyValueBuilder;
+
 struct Request;
 struct RequestBuilder;
+
+inline const flatbuffers::TypeTable *KeyValueTypeTable();
 
 inline const flatbuffers::TypeTable *RequestTypeTable();
 
@@ -51,20 +58,16 @@ inline const char *EnumNameAction(Action e) {
   return EnumNamesAction()[index];
 }
 
-struct Request FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
-  typedef RequestBuilder Builder;
+struct KeyValue FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef KeyValueBuilder Builder;
   struct Traits;
   static const flatbuffers::TypeTable *MiniReflectTypeTable() {
-    return RequestTypeTable();
+    return KeyValueTypeTable();
   }
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
-    VT_ACTION = 4,
-    VT_KEY = 6,
-    VT_VALUE = 8
+    VT_KEY = 4,
+    VT_VALUE = 6
   };
-  spt::configdb::model::Action action() const {
-    return static_cast<spt::configdb::model::Action>(GetField<int8_t>(VT_ACTION, 0));
-  }
   const flatbuffers::String *key() const {
     return GetPointer<const flatbuffers::String *>(VT_KEY);
   }
@@ -73,18 +76,105 @@ struct Request FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   }
   template<size_t Index>
   auto get_field() const {
+         if constexpr (Index == 0) return key();
+    else if constexpr (Index == 1) return value();
+    else static_assert(Index != Index, "Invalid Field Index");
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyOffset(verifier, VT_KEY) &&
+           verifier.VerifyString(key()) &&
+           VerifyOffset(verifier, VT_VALUE) &&
+           verifier.VerifyString(value()) &&
+           verifier.EndTable();
+  }
+};
+
+struct KeyValueBuilder {
+  typedef KeyValue Table;
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_key(flatbuffers::Offset<flatbuffers::String> key) {
+    fbb_.AddOffset(KeyValue::VT_KEY, key);
+  }
+  void add_value(flatbuffers::Offset<flatbuffers::String> value) {
+    fbb_.AddOffset(KeyValue::VT_VALUE, value);
+  }
+  explicit KeyValueBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  flatbuffers::Offset<KeyValue> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<KeyValue>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<KeyValue> CreateKeyValue(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    flatbuffers::Offset<flatbuffers::String> key = 0,
+    flatbuffers::Offset<flatbuffers::String> value = 0) {
+  KeyValueBuilder builder_(_fbb);
+  builder_.add_value(value);
+  builder_.add_key(key);
+  return builder_.Finish();
+}
+
+struct KeyValue::Traits {
+  using type = KeyValue;
+  static auto constexpr Create = CreateKeyValue;
+  static constexpr auto name = "KeyValue";
+  static constexpr auto fully_qualified_name = "spt.configdb.model.KeyValue";
+  static constexpr std::array<const char *, 2> field_names = {
+    "key",
+    "value"
+  };
+  template<size_t Index>
+  using FieldType = decltype(std::declval<type>().get_field<Index>());
+  static constexpr size_t fields_number = 2;
+};
+
+inline flatbuffers::Offset<KeyValue> CreateKeyValueDirect(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    const char *key = nullptr,
+    const char *value = nullptr) {
+  auto key__ = key ? _fbb.CreateString(key) : 0;
+  auto value__ = value ? _fbb.CreateString(value) : 0;
+  return spt::configdb::model::CreateKeyValue(
+      _fbb,
+      key__,
+      value__);
+}
+
+struct Request FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef RequestBuilder Builder;
+  struct Traits;
+  static const flatbuffers::TypeTable *MiniReflectTypeTable() {
+    return RequestTypeTable();
+  }
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_ACTION = 4,
+    VT_DATA = 6
+  };
+  spt::configdb::model::Action action() const {
+    return static_cast<spt::configdb::model::Action>(GetField<int8_t>(VT_ACTION, 0));
+  }
+  const flatbuffers::Vector<flatbuffers::Offset<spt::configdb::model::KeyValue>> *data() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<spt::configdb::model::KeyValue>> *>(VT_DATA);
+  }
+  template<size_t Index>
+  auto get_field() const {
          if constexpr (Index == 0) return action();
-    else if constexpr (Index == 1) return key();
-    else if constexpr (Index == 2) return value();
+    else if constexpr (Index == 1) return data();
     else static_assert(Index != Index, "Invalid Field Index");
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int8_t>(verifier, VT_ACTION) &&
-           VerifyOffset(verifier, VT_KEY) &&
-           verifier.VerifyString(key()) &&
-           VerifyOffset(verifier, VT_VALUE) &&
-           verifier.VerifyString(value()) &&
+           VerifyOffset(verifier, VT_DATA) &&
+           verifier.VerifyVector(data()) &&
+           verifier.VerifyVectorOfTables(data()) &&
            verifier.EndTable();
   }
 };
@@ -96,11 +186,8 @@ struct RequestBuilder {
   void add_action(spt::configdb::model::Action action) {
     fbb_.AddElement<int8_t>(Request::VT_ACTION, static_cast<int8_t>(action), 0);
   }
-  void add_key(flatbuffers::Offset<flatbuffers::String> key) {
-    fbb_.AddOffset(Request::VT_KEY, key);
-  }
-  void add_value(flatbuffers::Offset<flatbuffers::String> value) {
-    fbb_.AddOffset(Request::VT_VALUE, value);
+  void add_data(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<spt::configdb::model::KeyValue>>> data) {
+    fbb_.AddOffset(Request::VT_DATA, data);
   }
   explicit RequestBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -116,11 +203,9 @@ struct RequestBuilder {
 inline flatbuffers::Offset<Request> CreateRequest(
     flatbuffers::FlatBufferBuilder &_fbb,
     spt::configdb::model::Action action = spt::configdb::model::Action::Get,
-    flatbuffers::Offset<flatbuffers::String> key = 0,
-    flatbuffers::Offset<flatbuffers::String> value = 0) {
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<spt::configdb::model::KeyValue>>> data = 0) {
   RequestBuilder builder_(_fbb);
-  builder_.add_value(value);
-  builder_.add_key(key);
+  builder_.add_data(data);
   builder_.add_action(action);
   return builder_.Finish();
 }
@@ -130,28 +215,24 @@ struct Request::Traits {
   static auto constexpr Create = CreateRequest;
   static constexpr auto name = "Request";
   static constexpr auto fully_qualified_name = "spt.configdb.model.Request";
-  static constexpr std::array<const char *, 3> field_names = {
+  static constexpr std::array<const char *, 2> field_names = {
     "action",
-    "key",
-    "value"
+    "data"
   };
   template<size_t Index>
   using FieldType = decltype(std::declval<type>().get_field<Index>());
-  static constexpr size_t fields_number = 3;
+  static constexpr size_t fields_number = 2;
 };
 
 inline flatbuffers::Offset<Request> CreateRequestDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     spt::configdb::model::Action action = spt::configdb::model::Action::Get,
-    const char *key = nullptr,
-    const char *value = nullptr) {
-  auto key__ = key ? _fbb.CreateString(key) : 0;
-  auto value__ = value ? _fbb.CreateString(value) : 0;
+    const std::vector<flatbuffers::Offset<spt::configdb::model::KeyValue>> *data = nullptr) {
+  auto data__ = data ? _fbb.CreateVector<flatbuffers::Offset<spt::configdb::model::KeyValue>>(*data) : 0;
   return spt::configdb::model::CreateRequest(
       _fbb,
       action,
-      key__,
-      value__);
+      data__);
 }
 
 inline const flatbuffers::TypeTable *ActionTypeTable() {
@@ -176,22 +257,36 @@ inline const flatbuffers::TypeTable *ActionTypeTable() {
   return &tt;
 }
 
-inline const flatbuffers::TypeTable *RequestTypeTable() {
+inline const flatbuffers::TypeTable *KeyValueTypeTable() {
   static const flatbuffers::TypeCode type_codes[] = {
-    { flatbuffers::ET_CHAR, 0, 0 },
     { flatbuffers::ET_STRING, 0, -1 },
     { flatbuffers::ET_STRING, 0, -1 }
   };
-  static const flatbuffers::TypeFunction type_refs[] = {
-    spt::configdb::model::ActionTypeTable
-  };
   static const char * const names[] = {
-    "action",
     "key",
     "value"
   };
   static const flatbuffers::TypeTable tt = {
-    flatbuffers::ST_TABLE, 3, type_codes, type_refs, nullptr, nullptr, names
+    flatbuffers::ST_TABLE, 2, type_codes, nullptr, nullptr, nullptr, names
+  };
+  return &tt;
+}
+
+inline const flatbuffers::TypeTable *RequestTypeTable() {
+  static const flatbuffers::TypeCode type_codes[] = {
+    { flatbuffers::ET_CHAR, 0, 0 },
+    { flatbuffers::ET_SEQUENCE, 1, 1 }
+  };
+  static const flatbuffers::TypeFunction type_refs[] = {
+    spt::configdb::model::ActionTypeTable,
+    spt::configdb::model::KeyValueTypeTable
+  };
+  static const char * const names[] = {
+    "action",
+    "data"
+  };
+  static const flatbuffers::TypeTable tt = {
+    flatbuffers::ST_TABLE, 2, type_codes, type_refs, nullptr, nullptr, names
   };
   return &tt;
 }

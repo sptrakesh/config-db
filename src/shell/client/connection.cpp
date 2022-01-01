@@ -42,45 +42,42 @@ Connection::~Connection()
   }
 }
 
-auto Connection::list( std::string_view k ) -> const model::Response*
+auto Connection::list( std::string_view key ) -> const model::Response*
 {
-  auto fb = flatbuffers::FlatBufferBuilder{ 64 };
-  auto key = fb.CreateString( k );
-  auto value = fb.CreateString( "" );
-  auto request = model::CreateRequest( fb, model::Action::List, key, value );
+  auto fb = flatbuffers::FlatBufferBuilder{};
+  auto vec = std::vector<flatbuffers::Offset<model::KeyValue>>{ model::CreateKeyValue( fb, fb.CreateString( key ) ) };
+  auto request = CreateRequest( fb, model::Action::List, fb.CreateVector( vec ) );
   fb.Finish( request );
 
   return write( fb, "List" );
 }
 
-auto Connection::get( std::string_view k ) -> const model::Response*
+auto Connection::get( std::string_view key ) -> const model::Response*
 {
   auto fb = flatbuffers::FlatBufferBuilder{};
-  auto key = fb.CreateString( k );
-  auto value = fb.CreateString( "" );
-  auto request = model::CreateRequest( fb, model::Action::Get, key, value );
+  auto vec = std::vector<flatbuffers::Offset<model::KeyValue>>{ model::CreateKeyValue( fb, fb.CreateString( key ) ) };
+  auto request = CreateRequest( fb, model::Action::Get, fb.CreateVector( vec ) );
   fb.Finish( request );
 
   return write( fb, "Get" );
 }
 
-auto Connection::set( std::string_view k, std::string_view v ) -> const model::Response*
+auto Connection::set( std::string_view key, std::string_view value ) -> const model::Response*
 {
   auto fb = flatbuffers::FlatBufferBuilder{};
-  auto key = fb.CreateString( k );
-  auto value = fb.CreateString( v );
-  auto request = model::CreateRequest( fb, model::Action::Put, key, value );
+  auto vec = std::vector<flatbuffers::Offset<model::KeyValue>>{
+    model::CreateKeyValue( fb, fb.CreateString( key ), fb.CreateString( value ) ) };
+  auto request = CreateRequest( fb, model::Action::Put, fb.CreateVector( vec ) );
   fb.Finish( request );
 
   return write( fb, "Set" );
 }
 
-auto Connection::remove( std::string_view k ) -> const model::Response*
+auto Connection::remove( std::string_view key ) -> const model::Response*
 {
   auto fb = flatbuffers::FlatBufferBuilder{};
-  auto key = fb.CreateString( k );
-  auto value = fb.CreateString( "" );
-  auto request = model::CreateRequest( fb, model::Action::Delete, key, value );
+  auto vec = std::vector<flatbuffers::Offset<model::KeyValue>>{ model::CreateKeyValue( fb, fb.CreateString( key ) ) };
+  auto request = CreateRequest( fb, model::Action::Delete, fb.CreateVector( vec ) );
   fb.Finish( request );
 
   return write( fb, "Delete" );

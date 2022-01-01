@@ -25,132 +25,241 @@ SCENARIO( "Deep tree test", "[tree]" )
 
     WHEN( "Creating keys" )
     {
-      const auto fn = [&c]( std::string_view k )
-      {
-        auto fb = flatbuffers::FlatBufferBuilder{ 256 };
-        auto key = fb.CreateString( k );
-        auto value = fb.CreateString( "value" );
-        auto request = CreateRequest( fb, Action::Put, key, value );
-        fb.Finish( request );
-
-        const auto [response, isize, osize] = c.write( fb, "Set" );
-        REQUIRE( isize != osize );
-        REQUIRE( response );
-
-        REQUIRE( response->value_type() == ResponseValue::Success );
-        auto resp = response->value_as<Success>();
-        REQUIRE( resp );
-        REQUIRE( resp->value() );
+      auto fb = flatbuffers::FlatBufferBuilder{};
+      auto kvs = std::vector<flatbuffers::Offset<KeyValue>>{
+          CreateKeyValue( fb, fb.CreateString( key1 ), fb.CreateString( "value" ) ),
+          CreateKeyValue( fb, fb.CreateString( key2 ), fb.CreateString( "value" ) ),
+          CreateKeyValue( fb, fb.CreateString( key3 ), fb.CreateString( "value" ) ),
+          CreateKeyValue( fb, fb.CreateString( key4 ), fb.CreateString( "value" ) )
       };
 
-      fn( key1 );
-      fn( key2 );
-      fn( key3 );
-      fn( key4 );
+      auto request = CreateRequest( fb, Action::Put, fb.CreateVector( kvs ) );
+      fb.Finish( request );
+
+      const auto [response, isize, osize] = c.write( fb, "Set" );
+      REQUIRE( isize != osize );
+      REQUIRE( response );
+
+      REQUIRE( response->value_type() == ResultVariant::Success );
+      auto resp = response->value_as<Success>();
+      REQUIRE( resp );
+      REQUIRE( resp->value() );
     }
 
     AND_WHEN( "Listing root node" )
     {
       auto fb = flatbuffers::FlatBufferBuilder{ 64 };
-      auto key = fb.CreateString( "/" );
-      auto value = fb.CreateString( "" );
-      auto request = CreateRequest( fb, Action::List, key, value );
+      auto vec = std::vector<flatbuffers::Offset<KeyValue>>{ CreateKeyValue( fb, fb.CreateString( "/" ) ) };
+      auto request = CreateRequest( fb, Action::List, fb.CreateVector( vec ) );
       fb.Finish( request );
 
       const auto [response, isize, osize] = c.write( fb, "List" );
       REQUIRE( isize != osize );
       REQUIRE( response );
 
-      REQUIRE( response->value_type() == ResponseValue::Children );
-      auto resp = response->value_as<Children>();
+      REQUIRE( response->value_type() == ResultVariant::KeyValueResults );
+      auto resp = response->value_as<KeyValueResults>();
       REQUIRE( resp );
       REQUIRE( resp->value()->size() == 1 );
-      REQUIRE( resp->value()->Get( 0 )->string_view() == "key1"sv );
+      REQUIRE( resp->value()->Get( 0 )->key()->string_view() == "/"sv );
+      REQUIRE( resp->value()->Get( 0 )->value_type() == ValueVariant::Children );
+      auto v = resp->value()->Get( 0 )->value_as<Children>();
+      REQUIRE( v );
+      REQUIRE( v->value()->size() == 1 );
+      REQUIRE( v->value()->Get( 0 )->string_view() == "key1"sv );
     }
 
     AND_WHEN( "Listing first node" )
     {
       auto fb = flatbuffers::FlatBufferBuilder{ 64 };
-      auto key = fb.CreateString( "/key1" );
-      auto value = fb.CreateString( "" );
-      auto request = CreateRequest( fb, Action::List, key, value );
+      auto vec = std::vector<flatbuffers::Offset<KeyValue>>{ CreateKeyValue( fb, fb.CreateString( "/key1" ) ) };
+      auto request = CreateRequest( fb, Action::List, fb.CreateVector( vec ) );
       fb.Finish( request );
 
       const auto [response, isize, osize] = c.write( fb, "List" );
       REQUIRE( isize != osize );
       REQUIRE( response );
 
-      REQUIRE( response->value_type() == ResponseValue::Children );
-      auto resp = response->value_as<Children>();
+      REQUIRE( response->value_type() == ResultVariant::KeyValueResults );
+      auto resp = response->value_as<KeyValueResults>();
       REQUIRE( resp );
-      REQUIRE( resp->value()->size() == 2 );
-      REQUIRE( resp->value()->Get( 0 )->string_view() == "key2"sv );
-      REQUIRE( resp->value()->Get( 1 )->string_view() == "key21"sv );
+      REQUIRE( resp->value()->size() == 1 );
+      REQUIRE( resp->value()->Get( 0 )->key()->string_view() == "/key1"sv );
+      REQUIRE( resp->value()->Get( 0 )->value_type() == ValueVariant::Children );
+      auto v = resp->value()->Get( 0 )->value_as<Children>();
+      REQUIRE( v );
+      REQUIRE( v->value()->size() == 2 );
+      REQUIRE( v->value()->Get( 0 )->string_view() == "key2"sv );
+      REQUIRE( v->value()->Get( 1 )->string_view() == "key21"sv );
     }
 
     AND_WHEN( "Listing first second node" )
     {
       auto fb = flatbuffers::FlatBufferBuilder{ 64 };
-      auto key = fb.CreateString( "/key1/key2" );
-      auto value = fb.CreateString( "" );
-      auto request = CreateRequest( fb, Action::List, key, value );
+      auto vec = std::vector<flatbuffers::Offset<KeyValue>>{ CreateKeyValue( fb, fb.CreateString( "/key1/key2" ) ) };
+      auto request = CreateRequest( fb, Action::List, fb.CreateVector( vec ) );
       fb.Finish( request );
 
       const auto [response, isize, osize] = c.write( fb, "List" );
       REQUIRE( isize != osize );
       REQUIRE( response );
 
-      REQUIRE( response->value_type() == ResponseValue::Children );
-      auto resp = response->value_as<Children>();
+      REQUIRE( response->value_type() == ResultVariant::KeyValueResults );
+      auto resp = response->value_as<KeyValueResults>();
       REQUIRE( resp );
-      REQUIRE( resp->value()->size() == 2 );
-      REQUIRE( resp->value()->Get( 0 )->string_view() == "key3"sv );
-      REQUIRE( resp->value()->Get( 1 )->string_view() == "key4"sv );
+      REQUIRE( resp->value()->size() == 1 );
+      REQUIRE( resp->value()->Get( 0 )->key()->string_view() == "/key1/key2"sv );
+      REQUIRE( resp->value()->Get( 0 )->value_type() == ValueVariant::Children );
+      auto v = resp->value()->Get( 0 )->value_as<Children>();
+      REQUIRE( v );
+      REQUIRE( v->value()->size() == 2 );
+      REQUIRE( v->value()->Get( 0 )->string_view() == "key3"sv );
+      REQUIRE( v->value()->Get( 1 )->string_view() == "key4"sv );
     }
 
     AND_WHEN( "Listing second second node" )
     {
       auto fb = flatbuffers::FlatBufferBuilder{ 64 };
-      auto key = fb.CreateString( "/key1/key21" );
-      auto value = fb.CreateString( "" );
-      auto request = CreateRequest( fb, Action::List, key, value );
+      auto vec = std::vector<flatbuffers::Offset<KeyValue>>{ CreateKeyValue( fb, fb.CreateString( "/key1/key21" ) ) };
+      auto request = CreateRequest( fb, Action::List, fb.CreateVector( vec ) );
       fb.Finish( request );
 
       const auto [response, isize, osize] = c.write( fb, "List" );
       REQUIRE( isize != osize );
       REQUIRE( response );
 
-      REQUIRE( response->value_type() == ResponseValue::Children );
-      auto resp = response->value_as<Children>();
+      REQUIRE( response->value_type() == ResultVariant::KeyValueResults );
+      auto resp = response->value_as<KeyValueResults>();
       REQUIRE( resp );
-      REQUIRE( resp->value()->size() == 2 );
-      REQUIRE( resp->value()->Get( 0 )->string_view() == "key3"sv );
-      REQUIRE( resp->value()->Get( 1 )->string_view() == "key4"sv );
+      REQUIRE( resp->value()->size() == 1 );
+      REQUIRE( resp->value()->Get( 0 )->key()->string_view() == "/key1/key21"sv );
+      REQUIRE( resp->value()->Get( 0 )->value_type() == ValueVariant::Children );
+      auto v = resp->value()->Get( 0 )->value_as<Children>();
+      REQUIRE( v );
+      REQUIRE( v->value()->size() == 2 );
+      REQUIRE( v->value()->Get( 0 )->string_view() == "key3"sv );
+      REQUIRE( v->value()->Get( 1 )->string_view() == "key4"sv );
+    }
+
+    AND_WHEN( "Listing all nodes" )
+    {
+      auto fb = flatbuffers::FlatBufferBuilder{ 64 };
+      auto vec = std::vector<flatbuffers::Offset<KeyValue>>{
+        CreateKeyValue( fb, fb.CreateString( "/" ) ),
+        CreateKeyValue( fb, fb.CreateString( "/key1" ) ),
+        CreateKeyValue( fb, fb.CreateString( "/key1/key2" ) ),
+        CreateKeyValue( fb, fb.CreateString( "/key1/key21" ) )
+      };
+      auto request = CreateRequest( fb, Action::List, fb.CreateVector( vec ) );
+      fb.Finish( request );
+
+      const auto [response, isize, osize] = c.write( fb, "List" );
+      REQUIRE( isize != osize );
+      REQUIRE( response );
+
+      REQUIRE( response->value_type() == ResultVariant::KeyValueResults );
+      auto resp = response->value_as<KeyValueResults>();
+      REQUIRE( resp );
+      REQUIRE( resp->value()->size() == 4 );
+
+      REQUIRE( resp->value()->Get( 0 )->key()->string_view() == "/"sv );
+      REQUIRE( resp->value()->Get( 0 )->value_type() == ValueVariant::Children );
+      auto v = resp->value()->Get( 0 )->value_as<Children>();
+      REQUIRE( v );
+      REQUIRE( v->value()->size() == 1 );
+      REQUIRE( v->value()->Get( 0 )->string_view() == "key1"sv );
+
+      REQUIRE( resp->value()->Get( 1 )->key()->string_view() == "/key1"sv );
+      REQUIRE( resp->value()->Get( 1 )->value_type() == ValueVariant::Children );
+      v = resp->value()->Get( 1 )->value_as<Children>();
+      REQUIRE( v );
+      REQUIRE( v->value()->size() == 2 );
+      REQUIRE( v->value()->Get( 0 )->string_view() == "key2"sv );
+      REQUIRE( v->value()->Get( 1 )->string_view() == "key21"sv );
+
+      REQUIRE( resp->value()->Get( 2 )->key()->string_view() == "/key1/key2"sv );
+      REQUIRE( resp->value()->Get( 2 )->value_type() == ValueVariant::Children );
+      v = resp->value()->Get( 2 )->value_as<Children>();
+      REQUIRE( v );
+      REQUIRE( v->value()->size() == 2 );
+      REQUIRE( v->value()->Get( 0 )->string_view() == "key3"sv );
+      REQUIRE( v->value()->Get( 1 )->string_view() == "key4"sv );
+
+      REQUIRE( resp->value()->Get( 3 )->key()->string_view() == "/key1/key21"sv );
+      REQUIRE( resp->value()->Get( 3 )->value_type() == ValueVariant::Children );
+      v = resp->value()->Get( 3 )->value_as<Children>();
+      REQUIRE( v );
+      REQUIRE( v->value()->size() == 2 );
+      REQUIRE( v->value()->Get( 0 )->string_view() == "key3"sv );
+      REQUIRE( v->value()->Get( 1 )->string_view() == "key4"sv );
+    }
+
+    AND_WHEN( "Retrieving all keys" )
+    {
+      auto fb = flatbuffers::FlatBufferBuilder{ 256 };
+      auto kvs = std::vector<flatbuffers::Offset<KeyValue>>{
+          CreateKeyValue( fb, fb.CreateString( key1 ) ),
+          CreateKeyValue( fb, fb.CreateString( key2 ) ),
+          CreateKeyValue( fb, fb.CreateString( key3 ) ),
+          CreateKeyValue( fb, fb.CreateString( key4 ) )
+      };
+      auto request = CreateRequest( fb, Action::Get, fb.CreateVector( kvs ) );
+      fb.Finish( request );
+
+      const auto [response, isize, osize] = c.write( fb, "Get" );
+      REQUIRE( isize != osize );
+      REQUIRE( response );
+
+      REQUIRE( response->value_type() == ResultVariant::KeyValueResults );
+      auto resp = response->value_as<KeyValueResults>();
+      REQUIRE( resp );
+      REQUIRE( resp->value()->size() == 4 );
+
+      REQUIRE( resp->value()->Get( 0 )->key()->string_view() == key1 );
+      REQUIRE( resp->value()->Get( 0 )->value_type() == ValueVariant::Value );
+      auto v = resp->value()->Get( 0 )->value_as<Value>();
+      REQUIRE( v );
+      REQUIRE( v->value()->string_view() == "value"sv );
+
+      REQUIRE( resp->value()->Get( 1 )->key()->string_view() == key2 );
+      REQUIRE( resp->value()->Get( 1 )->value_type() == ValueVariant::Value );
+      v = resp->value()->Get( 1 )->value_as<Value>();
+      REQUIRE( v );
+      REQUIRE( v->value()->string_view() == "value"sv );
+
+      REQUIRE( resp->value()->Get( 2 )->key()->string_view() == key3 );
+      REQUIRE( resp->value()->Get( 2 )->value_type() == ValueVariant::Value );
+      v = resp->value()->Get( 2 )->value_as<Value>();
+      REQUIRE( v );
+      REQUIRE( v->value()->string_view() == "value"sv );
+
+      REQUIRE( resp->value()->Get( 3 )->key()->string_view() == key4 );
+      REQUIRE( resp->value()->Get( 3 )->value_type() == ValueVariant::Value );
+      v = resp->value()->Get( 3 )->value_as<Value>();
+      REQUIRE( v );
+      REQUIRE( v->value()->string_view() == "value"sv );
     }
 
     AND_WHEN( "Removing the keys" )
     {
-      const auto fn = [&c]( std::string_view k )
-      {
-        auto fb = flatbuffers::FlatBufferBuilder{ 256 };
-        auto key = fb.CreateString( k );
-        auto value = fb.CreateString( "" );
-        auto request = CreateRequest( fb, Action::Delete, key, value );
-        fb.Finish( request );
-
-        const auto [response, isize, osize] = c.write( fb, "Delete" );
-        REQUIRE( isize != osize );
-        REQUIRE( response );
-        REQUIRE( response->value_type() == ResponseValue::Success );
-        auto resp = response->value_as<Success>();
-        REQUIRE( resp );
-        REQUIRE( resp->value() );
+      auto fb = flatbuffers::FlatBufferBuilder{};
+      auto kvs = std::vector<flatbuffers::Offset<KeyValue>>{
+          CreateKeyValue( fb, fb.CreateString( key1 ) ),
+          CreateKeyValue( fb, fb.CreateString( key2 ) ),
+          CreateKeyValue( fb, fb.CreateString( key3 ) ),
+          CreateKeyValue( fb, fb.CreateString( key4 ) )
       };
 
-      fn( key1 );
-      fn( key2 );
-      fn( key3 );
-      fn( key4 );
+      auto request = CreateRequest( fb, Action::Delete, fb.CreateVector( kvs ) );
+      fb.Finish( request );
+
+      const auto [response, isize, osize] = c.write( fb, "Delete" );
+      REQUIRE( isize != osize );
+      REQUIRE( response );
+      REQUIRE( response->value_type() == ResultVariant::Success );
+      auto resp = response->value_as<Success>();
+      REQUIRE( resp );
+      REQUIRE( resp->value() );
     }
   }
 }

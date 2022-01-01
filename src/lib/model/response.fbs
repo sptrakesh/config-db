@@ -1,31 +1,25 @@
+include "keyvalue.fbs";
+
 namespace spt.configdb.model;
 
-table Value
+union ValueVariant{ Value, Children, Success }
+
+table KeyValueResult
 {
-  value:string;
+  key:string;
+  value:ValueVariant;
 }
 
-table Children
+table KeyValueResults
 {
-  value:[string];
+  value:[KeyValueResult];
 }
 
-table Success
-{
-  value:bool;
-}
-
-table Error
-{
-  value:bool;
-  message:string;
-}
-
-union ResponseValue{ Value, Children, Success, Error }
+union ResultVariant { KeyValueResults, Success }
 
 table Response
 {
-  value:ResponseValue;
+  value:ResultVariant;
 }
 
 root_type Response;

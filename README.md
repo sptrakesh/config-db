@@ -54,7 +54,7 @@ The models were generated from the schema files using the following command:
 
 ```shell
 (cd <path to project>/src/lib/model;
-<path to>/flatc --cpp --cpp-std c++17 --cpp-static-reflection --reflect-names request.fbs response.fbs tree.fbs)
+<path to>/flatc --cpp --cpp-std c++17 --cpp-static-reflection --reflect-names keyvalue.fbs request.fbs response.fbs tree.fbs)
 ```
 
 ### TCP/IP
@@ -63,6 +63,10 @@ adds an extra 4 bytes at the beginning of each message.  These 4 bytes contain
 the size of the message being interchanged.  Client and server will use these
 4 bytes to ensure they have read the entire message before attempting to marshall
 the data.
+
+All requests are for setting or retrieving multiple *keys*.  When setting or
+deleting multiple keys, a single failure will result in rolling back the entire
+*transaction*.
 
 ### HTTP/2
 The HTTP service uses JSON for data interchange.  HTTP/1.1 or upgrade to 2 is
@@ -82,6 +86,8 @@ as the desired *key* within the configuration database.  This is used to
 retrieve child node names for the specified path.
 
 See [example](test/integration/curl.sh) for sample HTTP requests and responses.
+
+**Note:** The HTTP service does not support batch (multiple *key*) operations.
 
 #### PUT
 ```shell
@@ -128,26 +134,27 @@ The following messages are transferred between the client and TCP server.
 
 ### Request
 The [request](src/lib/model/request.fbs) message contains the `action` desired
-as well as the `key` and optionally the `value` to be sent to the service.
+as well as the `key-value` pairs to be sent to the service.  The `value` may
+be omitted for all actions other than `Put`.
 
 * **action** - An `enum` used to specify the type of action to perform against
 the service.  Action values are kept similar to their HTTP verb counterparts
 when possible.
-* **key** - The *key* to act upon against the service.
-* **value** - The *value* to set for the *key*.  This is only relevant for
+* **data** - Array of `key-value` pairs.
+  * **key** - The *key* to act upon against the service.
+  * **value** - The *value* to set for the *key*.  This is only relevant for
 the `Put` action.
 
 ### Response
 The [response](src/lib/model/response.fbs) message contains either the *value*
-for a *key*, or a `boolean` indicating success or failure of the action.
+for the array of *keys* (`Get`, `List`), or a `boolean` indicating success or failure of the 
+*transaction* (`Put`, `Delete`).
 
+A **KeyValueResult** structure is used to represent the result for a specific
+*key* sent in the request.  The `value` can be one of:
 * **Value** - The string value associated with the specified *key* for a `Get` request.
 * **Children** - A list of child node names for the specified *key/path* for a `List` request.
-* **Success** - A boolean value indicating success or failure when setting (`Put`)
-or deleting (`Delete`) a *key*.  A `false` value usually indicates a **transaction**
-*commit* or *rollback* error.
-* **Error** - A boolean value indicating the specified *key* does not exist for
-a `Get` request.
+* **Success** - A boolean value used to report failure at retrieving the `key` or `path`.
 
 When reading the response, as mentioned above, the first **4** bytes represent
 the length of the buffer being returned, and the rest of the bytes (use loops

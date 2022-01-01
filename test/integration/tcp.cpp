@@ -24,16 +24,17 @@ SCENARIO( "Simple CRUD test suite", "[crud]" )
     WHEN( "Setting a key-value pair" )
     {
       auto fb = flatbuffers::FlatBufferBuilder{ 256 };
-      auto key = fb.CreateString( "/key" );
-      auto value = fb.CreateString( "value" );
-      auto request = CreateRequest( fb, Action::Put, key, value );
+      auto kvs = std::vector<flatbuffers::Offset<KeyValue>>{
+          CreateKeyValue( fb, fb.CreateString( "/key" ), fb.CreateString( "value" ) )
+      };
+      auto request = CreateRequest( fb, Action::Put, fb.CreateVector( kvs ) );
       fb.Finish( request );
 
       const auto [response, isize, osize] = c.write( fb, "Set" );
       REQUIRE( isize != osize );
       REQUIRE( response );
 
-      REQUIRE( response->value_type() == ResponseValue::Success );
+      REQUIRE( response->value_type() == ResultVariant::Success );
       auto resp = response->value_as<Success>();
       REQUIRE( resp );
       REQUIRE( resp->value() );
@@ -42,34 +43,41 @@ SCENARIO( "Simple CRUD test suite", "[crud]" )
     AND_WHEN( "Reading key" )
     {
       auto fb = flatbuffers::FlatBufferBuilder{ 256 };
-      auto key = fb.CreateString( "/key" );
-      auto value = fb.CreateString( "" );
-      auto request = CreateRequest( fb, Action::Get, key, value );
+      auto kvs = std::vector<flatbuffers::Offset<KeyValue>>{
+          CreateKeyValue( fb, fb.CreateString( "/key" ) )
+      };
+      auto request = CreateRequest( fb, Action::Get, fb.CreateVector( kvs ) );
       fb.Finish( request );
 
       const auto [response, isize, osize] = c.write( fb, "Get" );
       REQUIRE( isize != osize );
       REQUIRE( response );
 
-      REQUIRE( response->value_type() == ResponseValue::Value );
-      auto resp = response->value_as<Value>();
+      REQUIRE( response->value_type() == ResultVariant::KeyValueResults );
+      auto resp = response->value_as<KeyValueResults>();
       REQUIRE( resp );
-      REQUIRE( resp->value()->string_view() == "value"sv );
+      REQUIRE( resp->value()->size() == 1 );
+      REQUIRE( resp->value()->Get( 0 )->key()->string_view() == "/key"sv );
+      REQUIRE( resp->value()->Get( 0 )->value_type() == ValueVariant::Value );
+      auto v = resp->value()->Get( 0 )->value_as<Value>();
+      REQUIRE( v );
+      REQUIRE( v->value()->string_view() == "value"sv );
     }
 
     AND_WHEN( "Updating value" )
     {
       auto fb = flatbuffers::FlatBufferBuilder{ 256 };
-      auto key = fb.CreateString( "/key" );
-      auto value = fb.CreateString( "value modified" );
-      auto request = CreateRequest( fb, Action::Put, key, value );
+      auto kvs = std::vector<flatbuffers::Offset<KeyValue>>{
+          CreateKeyValue( fb, fb.CreateString( "/key" ), fb.CreateString( "value modified" ) )
+      };
+      auto request = CreateRequest( fb, Action::Put, fb.CreateVector( kvs ) );
       fb.Finish( request );
 
       const auto [response, isize, osize] = c.write( fb, "Set" );
       REQUIRE( isize != osize );
       REQUIRE( response );
 
-      REQUIRE( response->value_type() == ResponseValue::Success );
+      REQUIRE( response->value_type() == ResultVariant::Success );
       auto resp = response->value_as<Success>();
       REQUIRE( resp );
       REQUIRE( resp->value() );
@@ -78,33 +86,40 @@ SCENARIO( "Simple CRUD test suite", "[crud]" )
     AND_WHEN( "Reading updated value" )
     {
       auto fb = flatbuffers::FlatBufferBuilder{ 256 };
-      auto key = fb.CreateString( "/key" );
-      auto value = fb.CreateString( "" );
-      auto request = CreateRequest( fb, Action::Get, key, value );
+      auto kvs = std::vector<flatbuffers::Offset<KeyValue>>{
+          CreateKeyValue( fb, fb.CreateString( "/key" ) )
+      };
+      auto request = CreateRequest( fb, Action::Get, fb.CreateVector( kvs ) );
       fb.Finish( request );
 
       const auto [response, isize, osize] = c.write( fb, "Get" );
       REQUIRE( isize != osize );
       REQUIRE( response );
 
-      REQUIRE( response->value_type() == ResponseValue::Value );
-      auto resp = response->value_as<Value>();
+      REQUIRE( response->value_type() == ResultVariant::KeyValueResults );
+      auto resp = response->value_as<KeyValueResults>();
       REQUIRE( resp );
-      REQUIRE( resp->value()->string_view() == "value modified"sv );
+      REQUIRE( resp->value()->size() == 1 );
+      REQUIRE( resp->value()->Get( 0 )->key()->string_view() == "/key"sv );
+      REQUIRE( resp->value()->Get( 0 )->value_type() == ValueVariant::Value );
+      auto v = resp->value()->Get( 0 )->value_as<Value>();
+      REQUIRE( v );
+      REQUIRE( v->value()->string_view() == "value modified"sv );
     }
 
     AND_WHEN( "Deleting key" )
     {
       auto fb = flatbuffers::FlatBufferBuilder{ 256 };
-      auto key = fb.CreateString( "/key" );
-      auto value = fb.CreateString( "" );
-      auto request = CreateRequest( fb, Action::Delete, key, value );
+      auto kvs = std::vector<flatbuffers::Offset<KeyValue>>{
+          CreateKeyValue( fb, fb.CreateString( "/key" ) )
+      };
+      auto request = CreateRequest( fb, Action::Delete, fb.CreateVector( kvs ) );
       fb.Finish( request );
 
       const auto [response, isize, osize] = c.write( fb, "Delete" );
       REQUIRE( isize != osize );
       REQUIRE( response );
-      REQUIRE( response->value_type() == ResponseValue::Success );
+      REQUIRE( response->value_type() == ResultVariant::Success );
       auto resp = response->value_as<Success>();
       REQUIRE( resp );
       REQUIRE( resp->value() );
@@ -113,20 +128,24 @@ SCENARIO( "Simple CRUD test suite", "[crud]" )
     AND_WHEN( "Retrieving deleted key" )
     {
       auto fb = flatbuffers::FlatBufferBuilder{ 256 };
-      auto key = fb.CreateString( "/key" );
-      auto value = fb.CreateString( "" );
-      auto request = CreateRequest( fb, Action::Get, key, value );
+      auto kvs = std::vector<flatbuffers::Offset<KeyValue>>{
+          CreateKeyValue( fb, fb.CreateString( "/key" ) )
+      };
+      auto request = CreateRequest( fb, Action::Get, fb.CreateVector( kvs ) );
       fb.Finish( request );
 
       const auto [response, isize, osize] = c.write( fb, "Get deleted" );
       REQUIRE( isize != osize );
       REQUIRE( response );
 
-      REQUIRE( response->value_type() == ResponseValue::Error );
-      auto resp = response->value_as<Error>();
+      REQUIRE( response->value_type() == ResultVariant::KeyValueResults );
+      auto resp = response->value_as<KeyValueResults>();
       REQUIRE( resp );
-      REQUIRE( resp->value() );
-      REQUIRE( resp->message()->string_view() == "Key not found"sv );
+      REQUIRE( resp->value()->size() == 1 );
+      REQUIRE( resp->value()->Get( 0 )->key()->string_view() == "/key"sv );
+      REQUIRE( resp->value()->Get( 0 )->value_type() == ValueVariant::Success );
+      auto v = resp->value()->Get( 0 )->value_as<Success>();
+      REQUIRE_FALSE( v->value() );
     }
 
     AND_WHEN( "Sending noop message" )
@@ -206,14 +225,17 @@ SCENARIO( "Simple CRUD test suite", "[crud]" )
     WHEN( "Saving the key-value pair" )
     {
       auto fb = flatbuffers::FlatBufferBuilder{};
-      auto request = CreateRequest( fb, Action::Put, fb.CreateString( key ), fb.CreateString( value ) );
+      auto kvs = std::vector<flatbuffers::Offset<KeyValue>>{
+          CreateKeyValue( fb, fb.CreateString( key ), fb.CreateString( value ) )
+      };
+      auto request = CreateRequest( fb, Action::Put, fb.CreateVector( kvs ) );
       fb.Finish( request );
 
       const auto [response, isize, osize] = c.write( fb, "Set" );
       REQUIRE( isize != osize );
       REQUIRE( response );
 
-      REQUIRE( response->value_type() == ResponseValue::Success );
+      REQUIRE( response->value_type() == ResultVariant::Success );
       auto resp = response->value_as<Success>();
       REQUIRE( resp );
       REQUIRE( resp->value() );
@@ -222,29 +244,40 @@ SCENARIO( "Simple CRUD test suite", "[crud]" )
     AND_WHEN( "Reading key" )
     {
       auto fb = flatbuffers::FlatBufferBuilder{};
-      auto request = CreateRequest( fb, Action::Get, fb.CreateString( key ), fb.CreateString( "" ) );
+      auto kvs = std::vector<flatbuffers::Offset<KeyValue>>{
+          CreateKeyValue( fb, fb.CreateString( key ) )
+      };
+      auto request = CreateRequest( fb, Action::Get, fb.CreateVector( kvs ) );
       fb.Finish( request );
 
       const auto [response, isize, osize] = c.write( fb, "Get" );
       REQUIRE( isize != osize );
       REQUIRE( response );
 
-      REQUIRE( response->value_type() == ResponseValue::Value );
-      auto resp = response->value_as<Value>();
+      REQUIRE( response->value_type() == ResultVariant::KeyValueResults );
+      auto resp = response->value_as<KeyValueResults>();
       REQUIRE( resp );
-      REQUIRE( resp->value()->string_view() == value );
+      REQUIRE( resp->value()->size() == 1 );
+      REQUIRE( resp->value()->Get( 0 )->key()->string_view() == key );
+      REQUIRE( resp->value()->Get( 0 )->value_type() == ValueVariant::Value );
+      auto v = resp->value()->Get( 0 )->value_as<Value>();
+      REQUIRE( v );
+      REQUIRE( v->value()->string_view() == value );
     }
 
     AND_WHEN( "Deleting key" )
     {
       auto fb = flatbuffers::FlatBufferBuilder{ 256 };
-      auto request = CreateRequest( fb, Action::Delete, fb.CreateString( key ), fb.CreateString( "" ) );
+      auto kvs = std::vector<flatbuffers::Offset<KeyValue>>{
+          CreateKeyValue( fb, fb.CreateString( key ) )
+      };
+      auto request = CreateRequest( fb, Action::Delete, fb.CreateVector( kvs ) );
       fb.Finish( request );
 
       const auto [response, isize, osize] = c.write( fb, "Delete" );
       REQUIRE( isize != osize );
       REQUIRE( response );
-      REQUIRE( response->value_type() == ResponseValue::Success );
+      REQUIRE( response->value_type() == ResultVariant::Success );
       auto resp = response->value_as<Success>();
       REQUIRE( resp );
       REQUIRE( resp->value() );
