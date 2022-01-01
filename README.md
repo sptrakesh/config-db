@@ -13,6 +13,7 @@
   * [CLI](#cli)
 * [Docker](#docker)
 * [Build](#build)
+* [Run](#run)
 * [Acknowledgements](#acknowledgements)
 
 A simple configuration database similar to Apache Zookeeper, Etcd, etc., built
@@ -273,6 +274,42 @@ sequence.  Ensure the dependencies are available under the following paths:
 * **MacOSX** - Various dependencies installed under the `/usr/local/<dependency>` path.
   See [dependencies](dependencies.md) for scripts used to install the dependencies.
 * **UNIX** - All dependencies installed under the `/opt/local` path.
+
+
+## Run
+Run the service via the `/opt/spt/bin/configdb` executable.  Command line options
+may be specified to override default options.  When running as a Docker container,
+use environment variables to specify the comman line options.
+* **Logging** - Options related to logging.
+  * **-c | --console** - Echo logs to `stdout`.  Default `false`.  Always specified
+    as `true` in the Docker [entrypoint](docker/scripts/entrypoint.sh).
+  * **-l | --log-level** - The log level to set.  Default `info`.  Supported values
+    `critical|warn|info|debug`.  Specify via `LOG_LEVEL` environment variable to docker.
+  * **-o | --log-dir** - The directory under which log files are written.  Default
+    `logs/` relative path. On docker this is set to `/opt/spt/logs`. Files
+    are rotated daily.  External scripts (`cron` etc. are needed to remove old files).
+* **-p | --http-port** - The port on which the HTTP/2 service listens.  Default
+  `6000` (`6006` on Apple).  Specify via `HTTP_PORT` environment variable to docker.
+* **-t | --tcp-port** - The port on which the TCP/IP service listens.  Default
+  `2020` (`2022` on Apple).  Specify via `TCP_PORT` environment variable to docker.
+* **-n | --threads** - The number of threads for both TCP/IP and HTTP/2 services.
+  Default to number of hardware threads.  The Docker entrypoint defaults to `4`.
+  Specify via `THREADS` environment variable to docker.
+* **-e | --encryption-secret** - The secret to use to encrypt values.  Default
+  value is internal to the system.  Specify via `ENCRYPTION_SECRET` environment
+  variable to docker.
+* **-c | --enable-cache** - Enables temporary cache for keys read from the database.
+  Default `false`.  Specify via `ENABLE_CACHE` environment variable to docker.
+
+Sample command to run the service
+```shell
+# Locally built service
+/opt/spt/bin/configdb --console true --log-dir /tmp/ --threads 4 --log-level debug
+# Docker container
+docker run -d --rm -p 6000:6000 -p 2022:2020 \
+  -e "ENCRYPTION_SECRET=abc123" -e "LOG_LEVEL=debug" \
+  --name config-db config-db
+```
 
 ## Acknowledgements
 This software has been developed mainly using work other people/projects have contributed.

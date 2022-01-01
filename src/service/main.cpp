@@ -37,7 +37,7 @@ int main( int argc, char const * const * argv )
       Opt(conf.encryption.secret, "AESEncryptionKey")["-e"]["--encryption-secret"]("Secret to use to encrypt values (default internal)") |
       Opt(conf.enableCache, "true")["-c"]["--enable-cache"]("Enable temporary cache for key values (default false)") |
       Opt(conf.logging.level, "info")["-l"]["--log-level"]("Log level to use [debug|info|warn|critical] (default info).") |
-      Opt(conf.logging.dir, "logs/")["-o"]["--dir"]("Log directory (default logs/)");
+      Opt(conf.logging.dir, "logs/")["-o"]["--log-dir"]("Log directory (default logs/)");
 
   auto result = options.parse( clara::Args( argc, argv ) );
   if ( !result )

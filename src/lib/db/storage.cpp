@@ -205,11 +205,13 @@ namespace spt::configdb::db::internal
           }
           else
           {
+            LOG_DEBUG << "Adding key " << ks;
             keys.emplace_back( ks );
           }
         }
         else
         {
+          LOG_DEBUG << "Adding key " << ks;
           keys.emplace_back( ks );
         }
       }
@@ -226,16 +228,17 @@ namespace spt::configdb::db::internal
 
       for ( std::size_t i = 0; i < keys.size(); ++i )
       {
+        auto keystr = keys[i].ToString();
         if ( statuses[i].ok() )
         {
           auto ret = ( *encrypter )->decrypt( values[i].ToStringView() );
           if ( conf.enableCache ) vc.put( keys[i].ToString(), ret );
-          result.emplace_back( keys[i].ToString(), values[i].ToString() );
+          result.emplace_back( keystr, values[i].ToString() );
         }
         else
         {
-          LOG_WARN << "Error retrieving key " << keys[i].ToStringView() << ". " << statuses[i].ToString();
-          result.emplace_back( keys[i].ToString(), std::nullopt );
+          LOG_WARN << "Error retrieving key " << keystr << ". " << statuses[i].ToString();
+          result.emplace_back( keystr, std::nullopt );
         }
       }
 
@@ -304,6 +307,8 @@ namespace spt::configdb::db::internal
       result.reserve( vec.size() );
       for ( std::size_t i = 0; i < vec.size(); ++i )
       {
+        auto ks = keys[i].ToString();
+
         if ( statuses[i].ok() )
         {
           const auto d = reinterpret_cast<const uint8_t*>( values[i].data() );
@@ -314,18 +319,18 @@ namespace spt::configdb::db::internal
             auto rvec = std::vector<std::string>{};
             rvec.reserve( response->children()->size() + 1 );
             for ( auto&& child : *response->children() ) rvec.push_back( child->str() );
-            result.emplace_back( keys[i].ToString(), std::move( rvec ) );
+            result.emplace_back( ks, std::move( rvec ) );
           }
           else
           {
             LOG_CRIT << "Error marshalling buffer for path " << vec[i];
-            result.emplace_back( keys[i].ToString(), std::nullopt );
+            result.emplace_back( ks, std::nullopt );
           }
         }
         else
         {
           LOG_WARN << "Error retrieving path " << vec[i] << ". " << statuses[i].ToString();
-          result.emplace_back( keys[i].ToString(), std::nullopt );
+          result.emplace_back( ks, std::nullopt );
         }
       }
 

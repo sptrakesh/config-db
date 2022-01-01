@@ -50,12 +50,12 @@ Service()
 {
   if [ -n "$DEBUG" ]
   then
-    echo "DEBUG specified, shell into container and start up with gdb"
+    echo "DEBUG specified, shell into container and start using gdb.sh"
     tail -f /dev/null
   fi
 
-  echo "Starting up config-db service"
-  /opt/spt/bin/configdb --console true --dir ${LOGDIR}/ --log-level $LOG_LEVEL \
+  echo "Starting config-db service"
+  /opt/spt/bin/configdb --console true --log-dir ${LOGDIR}/ --log-level $LOG_LEVEL \
     --http-port $HTTP_PORT --tcp-port $TCP_PORT --threads $THREADS \
     --enable-cache $ENABLE_CACHE $args
 }
