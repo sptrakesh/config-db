@@ -7,6 +7,7 @@
 #include "tcp/server.h"
 #include "../lib/db/storage.h"
 #include "../lib/log/NanoLog.h"
+#include "../lib/model/configuration.h"
 #include "../lib/util/clara.h"
 
 #include <iostream>
@@ -18,7 +19,7 @@
 int main( int argc, char const * const * argv )
 {
   using clara::Opt;
-  uint32_t threads = std::thread::hardware_concurrency();
+  auto& conf = spt::configdb::model::Configuration::instance();
 #if __APPLE__
   std::string httpPort{ "6006" };
   int tcpPort{ 2022 };
@@ -26,20 +27,19 @@ int main( int argc, char const * const * argv )
   std::string httpPort{ "6000" };
   int tcpPort{ 2020 };
 #endif
-  std::string logLevel{"info"};
-  std::string dir{"logs/"};
   bool help = false;
-  bool console = false;
 
   auto options = clara::Help(help) |
-      Opt(console, "true")["-c"]["--console"]("Log to console (default false)") |
+      Opt(conf.logging.console, "true")["-c"]["--console"]("Log to console (default false)") |
       Opt(httpPort, "6000")["-p"]["--http-port"]("Port on which to listen for http/2 traffic (default 6000)") |
       Opt(tcpPort, "2020")["-t"]["--tcp-port"]("Port on which to listen for tcp traffic (default 2020)") |
-      Opt(threads, "8")["-n"]["--threads"]("Number of server threads to spawn (default system)") |
-      Opt(logLevel, "info")["-l"]["--log-level"]("Log level to use [debug|info|warn|critical] (default info).") |
-      Opt(dir, "logs/")["-o"]["--dir"]("Log directory (default logs/)");
+      Opt(conf.threads, "8")["-n"]["--threads"]("Number of server threads to spawn (default system)") |
+      Opt(conf.encryption.secret, "AESEncryptionKey")["-e"]["--encryption-secret"]("Secret to use to encrypt values (default internal)") |
+      Opt(conf.enableCache, "true")["-c"]["--enable-cache"]("Enable temporary cache for key values (default false)") |
+      Opt(conf.logging.level, "info")["-l"]["--log-level"]("Log level to use [debug|info|warn|critical] (default info).") |
+      Opt(conf.logging.dir, "logs/")["-o"]["--dir"]("Log directory (default logs/)");
 
-  auto result = options.parse(clara::Args(argc, argv));
+  auto result = options.parse( clara::Args( argc, argv ) );
   if ( !result )
   {
     std::cerr << "Error in command line: " << result.errorMessage() << std::endl;
@@ -53,24 +53,24 @@ int main( int argc, char const * const * argv )
   }
 
   std::cout << "Starting server with options\n" <<
-    "console: " << console << '\n' <<
+    "console: " << conf.logging.console << '\n' <<
     "http-port: " << httpPort << "\n" <<
     "tcp-port: " << tcpPort << "\n" <<
-    "threads: " << threads << "\n" <<
-    "logLevel: " << logLevel << '\n' <<
-    "dir: " << dir << '\n';
+    "threads: " << conf.threads << "\n" <<
+    "logLevel: " << conf.logging.level << '\n' <<
+    "dir: " << conf.logging.dir << '\n';
 
-  if ( logLevel == "debug" ) nanolog::set_log_level( nanolog::LogLevel::DEBUG );
-  else if ( logLevel == "info" ) nanolog::set_log_level( nanolog::LogLevel::INFO );
-  else if ( logLevel == "warn" ) nanolog::set_log_level( nanolog::LogLevel::WARN );
-  else if ( logLevel == "critical" ) nanolog::set_log_level( nanolog::LogLevel::CRIT );
-  nanolog::initialize( nanolog::GuaranteedLogger(), dir, "config-db", console );
+  if ( conf.logging.level == "debug" ) nanolog::set_log_level( nanolog::LogLevel::DEBUG );
+  else if ( conf.logging.level == "info" ) nanolog::set_log_level( nanolog::LogLevel::INFO );
+  else if ( conf.logging.level == "warn" ) nanolog::set_log_level( nanolog::LogLevel::WARN );
+  else if ( conf.logging.level == "critical" ) nanolog::set_log_level( nanolog::LogLevel::CRIT );
+  nanolog::initialize( nanolog::GuaranteedLogger(), conf.logging.dir, "config-db", conf.logging.console );
 
   spt::configdb::db::init();
 
   std::vector<std::thread> v;
-  v.reserve( threads );
-  v.emplace_back( [httpPort, threads]{ spt::configdb::http::start( httpPort, threads ); } );
+  v.reserve( conf.threads );
+  v.emplace_back( [httpPort, &conf]{ spt::configdb::http::start( httpPort, conf.threads ); } );
   v.emplace_back( [tcpPort]{ spt::configdb::tcp::start( tcpPort ); } );
 
   boost::asio::signal_set signals( spt::configdb::ContextHolder::instance().ioc, SIGINT, SIGTERM );
@@ -93,7 +93,7 @@ int main( int argc, char const * const * argv )
     }
   };
 
-  for( auto i = std::thread::hardware_concurrency() - 2; i > 0; --i )
+  for( auto i = conf.threads - 2; i > 0; --i )
   {
     v.emplace_back( [&run] { run(); } );
   }

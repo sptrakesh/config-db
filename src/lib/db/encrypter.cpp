@@ -4,6 +4,7 @@
 
 #include "encrypter.h"
 #include "log/NanoLog.h"
+#include "model/configuration.h"
 
 #include <cassert>
 #include <chrono>
@@ -155,16 +156,11 @@ void Encrypter::loadOpenSSL()
 void Encrypter::initContext()
 {
   constexpr static const char* scheme = "aes-256-cbc";
-  int rounds = 1000000;
+  auto& conf = model::Configuration::instance();
 
-  static const std::string saltStr = "jJ1LFPN2kl8P34saLd4rGe/UWncig04";
-  auto* salt = reinterpret_cast<const unsigned char*>( saltStr.data() );
-
-  std::string keystr = "mQtFU2PCvbqFhoM4XnB8yQMDETnSUaW";
-  auto* aes_key = reinterpret_cast<unsigned char*>( keystr.data() );
-
-  std::string ivstr = "Mr+xbc4TRKDrnCCrzE4t/7+ORrCfs6i";
-  auto* aes_iv = reinterpret_cast<unsigned char*>( ivstr.data() );
+  auto* salt = reinterpret_cast<const unsigned char*>( conf.encryption.salt.data() );
+  auto* aes_key = reinterpret_cast<unsigned char*>( conf.encryption.key.data() );
+  auto* aes_iv = reinterpret_cast<unsigned char*>( conf.encryption.iv.data() );
 
   const EVP_CIPHER *cipher = EVP_get_cipherbyname( scheme );
   if ( ! cipher )
@@ -176,11 +172,11 @@ void Encrypter::initContext()
 
   EVP_BytesToKey(
       cipher,  // Cryptographic mode
-      EVP_sha1(),         // SHA1
+      EVP_sha512(),         // SHA512
       salt,               // a fuzzifier
       reinterpret_cast<const unsigned char *>( key.c_str() ),
       int( key.size() + 1 ),
-      rounds,             // more rounds
+      conf.encryption.rounds,             // more rounds
       aes_key, aes_iv);   // return buffers
 
   encryptingContext = EVP_CIPHER_CTX_new();

@@ -5,6 +5,7 @@
 #include "encrypter.h"
 #include "storage.h"
 #include "log/NanoLog.h"
+#include "model/configuration.h"
 #include "model/tree_generated.h"
 #include "pool/pool.h"
 #include "util/cache.h"
@@ -27,7 +28,7 @@ namespace spt::configdb::db::internal
 {
   std::unique_ptr<Encrypter> create()
   {
-    return std::make_unique<Encrypter>( "TpSBvWY35C1sqURL9JCy6sKRtScKvCPTTQUZUE/vrfQ="sv );
+    return std::make_unique<Encrypter>( model::Configuration::instance().encryption.secret );
   }
 
   spt::configdb::pool::Configuration poolConfig()
@@ -64,12 +65,16 @@ namespace spt::configdb::db::internal
         return std::nullopt;
       }
 
+      const auto& conf = model::Configuration::instance();
       auto& vc = util::getValueCache();
       auto ks = getKey( key );
 
-      if ( auto iter = vc.find( ks ); iter != std::end( vc ))
+      if ( conf.enableCache )
       {
-        return iter->second;
+        if ( auto iter = vc.find( ks ); iter != std::end( vc ))
+        {
+          return iter->second;
+        }
       }
 
       std::string value;
@@ -89,7 +94,8 @@ namespace spt::configdb::db::internal
         return std::nullopt;
       }
       auto ret = ( *encrypter )->decrypt( value );
-      vc.put( ks, ret );
+
+      if ( conf.enableCache ) vc.put( ks, ret );
       return ret;
     }
 
@@ -171,6 +177,7 @@ namespace spt::configdb::db::internal
 
     std::vector<KeyValue> mget( const std::vector<std::string_view>& vec )
     {
+      const auto& conf = model::Configuration::instance();
       auto& vc = util::getValueCache();
 
       std::vector<KeyValue> result;
@@ -190,9 +197,16 @@ namespace spt::configdb::db::internal
       {
         auto ks = getKey( key );
 
-        if ( auto iter = vc.find( ks ); iter != std::end( vc ) )
+        if ( conf.enableCache )
         {
-          result.emplace_back( ks, iter->second );
+          if ( auto iter = vc.find( ks ); iter != std::end( vc ) )
+          {
+            result.emplace_back( ks, iter->second );
+          }
+          else
+          {
+            keys.emplace_back( ks );
+          }
         }
         else
         {
@@ -215,7 +229,7 @@ namespace spt::configdb::db::internal
         if ( statuses[i].ok() )
         {
           auto ret = ( *encrypter )->decrypt( values[i].ToStringView() );
-          vc.put( keys[i].ToString(), ret );
+          if ( conf.enableCache ) vc.put( keys[i].ToString(), ret );
           result.emplace_back( keys[i].ToString(), values[i].ToString() );
         }
         else
@@ -389,7 +403,10 @@ namespace spt::configdb::db::internal
         return rollback();
       }
 
-      util::getValueCache().put( ks, std::string{ value.data(), value.size() } );
+      if ( model::Configuration::instance().enableCache )
+      {
+        util::getValueCache().put( ks, std::string{ value.data(), value.size() } );
+      }
       return true;
     }
 
@@ -527,7 +544,7 @@ namespace spt::configdb::db::internal
         return rollback();
       }
 
-      util::getValueCache().erase( ks );
+      if ( model::Configuration::instance().enableCache ) util::getValueCache().erase( ks );
       return true;
     }
 

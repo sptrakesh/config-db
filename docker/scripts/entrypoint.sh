@@ -27,6 +27,23 @@ Defaults()
     LOG_LEVEL="info"
     echo "LOG_LEVEL not set.  Will default to $LOG_LEVEL"
   fi
+
+  if [ -z "$ENABLE_CACHE" ]
+  then
+    ENABLE_CACHE="true"
+    echo "ENABLE_CACHE not set.  Will default to $ENABLE_CACHE"
+  fi
+}
+
+Args()
+{
+  args=''
+
+  if [ -n "$ENCRYPTION_SECRET" ]
+  then
+    args=" --encryption-secret $ENCRYPTION_SECRET"
+    echo "AES encryption secret specified."
+  fi
 }
 
 Service()
@@ -39,7 +56,8 @@ Service()
 
   echo "Starting up config-db service"
   /opt/spt/bin/configdb --console true --dir ${LOGDIR}/ --log-level $LOG_LEVEL \
-    --http-port $HTTP_PORT --tcp-port $TCP_PORT --threads $THREADS
+    --http-port $HTTP_PORT --tcp-port $TCP_PORT --threads $THREADS \
+    --enable-cache $ENABLE_CACHE $args
 }
 
-Defaults && Service
+Defaults && Args && Service
