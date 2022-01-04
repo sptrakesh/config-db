@@ -2,12 +2,13 @@
 
 * [Keys](#keys)
 * [Protocols](#protocols)
-    * [TCP/IP](#tcpip)
-    * [HTTP/2](#http2)
+  * [TCP/IP](#tcpip)
+  * [HTTP/2](#http2)
 * [Messages](#messages)
-    * [Request](#request)
-    * [Response](#response)
-    * [Ping](#ping)
+  * [Request](#request)
+  * [Response](#response)
+  * [Ping](#ping)
+* [API](#api)
 * [Utilities](#utilities)
   * [Shell](#shell)
   * [CLI](#cli)
@@ -55,7 +56,7 @@ format, while the HTTP/2 service uses JSON.
 The models were generated from the schema files using the following command:
 
 ```shell
-(cd <path to project>/src/lib/model;
+(cd <path to project>/src/common/model;
 <path to>/flatc --cpp --cpp-std c++17 --cpp-static-reflection --reflect-names keyvalue.fbs request.fbs response.fbs tree.fbs)
 ```
 
@@ -135,7 +136,7 @@ curl -s --http2-prior-knowledge $url
 The following messages are transferred between the client and TCP server.
 
 ### Request
-The [request](src/lib/model/request.fbs) message contains the `action` desired
+The [request](src/common/model/request.fbs) message contains the `action` desired
 as well as the `key-value` pairs to be sent to the service.  The `value` may
 be omitted for all actions other than `Put`.
 
@@ -148,7 +149,7 @@ when possible.
 the `Put` action.
 
 ### Response
-The [response](src/lib/model/response.fbs) message contains either the *value*
+The [response](src/common/model/response.fbs) message contains either the *value*
 for the array of *keys* (`Get`, `List`), or a `boolean` indicating success or failure of the 
 *transaction* (`Put`, `Delete`).
 
@@ -168,6 +169,19 @@ example.
 Short (less than 5 bytes) messages may be sent to the service as a *keep-alive*
 message.  Service will echo the message back to the client.  Examples include
 `ping`, `noop`, etc.
+
+
+## API
+A high-level client API to interact with the service is provided.  The interface hides
+the complexities involved with making TCP/IP requests using flatbuffers.  The
+[api](src/api/api.h) presents an interface that is very similar to the persistence
+interface used internally by the service.  The API maintains a connection pool
+to the service and performs the required interactions using the flatbuffer models.
+
+**Note:** API **must** be initialised via the `init` function before first use.
+
+See [integration test](test/integration/api.cpp) for sample usage of the API.
+The *shell** application is built using the client API.
 
 
 ## Utilities

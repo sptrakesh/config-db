@@ -8,7 +8,7 @@
 
 #include "connection.h"
 #include "../../src/common/log/NanoLog.h"
-#include "../../src/lib/model/request_generated.h"
+#include "../../src/common/model/request_generated.h"
 
 using namespace spt::configdb::model;
 using namespace std::string_view_literals;

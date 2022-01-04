@@ -9,7 +9,7 @@
 #include <boost/asio/streambuf.hpp>
 #include <boost/asio/ip/tcp.hpp>
 
-#include "../../src/lib/model/response_generated.h"
+#include "../../src/common/model/response_generated.h"
 
 namespace spt::configdb::itest::tcp
 {

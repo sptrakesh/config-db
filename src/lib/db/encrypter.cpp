@@ -3,8 +3,8 @@
 //
 
 #include "encrypter.h"
-#include "../common/log/NanoLog.h"
 #include "model/configuration.h"
+#include "../common/log/NanoLog.h"
 
 #include <cassert>
 #include <chrono>

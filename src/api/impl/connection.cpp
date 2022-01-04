@@ -5,7 +5,7 @@
 #include "api.h"
 #include "connection.h"
 #include "../common/log/NanoLog.h"
-#include "../lib/model/request_generated.h"
+#include "../common/model/request_generated.h"
 
 #include <mutex>
 #include <boost/asio/connect.hpp>

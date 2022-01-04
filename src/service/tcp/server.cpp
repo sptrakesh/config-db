@@ -5,9 +5,9 @@
 #include "server.h"
 #include "../common/contextholder.h"
 #include "../common/log/NanoLog.h"
+#include "../common/model/request_generated.h"
+#include "../common/model/response_generated.h"
 #include "../lib/db/storage.h"
-#include "../lib/model/request_generated.h"
-#include "../lib/model/response_generated.h"
 
 #include <vector>
 
@@ -197,7 +197,7 @@ namespace spt::configdb::tcp::coroutine
     rbuf.reserve( docSize - sizeof(uint32_t) );
     rbuf.insert( rbuf.end(), data + sizeof(uint32_t), data + osize );
 
-    LOG_INFO << "Read " << int(osize) << " bytes, total size " << int(docSize);
+    LOG_DEBUG << "Read " << int(osize) << " bytes, total size " << int(docSize);
     while ( docSize < maxBytes && read != docSize )
     {
       osize = co_await socket.async_read_some( boost::asio::buffer( data ), use_awaitable );

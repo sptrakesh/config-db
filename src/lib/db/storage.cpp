@@ -5,9 +5,9 @@
 #include "encrypter.h"
 #include "storage.h"
 #include "model/configuration.h"
-#include "model/tree_generated.h"
 #include "util/cache.h"
 #include "../common/log/NanoLog.h"
+#include "../common/model/tree_generated.h"
 #include "../common/pool/pool.h"
 
 #include <algorithm>

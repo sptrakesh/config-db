@@ -12,7 +12,7 @@
 #include <boost/asio/ip/tcp.hpp>
 
 #include "../common/contextholder.h"
-#include "../../src/lib/model/response_generated.h"
+#include "../../src/common/model/response_generated.h"
 
 namespace spt::configdb::api::impl
 {
