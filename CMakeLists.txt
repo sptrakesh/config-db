@@ -43,7 +43,7 @@ if (UNIX AND NOT APPLE)
 endif()
 
 include_directories(
-  ${LIBMONGOCXX_STATIC_INCLUDE_DIRS}
+  ${Boost_INCLUDE_DIR}
   ${OPENSSL_INCLUDE_DIR}
 )
 
@@ -70,8 +70,10 @@ endif()
 
 set(CMAKE_INSTALL_PREFIX /opt/spt)
 
+add_subdirectory(src/common)
 add_subdirectory(src/lib)
 add_subdirectory(src/service)
+add_subdirectory(src/api)
 add_subdirectory(src/shell)
 add_subdirectory(src/cli)
 

@@ -7,7 +7,7 @@
 #include <boost/asio/io_context.hpp>
 
 #include "connection.h"
-#include "../../src/lib/log/NanoLog.h"
+#include "../../src/common/log/NanoLog.h"
 #include "../../src/lib/model/request_generated.h"
 
 using namespace spt::configdb::model;

@@ -6,7 +6,7 @@
 #include <catch2/catch.hpp>
 
 #include "../../src/lib/db/storage.h"
-#include "../../src/lib/log/NanoLog.h"
+#include "../../src/common/log/NanoLog.h"
 
 int main( int argc, char* argv[] )
 {

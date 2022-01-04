@@ -2,10 +2,10 @@
 // Created by Rakesh on 25/12/2021.
 //
 
-#include "contextholder.h"
 #include "client/client.h"
-#include "../lib/log/NanoLog.h"
-#include "../lib/util/clara.h"
+#include "../common/contextholder.h"
+#include "../common/log/NanoLog.h"
+#include "../common/util/clara.h"
 
 #include <algorithm>
 #include <iostream>

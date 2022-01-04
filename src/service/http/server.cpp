@@ -3,9 +3,9 @@
 //
 
 #include "server.h"
-#include "contextholder.h"
+#include "../common/contextholder.h"
+#include "../common/log/NanoLog.h"
 #include "../lib/db/storage.h"
-#include "../lib/log/NanoLog.h"
 
 #include <charconv>
 #include <boost/algorithm/string/replace.hpp>

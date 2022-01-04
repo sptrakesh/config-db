@@ -1,0 +1,5 @@
+file(GLOB_RECURSE configdb_SRCS *.cpp *.h)
+set(configdb_SRCS ${configdb_SRCS})
+add_library(configdb-api STATIC ${configdb_SRCS})
+set_target_properties(configdb-api PROPERTIES OUTPUT_NAME configapi)
+install(TARGETS configdb-api DESTINATION lib)

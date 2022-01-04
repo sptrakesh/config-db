@@ -3,7 +3,7 @@
 //
 
 #include "connection.h"
-#include "../../src/lib/log/NanoLog.h"
+#include "../../src/common/log/NanoLog.h"
 #include "../../src/lib/model/request_generated.h"
 
 #include <boost/asio/connect.hpp>

@@ -16,6 +16,6 @@ set( test_SRCS ${test_SRCS} )
 add_executable(integration ${test_SRCS} )
 
 target_link_libraries(integration
-  PRIVATE configdb-lib Catch2::Catch2 Boost::boost flatbuffers z
+  PRIVATE configdb-common configdb-lib configdb-api Catch2::Catch2 Boost::boost flatbuffers z
 )
 

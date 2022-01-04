@@ -16,6 +16,6 @@ set( test_SRCS ${test_SRCS} )
 add_executable(unitTest ${test_SRCS} )
 
 target_link_libraries(unitTest
-  PRIVATE configdb-lib Catch2::Catch2 Boost::boost rocksdb ${OPENSSL_LIBRARIES} z
+  PRIVATE configdb-common configdb-lib Catch2::Catch2 Boost::boost rocksdb ${OPENSSL_LIBRARIES} z
 )
 

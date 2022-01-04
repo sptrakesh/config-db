@@ -5,11 +5,12 @@
 #define CATCH_CONFIG_RUNNER
 #include <catch2/catch.hpp>
 
-#include "../../src/lib/db/storage.h"
-#include "../../src/lib/log/NanoLog.h"
+#include "../../src/api/api.h"
+#include "../../src/common/log/NanoLog.h"
 
 int main( int argc, char* argv[] )
 {
   nanolog::initialize( nanolog::GuaranteedLogger(), "/tmp/", "config-db-itest", false );
+  spt::configdb::api::init( "localhost", "2022" );
   return Catch::Session().run( argc, argv );
 }

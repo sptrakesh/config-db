@@ -3,8 +3,8 @@
 //
 
 #include "client.h"
-#include "connection.h"
-#include "../lib/pool/pool.h"
+#include "../api/api.h"
+#include "../common/log/NanoLog.h"
 
 #include <cctype>
 #include <iostream>
@@ -39,24 +39,6 @@ namespace spt::configdb::client::pclient
     return { left, static_cast<std::size_t>(std::distance( left, right ) + 1) };
   }
 
-  struct PoolHolder
-  {
-    static PoolHolder& instance()
-    {
-      static PoolHolder h;
-      return h;
-    }
-
-    ~PoolHolder() = default;
-    PoolHolder(const PoolHolder&) = delete;
-    PoolHolder& operator=(const PoolHolder&) = delete;
-
-    spt::configdb::pool::Pool<Connection> pool{ spt::configdb::client::create, pool::Configuration{} };
-
-  private:
-    PoolHolder() = default;
-  };
-
   std::tuple<std::string_view, std::size_t> command( std::string_view line )
   {
     auto idx = line.find( ' ', 0 );
@@ -87,50 +69,16 @@ namespace spt::configdb::client::pclient
       return;
     }
 
-    auto popt = pclient::PoolHolder::instance().pool.acquire();
-    if ( !popt )
-    {
-      LOG_WARN << "Error acquiring connection from pool";
-      std::cout << "Error acquiring connection from pool\n";
-      return;
-    }
-
-    auto response = (*popt)->list( key );
-    if ( response->value_type() != model::ResultVariant::KeyValueResults )
+    auto response = api::list( key );
+    if ( !response || response->empty() )
     {
       LOG_WARN << "Error retrieving path " << key;
       std::cout << "Error retrieving path " << key << '\n';
-      return;
-    }
-
-    auto resp = response->value_as<model::KeyValueResults>();
-    if ( resp->value()->size() != 1 )
-    {
-      LOG_WARN << "Error retrieving path " << key;
-      std::cout << "Error retrieving path " << key << '\n';
-      return;
-    }
-
-    if ( resp->value()->Get( 0 )->value_type() != model::ValueVariant::Children )
-    {
-      LOG_WARN << "Error listing path " << key;
-      std::cout << "Error listing path " << key << '\n';
-      return;
-    }
-
-    auto value = resp->value()->Get( 0 )->value_as<model::Children>();
-    if ( value->value()->size() == 0 )
-    {
-      LOG_WARN << "Error listing path " << key;
-      std::cout << "Error listing path " << key << '\n';
       return;
     }
 
     LOG_INFO << "Retrieved children for path " << key;
-    for ( auto&& v : *value->value() )
-    {
-      std::cout << v->string_view() << '\n';
-    }
+    for ( auto&& v : *response ) std::cout << v << '\n';
   }
 
   void processGet( std::string_view line, std::size_t idx )
@@ -142,14 +90,7 @@ namespace spt::configdb::client::pclient
       return;
     }
 
-    auto popt = pclient::PoolHolder::instance().pool.acquire();
-    if ( !popt )
-    {
-      std::cout << "Error acquiring connection from pool\n";
-      return;
-    }
-
-    auto response = (*popt)->get( key );
+    auto response = api::get( key );
     if ( !response )
     {
       LOG_WARN << "Error retrieving value for key " << key;
@@ -157,30 +98,8 @@ namespace spt::configdb::client::pclient
       return;
     }
 
-    if ( response->value_type() != model::ResultVariant::KeyValueResults )
-    {
-      LOG_WARN << "Error retrieving key " << key;
-      std::cout << "Error retrieving key " << key << '\n';
-      return;
-    }
-
-    auto resp = response->value_as<model::KeyValueResults>();
-    if ( resp->value()->size() != 1 )
-    {
-      LOG_WARN << "Error retrieving key " << key;
-      std::cout << "Error retrieving key " << key << '\n';
-      return;
-    }
-
-    if ( resp->value()->Get( 0 )->value_type() != model::ValueVariant::Value )
-    {
-      LOG_WARN << "Error retrieving key " << key;
-      std::cout << "Error retrieving key " << key << '\n';
-      return;
-    }
-    auto value = resp->value()->Get( 0 )->value_as<model::Value>();
     LOG_INFO << "Retrieved value for key " << key;
-    std::cout << value->value()->string_view() << '\n';
+    std::cout << *response << '\n';
   }
 
   void processSet( std::string_view line, std::size_t idx )
@@ -199,29 +118,13 @@ namespace spt::configdb::client::pclient
       vidx = line.find( ' ', end + 1 );
     }
 
-    auto popt = pclient::PoolHolder::instance().pool.acquire();
-    if ( !popt )
-    {
-      std::cout << "Error acquiring connection from pool\n";
-      return;
-    }
-
-    auto response = (*popt)->set( key, line.substr( end + 1 ) );
-    if ( !response )
-    {
-      std::cout << "Unable to set key " << key << '\n';
-      return;
-    }
-
-    if ( response->value_type() != model::ResultVariant::Success ||
-        !response->value_as<model::Success>()->value() )
+    if ( const auto response = api::set( key, line.substr( end + 1 ) ); !response )
     {
       std::cout << "Error setting key " << key << '\n';
+      return;
     }
-    else
-    {
-      std::cout << "Set key " << key << '\n';
-    }
+
+    std::cout << "Set key " << key << '\n';
   }
 
   void processRemove( std::string_view line, std::size_t idx )
@@ -233,37 +136,20 @@ namespace spt::configdb::client::pclient
       return;
     }
 
-    auto popt = pclient::PoolHolder::instance().pool.acquire();
-    if ( !popt )
-    {
-      std::cout << "Error acquiring connection from pool\n";
-      return;
-    }
-
-    auto response = ( *popt )->remove( key );
-    if ( !response )
-    {
-      LOG_WARN << "Error removing key " << key;
-      std::cout << "Unable to remove key " << key << '\n';
-      return;
-    }
-
-    if ( response->value_type() != model::ResultVariant::Success ||
-        !response->value_as<model::Success>()->value() )
+    if ( const auto response = api::remove( key ); !response )
     {
       LOG_WARN << "Error removing key " << key;
       std::cout << "Error removing key " << key << '\n';
+      return;
     }
-    else
-    {
-      std::cout << "Removed key " << key << '\n';
-    }
+
+    std::cout << "Removed key " << key << '\n';
   }
 }
 
 int spt::configdb::client::run( std::string_view server, std::string_view port )
 {
-  init( server, port );
+  api::init( server, port );
 
   using namespace std::literals;
   std::cout << "Enter commands followed by <ENTER>" << '\n';

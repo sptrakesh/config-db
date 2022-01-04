@@ -21,6 +21,7 @@ using [RocksDB](https://rocksdb.org/).
 
 All values are stored encrypted using `aes-256-cbc` on disk.
 
+
 ## Keys
 All keys are required to represent UNIX *path like* structures.  Keys that do
 not at least start with a leading `/` character are internally replaced with

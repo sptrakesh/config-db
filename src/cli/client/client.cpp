@@ -3,15 +3,15 @@
 //
 
 #include "client.h"
-#include "connection.h"
-#include "../lib/log/NanoLog.h"
+#include "../api/impl/connection.h"
+#include "../common/log/NanoLog.h"
 
 #include <iostream>
 
 void spt::configdb::client::get( std::string_view server,
     std::string_view port, std::string_view key )
 {
-  auto connection = Connection{ server, port };
+  auto connection = api::impl::Connection{ server, port };
   auto response = connection.get( key );
   if ( !response )
   {
@@ -49,7 +49,7 @@ void spt::configdb::client::get( std::string_view server,
 void spt::configdb::client::set( std::string_view server,
     std::string_view port, std::string_view key, std::string_view value )
 {
-  auto connection = Connection{ server, port };
+  auto connection = api::impl::Connection{ server, port };
   auto response = connection.set( key, value );
   if ( !response )
   {
@@ -80,7 +80,7 @@ void spt::configdb::client::set( std::string_view server,
 void spt::configdb::client::list( std::string_view server,
     std::string_view port, std::string_view path )
 {
-  auto connection = Connection{ server, port };
+  auto connection = api::impl::Connection{ server, port };
   auto response = connection.list( path );
   if ( !response )
   {
@@ -128,7 +128,7 @@ void spt::configdb::client::list( std::string_view server,
 void spt::configdb::client::remove( std::string_view server,
     std::string_view port, std::string_view key )
 {
-  auto connection = Connection{ server, port };
+  auto connection = api::impl::Connection{ server, port };
   auto response = connection.remove( key );
   if ( !response )
   {

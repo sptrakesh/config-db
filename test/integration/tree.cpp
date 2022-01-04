@@ -16,10 +16,10 @@ SCENARIO( "Deep tree test", "[tree]" )
 
   GIVEN( "Connected to TCP Service" )
   {
-    static const auto key1 = "/key1/key2/key3"sv;
-    static const auto key2 = "/key1/key2/key4"sv;
-    static const auto key3 = "/key1/key21/key3"sv;
-    static const auto key4 = "/key1/key21/key4"sv;
+    const auto key1 = "/key1/key2/key3"sv;
+    const auto key2 = "/key1/key2/key4"sv;
+    const auto key3 = "/key1/key21/key3"sv;
+    const auto key4 = "/key1/key21/key4"sv;
 
     spt::configdb::itest::tcp::Connection c{ ioc };
 
@@ -196,7 +196,7 @@ SCENARIO( "Deep tree test", "[tree]" )
 
     AND_WHEN( "Retrieving all keys" )
     {
-      auto fb = flatbuffers::FlatBufferBuilder{ 256 };
+      auto fb = flatbuffers::FlatBufferBuilder{};
       auto kvs = std::vector<flatbuffers::Offset<KeyValue>>{
           CreateKeyValue( fb, fb.CreateString( key1 ) ),
           CreateKeyValue( fb, fb.CreateString( key2 ) ),

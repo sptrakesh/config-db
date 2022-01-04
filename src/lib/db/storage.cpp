@@ -4,11 +4,11 @@
 
 #include "encrypter.h"
 #include "storage.h"
-#include "log/NanoLog.h"
 #include "model/configuration.h"
 #include "model/tree_generated.h"
-#include "pool/pool.h"
 #include "util/cache.h"
+#include "../common/log/NanoLog.h"
+#include "../common/pool/pool.h"
 
 #include <algorithm>
 #include <chrono>
@@ -190,29 +190,29 @@ namespace spt::configdb::db::internal
         return result;
       }
 
+      std::vector<std::string> skeys;
+      skeys.reserve( vec.size() );
+      for ( auto&& key : vec ) skeys.push_back( getKey( key ) );
+
       std::vector<rocksdb::Slice> keys;
       keys.reserve( vec.size() );
 
-      for ( auto&& key : vec )
+      for ( std::size_t i = 0; i < vec.size(); ++i )
       {
-        auto ks = getKey( key );
-
         if ( conf.enableCache )
         {
-          if ( auto iter = vc.find( ks ); iter != std::end( vc ) )
+          if ( auto iter = vc.find( skeys[i] ); iter != std::end( vc ) )
           {
-            result.emplace_back( ks, iter->second );
+            result.emplace_back( skeys[i], iter->second );
           }
           else
           {
-            LOG_DEBUG << "Adding key " << ks;
-            keys.emplace_back( ks );
+            keys.emplace_back( skeys[i] );
           }
         }
         else
         {
-          LOG_DEBUG << "Adding key " << ks;
-          keys.emplace_back( ks );
+          keys.emplace_back( skeys[i] );
         }
       }
 
@@ -233,7 +233,7 @@ namespace spt::configdb::db::internal
         {
           auto ret = ( *encrypter )->decrypt( values[i].ToStringView() );
           if ( conf.enableCache ) vc.put( keys[i].ToString(), ret );
-          result.emplace_back( keystr, values[i].ToString() );
+          result.emplace_back( keystr, std::move( ret ) );
         }
         else
         {
