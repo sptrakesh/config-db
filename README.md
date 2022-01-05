@@ -146,12 +146,13 @@ as well as the `key-value` pairs to be sent to the service.  The `value` may
 be omitted for all actions other than `Put`.
 
 * **action** - An `enum` used to specify the type of action to perform against
-the service.  Action values are kept similar to their HTTP verb counterparts
-when possible.
+  the service.  Action values are kept similar to their HTTP verb counterparts
+  when possible.
 * **data** - Array of `key-value` pairs.
   * **key** - The *key* to act upon against the service.
   * **value** - The *value* to set for the *key*.  This is only relevant for
-the `Put` action.
+    the `Put` or `Move` actions.  In the case of `Move`, the *value* is the destination
+    *key* to move the *value* to.
 
 ### Response
 The [response](src/common/model/response.fbs) message contains either the *value*
@@ -186,7 +187,7 @@ to the service and performs the required interactions using the flatbuffer model
 **Note:** API **must** be initialised via the `init` function before first use.
 
 See [integration test](test/integration/apicrud.cpp) for sample usage of the API.
-The *shell** application is built using the client API.
+The *shell* application is built using the client API.
 
 
 ## Utilities
