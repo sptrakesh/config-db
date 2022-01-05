@@ -3,7 +3,7 @@
 //
 
 #include "encrypter.h"
-#include "storage.h"
+#include "crud.h"
 #include "model/configuration.h"
 #include "util/cache.h"
 #include "../common/log/NanoLog.h"
@@ -138,6 +138,26 @@ namespace spt::configdb::db::internal
       return true;
     }
 
+    bool move( std::string_view key, std::string_view dest )
+    {
+      if ( key.empty() )
+      {
+        LOG_INFO << "Rejecting request for empty key";
+        return false;
+      }
+
+      auto txn = db->BeginTransaction( rocksdb::WriteOptions{} );
+      if ( const auto s = move( key, dest, txn ); !s ) return s;
+
+      if ( const auto s = txn->Commit(); !s.ok())
+      {
+        LOG_WARN << "Error removing key [" << key << "]. " << s.ToString();
+        return false;
+      }
+
+      return true;
+    }
+
     Nodes list( std::string_view key )
     {
       if ( key.empty())
@@ -175,7 +195,7 @@ namespace spt::configdb::db::internal
       return std::nullopt;
     }
 
-    std::vector<KeyValue> mget( const std::vector<std::string_view>& vec )
+    std::vector<KeyValue> get( const std::vector<std::string_view>& vec )
     {
       const auto& conf = model::Configuration::instance();
       auto& vc = util::getValueCache();
@@ -245,7 +265,7 @@ namespace spt::configdb::db::internal
       return result;
     }
 
-    bool mset( const std::vector<Pair>& kvs )
+    bool set( const std::vector<Pair>& kvs )
     {
       auto txn = db->BeginTransaction( rocksdb::WriteOptions{} );
 
@@ -267,7 +287,7 @@ namespace spt::configdb::db::internal
       return true;
     }
 
-    bool mremove( const std::vector<std::string_view>& keys )
+    bool remove( const std::vector<std::string_view>& keys )
     {
       auto txn = db->BeginTransaction( rocksdb::WriteOptions{} );
 
@@ -289,7 +309,29 @@ namespace spt::configdb::db::internal
       return true;
     }
 
-    std::vector<NodePair> mlist( const std::vector<std::string_view>& vec )
+    bool move( const std::vector<Pair>& kvs )
+    {
+      auto txn = db->BeginTransaction( rocksdb::WriteOptions{} );
+
+      for ( auto&& [key, dest] : kvs )
+      {
+        if ( const auto s = move( key, dest, txn ); !s )
+        {
+          LOG_WARN << "Error moving key " << key << " to destination " << dest;
+          return s;
+        }
+      }
+
+      if ( const auto s = txn->Commit(); !s.ok() )
+      {
+        LOG_WARN << "Error moving batch. " << s.ToString();
+        return false;
+      }
+
+      return true;
+    }
+
+    std::vector<NodePair> list( const std::vector<std::string_view>& vec )
     {
       std::vector<rocksdb::Slice> keys;
       keys.reserve( vec.size() );
@@ -379,7 +421,7 @@ namespace spt::configdb::db::internal
       {
         if ( const auto s = txn->Rollback(); !s.ok())
         {
-          LOG_WARN << "Error rolling back transaction. " << s.ToString();
+          LOG_CRIT << "Error rolling back transaction. " << s.ToString();
         }
         return false;
       };
@@ -530,7 +572,7 @@ namespace spt::configdb::db::internal
       {
         if ( const auto s = txn->Rollback(); !s.ok())
         {
-          LOG_WARN << "Error rolling back transaction. " << s.ToString();
+          LOG_CRIT << "Error rolling back transaction. " << s.ToString();
         }
         return false;
       };
@@ -678,6 +720,47 @@ namespace spt::configdb::db::internal
       return tuples;
     }
 
+    bool move( std::string_view key, std::string_view dest, rocksdb::Transaction* txn )
+    {
+      auto encrypter = pool.acquire();
+      if ( !encrypter )
+      {
+        LOG_CRIT << "Unable to acquire encrypter from pool";
+        return false;
+      }
+
+      std::string value;
+
+      if ( const auto s = txn->Get( rocksdb::ReadOptions{}, handles[1], rocksdb::Slice{ key }, &value );
+          !s.ok() )
+      {
+        if ( s.IsNotFound() ) LOG_WARN << "Key " << key << " not found.";
+        else LOG_WARN << "Error retrieving key " << key << ". " << s.ToString();
+        return false;
+      }
+      value = ( *encrypter )->decrypt( value );
+
+      if ( const auto s = remove( key, txn ); !s )
+      {
+        if ( const auto st = txn->Rollback(); !st.ok() )
+        {
+          LOG_CRIT << "Error rolling back transaction. " << st.ToString();
+        }
+        return s;
+      }
+
+      if ( const auto s = set( dest, value, txn ); !s )
+      {
+        if ( const auto st = txn->Rollback(); !st.ok() )
+        {
+          LOG_CRIT << "Error rolling back transaction. " << st.ToString();
+        }
+        return s;
+      }
+
+      return true;
+    }
+
     void init()
     {
 #ifdef __APPLE__
@@ -759,29 +842,39 @@ bool spt::configdb::db::remove( std::string_view key )
   return internal::Database::instance().remove( key );
 }
 
+bool spt::configdb::db::move( std::string_view key, std::string_view dest )
+{
+  return internal::Database::instance().move( key, dest );
+}
+
 auto spt::configdb::db::list( std::string_view key ) -> Nodes
 {
   return internal::Database::instance().list( key );
 }
 
-auto spt::configdb::db::mget( const std::vector<std::string_view>& keys ) -> std::vector<KeyValue>
+auto spt::configdb::db::get( const std::vector<std::string_view>& keys ) -> std::vector<KeyValue>
 {
-  return internal::Database::instance().mget( keys );
+  return internal::Database::instance().get( keys );
 }
 
-bool spt::configdb::db::mset( const std::vector<Pair>& kvs )
+bool spt::configdb::db::set( const std::vector<Pair>& kvs )
 {
-  return internal::Database::instance().mset( kvs );
+  return internal::Database::instance().set( kvs );
 }
 
-bool spt::configdb::db::mremove( const std::vector<std::string_view>& keys )
+bool spt::configdb::db::remove( const std::vector<std::string_view>& keys )
 {
-  return internal::Database::instance().mremove( keys );
+  return internal::Database::instance().remove( keys );
 }
 
-auto spt::configdb::db::mlist( const std::vector<std::string_view>& keys ) -> std::vector<NodePair>
+bool spt::configdb::db::move( const std::vector<Pair>& kvs )
 {
-  return internal::Database::instance().mlist( keys );
+  return internal::Database::instance().move( kvs );
+}
+
+auto spt::configdb::db::list( const std::vector<std::string_view>& keys ) -> std::vector<NodePair>
+{
+  return internal::Database::instance().list( keys );
 }
 
 void spt::configdb::db::reopen()

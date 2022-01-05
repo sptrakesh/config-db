@@ -2,8 +2,9 @@ include "keyvalue.fbs";
 
 namespace spt.configdb.model;
 
-enum Action:byte { Get = 0, Put, Delete, List = 3 }
+enum Action:byte { Get = 0, Put, Delete, List, Move = 4 }
 
+// For Move, specify the destination key as the value
 table KeyValue
 {
   key:string;

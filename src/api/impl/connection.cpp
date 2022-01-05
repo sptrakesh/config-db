@@ -94,7 +94,18 @@ auto Connection::remove( std::string_view key ) -> const model::Response*
   return write( fb, "Delete" );
 }
 
-auto Connection::mlist( const std::vector<std::string_view>& keys ) -> const model::Response*
+auto Connection::move( std::string_view key, std::string_view dest ) -> const model::Response*
+{
+  auto fb = flatbuffers::FlatBufferBuilder{};
+  auto vec = std::vector<flatbuffers::Offset<model::KeyValue>>{
+      model::CreateKeyValue( fb, fb.CreateString( key ), fb.CreateString( dest ) ) };
+  auto request = CreateRequest( fb, model::Action::Move, fb.CreateVector( vec ) );
+  fb.Finish( request );
+
+  return write( fb, "Move" );
+}
+
+auto Connection::list( const std::vector<std::string_view>& keys ) -> const model::Response*
 {
   auto fb = flatbuffers::FlatBufferBuilder{};
   auto vec = std::vector<flatbuffers::Offset<model::KeyValue>>{};
@@ -106,7 +117,7 @@ auto Connection::mlist( const std::vector<std::string_view>& keys ) -> const mod
   return write( fb, "MList" );
 }
 
-auto Connection::mget( const std::vector<std::string_view>& keys ) -> const model::Response*
+auto Connection::get( const std::vector<std::string_view>& keys ) -> const model::Response*
 {
   auto fb = flatbuffers::FlatBufferBuilder{};
   auto vec = std::vector<flatbuffers::Offset<model::KeyValue>>{};
@@ -118,7 +129,7 @@ auto Connection::mget( const std::vector<std::string_view>& keys ) -> const mode
   return write( fb, "MGet" );
 }
 
-auto Connection::mset( const std::vector<Pair>& kvs ) -> const model::Response*
+auto Connection::set( const std::vector<Pair>& kvs ) -> const model::Response*
 {
   auto fb = flatbuffers::FlatBufferBuilder{};
   auto vec = std::vector<flatbuffers::Offset<model::KeyValue>>{};
@@ -130,7 +141,7 @@ auto Connection::mset( const std::vector<Pair>& kvs ) -> const model::Response*
   return write( fb, "MSet" );
 }
 
-auto Connection::mremove( const std::vector<std::string_view>& keys ) -> const model::Response*
+auto Connection::remove( const std::vector<std::string_view>& keys ) -> const model::Response*
 {
   auto fb = flatbuffers::FlatBufferBuilder{};
   auto vec = std::vector<flatbuffers::Offset<model::KeyValue>>{};
@@ -140,6 +151,18 @@ auto Connection::mremove( const std::vector<std::string_view>& keys ) -> const m
   fb.Finish( request );
 
   return write( fb, "MDelete" );
+}
+
+auto Connection::move( const std::vector<Pair>& kvs ) -> const model::Response*
+{
+  auto fb = flatbuffers::FlatBufferBuilder{};
+  auto vec = std::vector<flatbuffers::Offset<model::KeyValue>>{};
+  vec.reserve( kvs.size() );
+  for ( auto&& [key, value] : kvs ) vec.push_back( model::CreateKeyValue( fb, fb.CreateString( key ), fb.CreateString( value ) ) );
+  auto request = CreateRequest( fb, model::Action::Move, fb.CreateVector( vec ) );
+  fb.Finish( request );
+
+  return write( fb, "MMove" );
 }
 
 boost::asio::ip::tcp::socket& Connection::socket()

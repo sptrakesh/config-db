@@ -46,37 +46,6 @@ void spt::configdb::client::get( std::string_view server,
   std::cout << value->value()->string_view() << '\n';
 }
 
-void spt::configdb::client::set( std::string_view server,
-    std::string_view port, std::string_view key, std::string_view value )
-{
-  auto connection = api::impl::Connection{ server, port };
-  auto response = connection.set( key, value );
-  if ( !response )
-  {
-    LOG_WARN << "Error setting key " << key;
-    std::cout << "Error setting key " << key << '\n';
-    return;
-  }
-
-  if ( response->value_type() != model::ResultVariant::Success )
-  {
-    LOG_WARN << "Error setting key " << key;
-    std::cout << "Error setting key " << key << '\n';
-    return;
-  }
-
-  auto resp = response->value_as<model::Success>();
-  if ( resp->value() )
-  {
-    LOG_INFO << "Set value for key " << key;
-    std::cout << "Set value for key " << key << '\n';
-    return;
-  }
-
-  LOG_WARN << "Error setting key " << key;
-  std::cout << "Error setting key " << key << '\n';
-}
-
 void spt::configdb::client::list( std::string_view server,
     std::string_view port, std::string_view path )
 {
@@ -123,6 +92,68 @@ void spt::configdb::client::list( std::string_view server,
   {
     std::cout << v->string_view() << '\n';
   }
+}
+
+void spt::configdb::client::set( std::string_view server,
+    std::string_view port, std::string_view key, std::string_view value )
+{
+  auto connection = api::impl::Connection{ server, port };
+  auto response = connection.set( key, value );
+  if ( !response )
+  {
+    LOG_WARN << "Error setting key " << key;
+    std::cout << "Error setting key " << key << '\n';
+    return;
+  }
+
+  if ( response->value_type() != model::ResultVariant::Success )
+  {
+    LOG_WARN << "Error setting key " << key;
+    std::cout << "Error setting key " << key << '\n';
+    return;
+  }
+
+  auto resp = response->value_as<model::Success>();
+  if ( resp->value() )
+  {
+    LOG_INFO << "Set value for key " << key;
+    std::cout << "Set value for key " << key << '\n';
+    return;
+  }
+
+  LOG_WARN << "Error setting key " << key;
+  std::cout << "Error setting key " << key << '\n';
+}
+
+void spt::configdb::client::move( std::string_view server,
+    std::string_view port, std::string_view key, std::string_view dest )
+{
+  auto connection = api::impl::Connection{ server, port };
+  auto response = connection.move( key, dest );
+  if ( !response )
+  {
+    LOG_WARN << "Error moving key " << key << " to " << dest;
+    std::cout << "Error moving key " << key << " to " << dest << '\n';
+    return;
+  }
+
+  if ( response->value_type() != model::ResultVariant::Success )
+  {
+    LOG_WARN << "Error moving key " << key << " to " << dest;
+    std::cout << "Error moving key " << key << " to " << dest << '\n';
+    return;
+  }
+
+  auto resp = response->value_as<model::Success>();
+  if ( resp->value() )
+  {
+    LOG_INFO << "Moved key " << key << " to " << dest;
+    std::cout << "Moved key " << key << " to " << dest << '\n';
+    return;
+  }
+
+  LOG_WARN << "Error moving key " << key << " to " << dest;
+  std::cout << "Error moving key " << key << " to " << dest << '\n';
 }
 
 void spt::configdb::client::remove( std::string_view server,

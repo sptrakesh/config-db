@@ -49,6 +49,19 @@ namespace spt::configdb::api
    */
   bool remove( std::string_view key );
 
+  /**
+   * Move the specified `key` to the `dest` in a transaction.
+   *
+   * Internally a combination of `get-remove-set`.  Transaction is rolled back
+   * if any of the operations fail.  Inherent operations such as hierarchy
+   * management also operate as with their direct counterparts.
+   *
+   * @param key The key that is to be moved (path change).
+   * @param dest The destination path for the value.
+   * @return `true` if transaction succeeds.
+   */
+  bool move( std::string_view key, std::string_view dest );
+
   using Nodes = std::optional<std::vector<std::string>>;
   /**
    * Retrieve child node names for the specified `path`.
@@ -72,7 +85,7 @@ namespace spt::configdb::api
    * @param keys The keys to retrieve.
    * @return Vector of *key-value* pairs.
    */
-  std::vector<KeyValue> mget( const std::vector<std::string_view>& keys );
+  std::vector<KeyValue> get( const std::vector<std::string_view>& keys );
 
   using Pair = std::pair<std::string_view, std::string_view>;
   /**
@@ -83,7 +96,7 @@ namespace spt::configdb::api
    * @param kvs The batch of *key-value* pairs to set.
    * @return `true` if transaction succeeds.
    */
-  bool mset( const std::vector<Pair>& kvs );
+  bool set( const std::vector<Pair>& kvs );
 
   /**
    * Remove a batch of `keys` from the database in a single transaction.
@@ -93,7 +106,17 @@ namespace spt::configdb::api
    * @param keys The batch of `keys` to remove.
    * @return `true` if the transaction succeeds.
    */
-  bool mremove( const std::vector<std::string_view>& keys );
+  bool remove( const std::vector<std::string_view>& keys );
+
+  /**
+   * Move the specified batch of keys in a single transaction.
+   *
+   * If any operation in the batch fails, the entire transaction is *rolled back*.
+   *
+   * @param kvs The batch of *key-dest* pairs to move.
+   * @return `true` if the transaction succeeds.
+   */
+  bool move( const std::vector<Pair>& kvs );
 
   using NodePair = std::tuple<std::string, std::optional<std::vector<std::string>>>;
   /**
@@ -102,5 +125,5 @@ namespace spt::configdb::api
    * @param keys The batch of paths to retrieve children for.
    * @return The child node names for each `path`.  If a `path` has no children, returns `std::nullopt` for it.
    */
-  std::vector<NodePair> mlist( const std::vector<std::string_view>& paths );
+  std::vector<NodePair> list( const std::vector<std::string_view>& paths );
 }

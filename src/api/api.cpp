@@ -122,6 +122,33 @@ bool spt::configdb::api::remove( std::string_view key )
   return true;
 }
 
+bool spt::configdb::api::move( std::string_view key, std::string_view dest )
+{
+  auto popt = papi::PoolHolder::instance().pool.acquire();
+  if ( !popt )
+  {
+    LOG_CRIT << "Error acquiring connection from pool";
+    return false;
+  }
+
+  auto response = (*popt)->move( key, dest );
+  if ( !response )
+  {
+    LOG_WARN << "Unable to move key " << key << " to destination " << dest;
+    return false;
+  }
+
+  if ( response->value_type() != model::ResultVariant::Success ||
+      !response->value_as<model::Success>()->value() )
+  {
+    LOG_WARN << "Error moving key " << key << " to destination " << dest;
+    return false;
+  }
+
+  LOG_INFO << "Moved key " << key << " to dest " << dest;
+  return true;
+}
+
 auto spt::configdb::api::list( std::string_view path ) -> Nodes
 {
   auto popt = papi::PoolHolder::instance().pool.acquire();
@@ -164,7 +191,7 @@ auto spt::configdb::api::list( std::string_view path ) -> Nodes
   return results;
 }
 
-auto spt::configdb::api::mget( const std::vector<std::string_view>& keys ) -> std::vector<KeyValue>
+auto spt::configdb::api::get( const std::vector<std::string_view>& keys ) -> std::vector<KeyValue>
 {
   auto popt = papi::PoolHolder::instance().pool.acquire();
   if ( !popt )
@@ -173,7 +200,7 @@ auto spt::configdb::api::mget( const std::vector<std::string_view>& keys ) -> st
     return {};
   }
 
-  auto response = (*popt)->mget( keys );
+  auto response = ( *popt )->get( keys );
   if ( !response )
   {
     LOG_WARN << "Error retrieving values for " << int(keys.size()) << " keys";
@@ -214,7 +241,7 @@ auto spt::configdb::api::mget( const std::vector<std::string_view>& keys ) -> st
   return results;
 }
 
-bool spt::configdb::api::mset( const std::vector<Pair>& kvs )
+bool spt::configdb::api::set( const std::vector<Pair>& kvs )
 {
   auto popt = papi::PoolHolder::instance().pool.acquire();
   if ( !popt )
@@ -223,7 +250,7 @@ bool spt::configdb::api::mset( const std::vector<Pair>& kvs )
     return false;
   }
 
-  auto response = (*popt)->mset( kvs );
+  auto response = ( *popt )->set( kvs );
   if ( !response )
   {
     LOG_WARN << "Unable to set values for " << int(size(kvs)) << " keys";
@@ -241,7 +268,7 @@ bool spt::configdb::api::mset( const std::vector<Pair>& kvs )
   return true;
 }
 
-bool spt::configdb::api::mremove( const std::vector<std::string_view>& keys )
+bool spt::configdb::api::remove( const std::vector<std::string_view>& keys )
 {
   auto popt = papi::PoolHolder::instance().pool.acquire();
   if ( !popt )
@@ -250,7 +277,7 @@ bool spt::configdb::api::mremove( const std::vector<std::string_view>& keys )
     return false;
   }
 
-  auto response = (*popt)->mremove( keys );
+  auto response = ( *popt )->remove( keys );
   if ( !response )
   {
     LOG_WARN << "Unable to remove " << int(size(keys)) << " keys";
@@ -268,7 +295,34 @@ bool spt::configdb::api::mremove( const std::vector<std::string_view>& keys )
   return true;
 }
 
-auto spt::configdb::api::mlist( const std::vector<std::string_view>& paths ) -> std::vector<NodePair>
+bool spt::configdb::api::move( const std::vector<Pair>& kvs )
+{
+  auto popt = papi::PoolHolder::instance().pool.acquire();
+  if ( !popt )
+  {
+    LOG_CRIT << "Error acquiring connection from pool";
+    return false;
+  }
+
+  auto response = ( *popt )->move( kvs );
+  if ( !response )
+  {
+    LOG_WARN << "Unable to move " << int(size(kvs)) << " keys";
+    return false;
+  }
+
+  if ( response->value_type() != model::ResultVariant::Success ||
+      !response->value_as<model::Success>()->value() )
+  {
+    LOG_WARN << "Error moving " << int(size(kvs)) << " keys";
+    return false;
+  }
+
+  LOG_INFO << "Moved " << int(size(kvs)) << " keys";
+  return true;
+}
+
+auto spt::configdb::api::list( const std::vector<std::string_view>& paths ) -> std::vector<NodePair>
 {
   auto popt = papi::PoolHolder::instance().pool.acquire();
   if ( !popt )
@@ -277,7 +331,7 @@ auto spt::configdb::api::mlist( const std::vector<std::string_view>& paths ) -> 
     return {};
   }
 
-  auto response = (*popt)->mlist( paths );
+  auto response = ( *popt )->list( paths );
   if ( !response )
   {
     LOG_WARN << "Unable to list " << int(size(paths)) << " paths";

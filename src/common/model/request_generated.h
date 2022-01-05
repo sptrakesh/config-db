@@ -27,33 +27,36 @@ enum class Action : int8_t {
   Put = 1,
   Delete = 2,
   List = 3,
+  Move = 4,
   MIN = Get,
-  MAX = List
+  MAX = Move
 };
 
-inline const Action (&EnumValuesAction())[4] {
+inline const Action (&EnumValuesAction())[5] {
   static const Action values[] = {
     Action::Get,
     Action::Put,
     Action::Delete,
-    Action::List
+    Action::List,
+    Action::Move
   };
   return values;
 }
 
 inline const char * const *EnumNamesAction() {
-  static const char * const names[5] = {
+  static const char * const names[6] = {
     "Get",
     "Put",
     "Delete",
     "List",
+    "Move",
     nullptr
   };
   return names;
 }
 
 inline const char *EnumNameAction(Action e) {
-  if (flatbuffers::IsOutRange(e, Action::Get, Action::List)) return "";
+  if (flatbuffers::IsOutRange(e, Action::Get, Action::Move)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesAction()[index];
 }
@@ -240,6 +243,7 @@ inline const flatbuffers::TypeTable *ActionTypeTable() {
     { flatbuffers::ET_CHAR, 0, 0 },
     { flatbuffers::ET_CHAR, 0, 0 },
     { flatbuffers::ET_CHAR, 0, 0 },
+    { flatbuffers::ET_CHAR, 0, 0 },
     { flatbuffers::ET_CHAR, 0, 0 }
   };
   static const flatbuffers::TypeFunction type_refs[] = {
@@ -249,10 +253,11 @@ inline const flatbuffers::TypeTable *ActionTypeTable() {
     "Get",
     "Put",
     "Delete",
-    "List"
+    "List",
+    "Move"
   };
   static const flatbuffers::TypeTable tt = {
-    flatbuffers::ST_ENUM, 4, type_codes, type_refs, nullptr, nullptr, names
+    flatbuffers::ST_ENUM, 5, type_codes, type_refs, nullptr, nullptr, names
   };
   return &tt;
 }

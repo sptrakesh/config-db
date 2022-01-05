@@ -61,11 +61,11 @@ int main( int argc, char const * const * argv )
     exit( 1 );
   }
 
-  const std::vector<std::string> actions{ "delete"s ,"get"s, "list"s, "set"s };
+  const std::vector<std::string> actions{ "delete"s ,"get"s, "list"s, "move"s, "set"s };
   if ( std::find( std::begin( actions ), std::end( actions ), action ) == std::end( actions ) )
   {
     std::cout << "Unsupported action" << '\n';
-    std::cout << "Valid values get|set|list|delete" << '\n';
+    std::cout << "Valid values get|set|move|list|delete" << '\n';
     exit( 1 );
   }
 
@@ -79,6 +79,13 @@ int main( int argc, char const * const * argv )
   if ( action == "set"s && value.empty() )
   {
     std::cout << "Value not specified" << '\n';
+    options.writeToStream( std::cout );
+    exit( 1 );
+  }
+
+  if ( action == "move"s && value.empty() )
+  {
+    std::cout << "Destination key not specified" << '\n';
     options.writeToStream( std::cout );
     exit( 1 );
   }
@@ -99,8 +106,9 @@ int main( int argc, char const * const * argv )
   try
   {
     if ( action == "get"s ) spt::configdb::client::get( server, port, key );
-    else if ( action == "set"s ) spt::configdb::client::set( server, port, key, value );
     else if ( action == "list"s ) spt::configdb::client::list( server, port, key );
+    else if ( action == "set"s ) spt::configdb::client::set( server, port, key, value );
+    else if ( action == "move"s ) spt::configdb::client::move( server, port, key, value );
     else if ( action == "delete"s ) spt::configdb::client::remove( server, port, key );
   }
   catch ( const std::exception& ex )

@@ -7,7 +7,7 @@
 #include "../common/log/NanoLog.h"
 #include "../common/model/request_generated.h"
 #include "../common/model/response_generated.h"
-#include "../lib/db/storage.h"
+#include "../lib/db/crud.h"
 
 #include <vector>
 
@@ -43,7 +43,7 @@ namespace spt::configdb::tcp::coroutine
     std::vector<std::string_view> keys;
     for ( auto&& kv : *request->data() ) keys.emplace_back( kv->key()->string_view() );
 
-    auto value = db::mget( keys );
+    auto value = db::get( keys );
     auto fb = flatbuffers::FlatBufferBuilder{};
     auto vec = std::vector<flatbuffers::Offset<model::KeyValueResult>>{};
 
@@ -80,7 +80,7 @@ namespace spt::configdb::tcp::coroutine
     std::vector<std::string_view> keys;
     for ( auto&& kv : *request->data() ) keys.emplace_back( kv->key()->string_view() );
 
-    auto value = db::mlist( keys );
+    auto value = db::list( keys );
     auto fb = flatbuffers::FlatBufferBuilder{};
     auto vec = std::vector<flatbuffers::Offset<model::KeyValueResult>>{};
 
@@ -117,7 +117,7 @@ namespace spt::configdb::tcp::coroutine
     std::vector<db::Pair> pairs;
     for ( auto&& kv : *request->data() ) pairs.emplace_back( kv->key()->string_view(), kv->value()->string_view() );
 
-    auto value = db::mset( pairs );
+    auto value = db::set( pairs );
     auto fb = flatbuffers::FlatBufferBuilder{};
     auto vt = model::CreateSuccess( fb, value );
     auto r = model::CreateResponse( fb, model::ResultVariant::Success, vt.Union() );
@@ -131,7 +131,21 @@ namespace spt::configdb::tcp::coroutine
     std::vector<std::string_view> keys;
     for ( auto&& kv : *request->data() ) keys.emplace_back( kv->key()->string_view() );
 
-    auto value = db::mremove( keys );
+    auto value = db::remove( keys );
+    auto fb = flatbuffers::FlatBufferBuilder{};
+    auto vt = model::CreateSuccess( fb, value );
+    auto r = model::CreateResponse( fb, model::ResultVariant::Success, vt.Union() );
+    fb.Finish( r );
+    co_await write( socket, fb );
+  }
+
+  boost::asio::awaitable<void> move( boost::asio::ip::tcp::socket& socket,
+      const model::Request* request )
+  {
+    std::vector<db::Pair> pairs;
+    for ( auto&& kv : *request->data() ) pairs.emplace_back( kv->key()->string_view(), kv->value()->string_view() );
+
+    auto value = db::move( pairs );
     auto fb = flatbuffers::FlatBufferBuilder{};
     auto vt = model::CreateSuccess( fb, value );
     auto r = model::CreateResponse( fb, model::ResultVariant::Success, vt.Union() );
@@ -155,6 +169,9 @@ namespace spt::configdb::tcp::coroutine
       break;
     case model::Action::Delete:
       co_await remove( socket, request );
+      break;
+    case model::Action::Move:
+      co_await move( socket, request );
       break;
     }
   }

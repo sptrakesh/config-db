@@ -24,18 +24,22 @@ namespace spt::configdb::api::impl
     Connection(const Connection&) = delete;
     Connection& operator=(const Connection&) = delete;
 
+    // CRUD
     const model::Response* list( std::string_view key );
     const model::Response* get( std::string_view key );
     const model::Response* set( std::string_view key, std::string_view value );
     const model::Response* remove( std::string_view key );
+    const model::Response* move( std::string_view key, std::string_view value );
 
-    const model::Response* mlist( const std::vector<std::string_view>& keys );
-    const model::Response* mget( const std::vector<std::string_view>& keys );
+    // Batch
+    const model::Response* list( const std::vector<std::string_view>& keys );
+    const model::Response* get( const std::vector<std::string_view>& keys );
 
     using Pair = std::pair<std::string_view, std::string_view>;
-    const model::Response* mset( const std::vector<Pair>& kvs );
+    const model::Response* set( const std::vector<Pair>& kvs );
 
-    const model::Response* mremove( const std::vector<std::string_view>& keys );
+    const model::Response* remove( const std::vector<std::string_view>& keys );
+    const model::Response* move( const std::vector<Pair>& kvs );
 
     bool valid() const { return status; }
     void invalid() { status = false; }

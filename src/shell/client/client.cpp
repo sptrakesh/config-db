@@ -3,7 +3,7 @@
 //
 
 #include "client.h"
-#include "../api/api.h"
+#include "../../api/api.h"
 #include "../common/log/NanoLog.h"
 
 #include <cctype>
@@ -23,6 +23,7 @@ namespace spt::configdb::client::pclient
     std::cout << "  \033[1mls\033[0m \033[3m<path>\033[0m - To list child node names.  Eg. [ls /]" << '\n';
     std::cout << "  \033[1mget\033[0m \033[3m<key>\033[0m - To get configured value for key.  Eg. [get /key1/key2/key3]" << '\n';
     std::cout << "  \033[1mset\033[0m \033[3m<key> <value>\033[0m - To set value for key.  Eg. [set /key1/key2/key3 Some long value. Note no surrounding quotes]" << '\n';
+    std::cout << "  \033[1mmv\033[0m \033[3m<key> <destination>\033[0m - To move value for key to destination.  Eg. [mv /key1/key2/key3 /key/key2/key3]" << '\n';
     std::cout << "  \033[1mrm\033[0m \033[3m<key>\033[0m - To remove configured key.  Eg. [rm /key1/key2/key3]" << '\n';
   }
 
@@ -127,6 +128,32 @@ namespace spt::configdb::client::pclient
     std::cout << "Set key " << key << '\n';
   }
 
+  void processMove( std::string_view line, std::size_t idx )
+  {
+    auto [key, end] = pclient::key( line, idx );
+    if ( end == std::string_view::npos )
+    {
+      std::cout << "Cannot parse key from " << line << '\n';
+      return;
+    }
+
+    auto vidx = line.find( ' ', end + 1 );
+    while ( vidx != std::string::npos && line.substr( end + 1, vidx - end - 1 ).empty() )
+    {
+      ++end;
+      vidx = line.find( ' ', end + 1 );
+    }
+
+    auto dest = line.substr( end + 1 );
+    if ( const auto response = api::move( key, dest ); !response )
+    {
+      std::cout << "Error moving key " << key << " to " << dest << '\n';
+      return;
+    }
+
+    std::cout << "Moved key " << key << " to " << dest << '\n';
+  }
+
   void processRemove( std::string_view line, std::size_t idx )
   {
     auto [key, end] = pclient::key( line, idx );
@@ -196,6 +223,10 @@ int spt::configdb::client::run( std::string_view server, std::string_view port )
       else if ( "set"sv == command )
       {
         pclient::processSet( line, idx );
+      }
+      else if ( "mv"sv == command )
+      {
+        pclient::processMove( line, idx );
       }
       else if ( "rm"sv == command )
       {

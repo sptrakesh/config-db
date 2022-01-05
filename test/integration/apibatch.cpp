@@ -1,5 +1,5 @@
 //
-// Created by Rakesh on 04/01/2022.
+// Created by Rakesh on 05/01/2022.
 //
 
 #include <catch2/catch.hpp>
@@ -10,57 +10,8 @@ using namespace std::string_literals;
 using namespace std::string_view_literals;
 using namespace spt::configdb::api;
 
-SCENARIO( "API test", "[api]" )
+SCENARIO( "API Batch test", "api-batch" )
 {
-  GIVEN( "A valid key" )
-  {
-    auto key = "key"sv;
-
-    WHEN( "Setting a key-value pair" )
-    {
-      const auto status = set( key, "value"sv );
-      REQUIRE( status );
-    }
-
-    AND_WHEN( "Reading the key" )
-    {
-      const auto value = get( key );
-      REQUIRE( value );
-      REQUIRE( *value == "value"sv );
-    }
-
-    AND_WHEN( "Updating the value" )
-    {
-      const auto status = set( key, "value modified"sv );
-      REQUIRE( status );
-    }
-
-    AND_WHEN( "Reading the key again" )
-    {
-      const auto value = get( key );
-      REQUIRE( value );
-      REQUIRE( *value == "value modified"sv );
-    }
-
-    AND_WHEN( "Removing the key" )
-    {
-      const auto status = remove( key );
-      REQUIRE( status );
-    }
-
-    AND_WHEN( "Reading the key after remove" )
-    {
-      const auto value = get( key );
-      REQUIRE_FALSE( value );
-    }
-
-    AND_WHEN( "Removing the key again" )
-    {
-      const auto status = remove( key );
-      REQUIRE( status );
-    }
-  }
-
   GIVEN( "A set of keys" )
   {
     const auto key1 = "/key1/key2/key3"s;
@@ -71,16 +22,16 @@ SCENARIO( "API test", "[api]" )
     WHEN( "Creating keys" )
     {
       const auto kvs = std::vector<Pair>{
-        { key1, "value"sv }, { key2, "value"sv },
-        { key3, "value"sv }, { key4, "value"sv } };
-      const auto status = mset( kvs );
+          { key1, "value"sv }, { key2, "value"sv },
+          { key3, "value"sv }, { key4, "value"sv } };
+      const auto status = set( kvs );
       REQUIRE( status );
     }
 
     AND_WHEN( "Retrieving the keys" )
     {
       const auto keys = std::vector<std::string_view>{ key1, key2, key3, key4 };
-      const auto results = mget( keys );
+      const auto results = get( keys );
       REQUIRE_FALSE( results.empty());
       REQUIRE( results.size() == keys.size());
       for ( auto i = 0; i < 4; ++i )
@@ -96,14 +47,14 @@ SCENARIO( "API test", "[api]" )
       const auto kvs = std::vector<Pair>{
           { key1, "value modified"sv }, { key2, "value modified"sv },
           { key3, "value modified"sv }, { key4, "value modified"sv } };
-      const auto status = mset( kvs );
+      const auto status = set( kvs );
       REQUIRE( status );
     }
 
     AND_WHEN( "Retrieving the modified keys" )
     {
       const auto keys = std::vector<std::string_view>{ key1, key2, key3, key4 };
-      const auto results = mget( keys );
+      const auto results = get( keys );
       REQUIRE_FALSE( results.empty());
       REQUIRE( results.size() == keys.size() );
       for ( auto i = 0; i < 4; ++i )
@@ -117,7 +68,7 @@ SCENARIO( "API test", "[api]" )
     AND_WHEN( "Listing multiple paths" )
     {
       const auto paths = std::vector<std::string_view>{ "/"sv, "/key1"sv, "/key1/key2"sv, "/key1/key21"sv };
-      const auto results = mlist( paths );
+      const auto results = list( paths );
       REQUIRE_FALSE( results.empty());
       REQUIRE( results.size() == paths.size() );
 
@@ -152,14 +103,14 @@ SCENARIO( "API test", "[api]" )
     AND_WHEN( "Removing the keys" )
     {
       const auto keys = std::vector<std::string_view>{ key1, key2, key3, key4 };
-      const auto results = mremove( keys );
+      const auto results = remove( keys );
       REQUIRE( results );
     }
 
     AND_WHEN( "Retrieving the deleted keys" )
     {
       const auto keys = std::vector<std::string_view>{ key1, key2, key3, key4 };
-      const auto results = mget( keys );
+      const auto results = get( keys );
       REQUIRE_FALSE( results.empty());
       REQUIRE( results.size() == keys.size());
       for ( auto i = 0; i < 4; ++i )
@@ -172,7 +123,7 @@ SCENARIO( "API test", "[api]" )
     AND_WHEN( "Listing deleted multiple paths" )
     {
       const auto paths = std::vector<std::string_view>{ "/"sv, "/key1"sv, "/key1/key2"sv, "/key1/key21"sv };
-      const auto results = mlist( paths );
+      const auto results = list( paths );
       REQUIRE_FALSE( results.empty());
       REQUIRE( results.size() == paths.size() );
 
@@ -190,3 +141,4 @@ SCENARIO( "API test", "[api]" )
     }
   }
 }
+

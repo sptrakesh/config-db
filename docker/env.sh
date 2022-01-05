@@ -1,4 +1,4 @@
 #!/bin/sh
 
-VERSION='0.6.0'
+VERSION='0.7.0'
 NAME='config-db'

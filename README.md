@@ -42,11 +42,14 @@ The following *actions/commands* are supported by the service:
   mentioned scheme.  The *value* is an arbitrary length value.  Can be large
   values such as JSON, BSON, base64 encoded binary data etc. as appropriate.
 * **Get** - Get a stored *value* for the specified *key*.
+* **Move** - Move the *value* associated with a *key* to a new *destination*.
+  Convenience command to perform a `Get-Delete-Put` in a single transaction.
 * **Delete** - Delete the *key-value* pair (and path components as appropriate)
   identified by the *key*.
 * **List** - List child node names under a specified *parent path*.  Leaf nodes
   will return an error.  **Note** that parent paths are recursively removed during
   a *Delete* action if no other child nodes exist.
+
 
 ## Protocols
 Service supports both TCP/IP and HTTP/2 connections.  The TCP service uses
@@ -91,6 +94,8 @@ retrieve child node names for the specified path.
 See [example](test/integration/curl.sh) for sample HTTP requests and responses.
 
 **Note:** The HTTP service does not support batch (multiple *key*) operations.
+
+**Note:** The HTTP service does not support *move* operations.
 
 #### PUT
 ```shell
@@ -180,7 +185,7 @@ to the service and performs the required interactions using the flatbuffer model
 
 **Note:** API **must** be initialised via the `init` function before first use.
 
-See [integration test](test/integration/api.cpp) for sample usage of the API.
+See [integration test](test/integration/apicrud.cpp) for sample usage of the API.
 The *shell** application is built using the client API.
 
 
@@ -195,7 +200,7 @@ The server should be running and the TCP port open for the application to connec
 The following shows a simple CRUD type interaction via the shell.
 
 <details>
-  <summary>Click to expand!</summary>
+  <summary><strong>Click to expand!</strong></summary>
 
 ```shell
 /opt/spt/bin/configsh --server localhost --port 2022 --log-level debug --log-dir /tmp/
@@ -207,6 +212,7 @@ Available commands
   ls <path> - To list child node names.  Eg. [ls /]
   get <key> - To get configured value for key.  Eg. [get /key1/key2/key3]
   set <key> <value> - To set value for key.  Eg. [set /key1/key2/key3 Some long value. Note no surrounding quotes]
+  mv <key> <destination> - To move value for key to destination.  Eg. [mv /key1/key2/key3 /key/key2/key3]
   rm <key> - To remove configured key.  Eg. [rm /key1/key2/key3]
 configdb> set /key1/key2/key3 {"glossary":{"title":"example glossary","GlossDiv":{"title":"S","GlossList":{"GlossEntry":{"ID":"SGML","SortAs":"SGML","GlossTerm":"Standard Generalized Markup Language","Acronym":"SGML","Abbrev":"ISO 8879:1986","GlossDef":{"para":"A meta-markup language, used to create markup languages such as DocBook.","GlossSeeAlso":["GML","XML"]},"GlossSee":"markup"}}}}}
 Set key /key1/key2/key3
@@ -246,7 +252,7 @@ The following shows a simple CRUD type interaction via the cli. These were using
 the default values for `server [-s|--server]` and `port [-p|--port]` options.
 
 <details>
-  <summary>Click to expand!</summary>
+  <summary><strong>Click to expand!</strong></summary>
 
 ```shell
 spt:/home/spt $ /opt/spt/bin/configctl -a list -k /
@@ -261,10 +267,12 @@ spt:/home/spt $ /opt/spt/bin/configctl -a set -k /test -v "value modified"
 Set value for key /test
 spt:/home/spt $ /opt/spt/bin/configctl -a get -k /test 
 value modified         
-spt:/home/spt $ /opt/spt/bin/configctl -a delete -k /test
-Removed key /test
+spt:/home/spt $ /opt/spt/bin/configctl -a move -k /test -v /test1
+Moved key /test to /test1
+spt:/home/spt $ /opt/spt/bin/configctl -a delete -k /test1
+Removed key /test1
 spt:/home/spt $ /opt/spt/bin/configctl -a list -k /
-Error retrieving path /
+Error listing path /
 ```
 
 </details>
