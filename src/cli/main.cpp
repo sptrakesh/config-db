@@ -30,11 +30,13 @@ int main( int argc, char const * const * argv )
   std::string action{};
   std::string key{};
   std::string value{};
+  std::string file{};
   bool help = false;
 
   auto options = clara::Help(help) |
       Opt(server, "localhost")["-s"]["--server"]("Server to connect to (default localhost).") |
       Opt(port, "2020")["-p"]["--port"]("TCP port for the server (default 2020)") |
+      Opt(file, "file.txt")["-f"]["--file"]("File to bulk import data from") |
       Opt(action, "set")["-a"]["--action"]("Action to perform against the database.") |
       Opt(key, "/key")["-k"]["--key"]("Key or path to apply action to") |
       Opt(value, "value")["-v"]["--value"]("Value to set.  Only applies to 'set' action") |
@@ -54,22 +56,25 @@ int main( int argc, char const * const * argv )
     exit( 0 );
   }
 
-  if ( action.empty() )
+  if ( action.empty() && file.empty() )
   {
     std::cout << "Action not specified" << '\n';
     options.writeToStream( std::cout );
     exit( 1 );
   }
 
-  const std::vector<std::string> actions{ "delete"s ,"get"s, "list"s, "move"s, "set"s };
-  if ( std::find( std::begin( actions ), std::end( actions ), action ) == std::end( actions ) )
+  if ( file.empty() )
   {
-    std::cout << "Unsupported action" << '\n';
-    std::cout << "Valid values get|set|move|list|delete" << '\n';
-    exit( 1 );
+    const std::vector<std::string> actions{ "delete"s ,"get"s, "list"s, "move"s, "set"s };
+    if ( std::find( std::begin( actions ), std::end( actions ), action ) == std::end( actions ) )
+    {
+      std::cout << "Unsupported action" << '\n';
+      std::cout << "Valid values get|set|move|list|delete" << '\n';
+      exit( 1 );
+    }
   }
 
-  if ( key.empty() )
+  if ( key.empty() && file.empty() )
   {
     std::cout << "Key not specified" << '\n';
     options.writeToStream( std::cout );
@@ -105,11 +110,18 @@ int main( int argc, char const * const * argv )
 
   try
   {
-    if ( action == "get"s ) spt::configdb::client::get( server, port, key );
-    else if ( action == "list"s ) spt::configdb::client::list( server, port, key );
-    else if ( action == "set"s ) spt::configdb::client::set( server, port, key, value );
-    else if ( action == "move"s ) spt::configdb::client::move( server, port, key, value );
-    else if ( action == "delete"s ) spt::configdb::client::remove( server, port, key );
+    if ( !file.empty() )
+    {
+      spt::configdb::client::import( server, port, file );
+    }
+    else
+    {
+      if ( action == "get"s ) spt::configdb::client::get( server, port, key );
+      else if ( action == "list"s ) spt::configdb::client::list( server, port, key );
+      else if ( action == "set"s ) spt::configdb::client::set( server, port, key, value );
+      else if ( action == "move"s ) spt::configdb::client::move( server, port, key, value );
+      else if ( action == "delete"s ) spt::configdb::client::remove( server, port, key );
+    }
   }
   catch ( const std::exception& ex )
   {
@@ -122,4 +134,6 @@ int main( int argc, char const * const * argv )
   {
     if ( t.joinable() ) t.join();
   }
+
+  return EXIT_SUCCESS;
 }

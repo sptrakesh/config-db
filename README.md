@@ -12,6 +12,7 @@
 * [Utilities](#utilities)
   * [Shell](#shell)
   * [CLI](#cli)
+    * [Bulk Import](#bulk-import)
 * [Docker](#docker)
 * [Build](#build)
 * [Run](#run)
@@ -277,6 +278,37 @@ Error listing path /
 ```
 
 </details>
+
+#### Bulk Import
+A special `-f | --file` option is supported for bulk importing *key-value* pairs
+from a file.  The input file must contain lines where each line represents a
+*key-value* pair.  The text before the first space character is interpreted as
+the *key*, and the rest of the line as the *value*.
+
+```shell
+/a/b/c string value
+/a/b/d 13
+```
+
+**Note:** The entire file is imported as a single transaction.  The input file
+must be small enough to buffer the requests and transaction in memory.
+
+<details>
+  <summary><strong>Click to expand!</strong></summary>
+
+```shell
+spt:/home/spt $ cat /tmp/import.txt
+/a/b/c  a long string
+/a/b/d another long value
+/a/c/e  1234
+/a/c/f 45765789
+/a/c/g 123.347
+spt:/home/spt $ /opt/spt/bin/configctl -f /tmp/import.txt
+Set 5 keys
+```
+
+</details>
+
 
 ## Docker
 Docker images are available on [Docker hub](https://hub.docker.com/repository/docker/sptrakesh/config-db).

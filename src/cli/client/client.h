@@ -13,4 +13,5 @@ namespace spt::configdb::client
   void set( std::string_view server, std::string_view port, std::string_view key, std::string_view value );
   void move( std::string_view server, std::string_view port, std::string_view key, std::string_view destination );
   void remove( std::string_view server, std::string_view port, std::string_view key );
+  void import( std::string_view server, std::string_view port, std::string_view file );
 }

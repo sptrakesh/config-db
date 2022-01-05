@@ -56,7 +56,6 @@ namespace spt::configdb::client::pclient
       idx = line.find( ' ', begin + 1 );
     }
 
-    //if ( idx == std::string_view::npos ) return { line, idx };
     return { line.substr( begin + 1, idx - begin - 1 ), idx };
   }
 
@@ -192,7 +191,7 @@ int spt::configdb::client::run( std::string_view server, std::string_view port )
     auto len = strlen( buf );
     if ( len == 0 )
     {
-      free( buf );
+      std::free( buf );
       continue;
     }
 
@@ -238,7 +237,7 @@ int spt::configdb::client::run( std::string_view server, std::string_view port )
       }
     }
 
-    free( buf );
+    std::free( buf );
   }
 
   return 0;
