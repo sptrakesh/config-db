@@ -25,6 +25,7 @@ namespace spt::configdb::client::pclient
     std::cout << "  \033[1mset\033[0m \033[3m<key> <value>\033[0m - To set value for key.  Eg. [set /key1/key2/key3 Some long value. Note no surrounding quotes]" << '\n';
     std::cout << "  \033[1mmv\033[0m \033[3m<key> <destination>\033[0m - To move value for key to destination.  Eg. [mv /key1/key2/key3 /key/key2/key3]" << '\n';
     std::cout << "  \033[1mrm\033[0m \033[3m<key>\033[0m - To remove configured key.  Eg. [rm /key1/key2/key3]" << '\n';
+    std::cout << "  \033[1mimport\033[0m \033[3m<path to file>\033[0m - To bulk import \033[3mkey-values\033[0m from file.  Eg. [import /tmp/kvps.txt]" << '\n';
   }
 
   std::string_view trim( std::string_view in )
@@ -171,6 +172,27 @@ namespace spt::configdb::client::pclient
 
     std::cout << "Removed key " << key << '\n';
   }
+
+  void processImport( std::string_view line, std::size_t idx )
+  {
+    auto [key, end] = pclient::key( line, idx );
+    if ( end <= idx )
+    {
+      std::cout << "Cannot parse file to import from " << line << '\n';
+      return;
+    }
+
+    const auto& [response, size, count] = api::import( std::string{ key } );
+    if ( !response )
+    {
+      LOG_WARN << "Error importing (" << int(size) << '/' << count << ") keys from file " << key;
+      std::cout << "Error importing (" << size << '/' << count << ") keys from file " << key << '\n';
+      return;
+    }
+
+    LOG_INFO << "Imported (" << int(size) << '/' << count << ") keys from file " << key;
+    std::cout << "Imported (" << size << '/' << count << ") keys from file " << key << '\n';
+  }
 }
 
 int spt::configdb::client::run( std::string_view server, std::string_view port )
@@ -230,6 +252,10 @@ int spt::configdb::client::run( std::string_view server, std::string_view port )
       else if ( "rm"sv == command )
       {
         pclient::processRemove( line, idx );
+      }
+      else if ( "import"sv == command )
+      {
+        pclient::processImport( line, idx );
       }
       else
       {

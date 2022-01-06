@@ -14,9 +14,10 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/detached.hpp>
-#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/redirect_error.hpp>
 #include <boost/asio/use_awaitable.hpp>
 #include <boost/asio/write.hpp>
+#include <boost/asio/ip/tcp.hpp>
 
 using boost::asio::use_awaitable;
 
@@ -34,7 +35,10 @@ namespace spt::configdb::tcp::coroutine
     std::vector<boost::asio::const_buffer> buffers;
     buffers.emplace_back( &size, sizeof(size) );
     buffers.emplace_back( fb.GetBufferPointer(), size );
-    co_await boost::asio::async_write( socket, buffers, use_awaitable );
+    boost::system::error_code ec;
+    co_await boost::asio::async_write( socket, buffers,
+        boost::asio::redirect_error( boost::asio::use_awaitable, ec ) );
+    if ( ec ) LOG_WARN << "Error writing to socket. " << ec.message();
   }
 
   boost::asio::awaitable<void> get( boost::asio::ip::tcp::socket& socket,
@@ -178,6 +182,8 @@ namespace spt::configdb::tcp::coroutine
 
   boost::asio::awaitable<void> respond( boost::asio::ip::tcp::socket& socket )
   {
+    using namespace std::string_view_literals;
+
     static constexpr int bufSize = 128;
     static constexpr auto maxBytes = 8 * 1024 * 1024;
     uint8_t data[bufSize];
@@ -192,13 +198,44 @@ namespace spt::configdb::tcp::coroutine
       return std::size_t( len + sizeof(len) );
     };
 
-    std::size_t osize = co_await socket.async_read_some( boost::asio::buffer( data ), use_awaitable );
+    const auto eof = []( const boost::system::error_code& ec )
+    {
+      static const std::string msg{ "End of file" };
+      return boost::algorithm::starts_with( ec.message(), msg );
+    };
+
+    const auto brokenPipe = []( const boost::system::error_code& ec )
+    {
+      static const std::string msg{ "Broken pipe" };
+      return boost::algorithm::starts_with( ec.message(), msg );
+    };
+
+    boost::system::error_code ec;
+    std::size_t osize = co_await socket.async_read_some( boost::asio::buffer( data ),
+        boost::asio::redirect_error( boost::asio::use_awaitable, ec ) );
+    if ( ec )
+    {
+      if ( !eof( ec ) )
+      {
+        LOG_WARN << "Error reading from socket. " << ec.message();
+        auto message = "err"sv;
+        co_await boost::asio::async_write( socket, boost::asio::buffer( message ),
+            boost::asio::redirect_error( boost::asio::use_awaitable, ec ) );
+        if ( ec && !brokenPipe( ec ) ) LOG_WARN << "Error writing error to socket. " << ec.message();
+      }
+      co_return;
+    }
     const auto docSize = documentSize( osize );
 
     // echo, noop, ping etc.
     if ( docSize < 5 )
     {
-      co_await boost::asio::async_write( socket, boost::asio::buffer( data, docSize ), use_awaitable );
+      co_await boost::asio::async_write( socket, boost::asio::buffer( data, docSize ),
+          boost::asio::redirect_error( boost::asio::use_awaitable, ec ) );
+      if ( ec && !brokenPipe( ec ) )
+      {
+        LOG_WARN << "Error writing to socket. " << ec.message();
+      }
       co_return;
     }
 
@@ -217,7 +254,20 @@ namespace spt::configdb::tcp::coroutine
     LOG_DEBUG << "Read " << int(osize) << " bytes, total size " << int(docSize);
     while ( docSize < maxBytes && read != docSize )
     {
-      osize = co_await socket.async_read_some( boost::asio::buffer( data ), use_awaitable );
+      osize = co_await socket.async_read_some( boost::asio::buffer( data ),
+          boost::asio::redirect_error( boost::asio::use_awaitable, ec ) );
+      if ( ec )
+      {
+        if ( !eof( ec ) )
+        {
+          LOG_WARN << "Error reading from socket. " << ec.message();
+          auto message = "err"sv;
+          co_await boost::asio::async_write( socket, boost::asio::buffer( message ),
+              boost::asio::redirect_error( boost::asio::use_awaitable, ec ) );
+          if ( ec && !brokenPipe( ec ) ) LOG_WARN << "Error writing error to socket. " << ec.message();
+        }
+        co_return;
+      }
       rbuf.insert( rbuf.end(), data, data + osize );
       read += osize;
     }
@@ -227,7 +277,9 @@ namespace spt::configdb::tcp::coroutine
     if ( !ok )
     {
       LOG_WARN << "Invalid request buffer";
-      co_await boost::asio::async_write( socket, boost::asio::buffer( rbuf.data(), rbuf.size() ), use_awaitable );
+      co_await boost::asio::async_write( socket, boost::asio::buffer( rbuf.data(), rbuf.size() ),
+          boost::asio::redirect_error( boost::asio::use_awaitable, ec ) );
+      if ( ec && !brokenPipe( ec ) ) LOG_WARN << "Error writing to socket. " << ec.message();
       co_return;
     }
 

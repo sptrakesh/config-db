@@ -41,6 +41,10 @@ namespace spt::configdb::api::impl
     const model::Response* remove( const std::vector<std::string_view>& keys );
     const model::Response* move( const std::vector<Pair>& kvs );
 
+    // File import
+    using ImportResponse = std::tuple<const model::Response*, std::size_t, uint32_t>;
+    ImportResponse import( const std::string& file );
+
     bool valid() const { return status; }
     void invalid() { status = false; }
 

@@ -216,6 +216,7 @@ Available commands
   set <key> <value> - To set value for key.  Eg. [set /key1/key2/key3 Some long value. Note no surrounding quotes]
   mv <key> <destination> - To move value for key to destination.  Eg. [mv /key1/key2/key3 /key/key2/key3]
   rm <key> - To remove configured key.  Eg. [rm /key1/key2/key3]
+  import <path to file> - To bulk import key-values from file.  Eg. [import /tmp/kvps.txt]
 configdb> set /key1/key2/key3 {"glossary":{"title":"example glossary","GlossDiv":{"title":"S","GlossList":{"GlossEntry":{"ID":"SGML","SortAs":"SGML","GlossTerm":"Standard Generalized Markup Language","Acronym":"SGML","Abbrev":"ISO 8879:1986","GlossDef":{"para":"A meta-markup language, used to create markup languages such as DocBook.","GlossSeeAlso":["GML","XML"]},"GlossSee":"markup"}}}}}
 Set key /key1/key2/key3
 configdb> ls /
@@ -234,6 +235,8 @@ configdb> rm /key1/key2/key3
 Removed key /key1/key2/key3
 configdb> ls /
 Error retrieving path /
+configdb> import /tmp/import.txt
+Imported (5/5) keys from file /tmp/import.txt
 configdb> exit
 Bye
 ```

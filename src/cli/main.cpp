@@ -56,45 +56,6 @@ int main( int argc, char const * const * argv )
     exit( 0 );
   }
 
-  if ( action.empty() && file.empty() )
-  {
-    std::cout << "Action not specified" << '\n';
-    options.writeToStream( std::cout );
-    exit( 1 );
-  }
-
-  if ( file.empty() )
-  {
-    const std::vector<std::string> actions{ "delete"s ,"get"s, "list"s, "move"s, "set"s };
-    if ( std::find( std::begin( actions ), std::end( actions ), action ) == std::end( actions ) )
-    {
-      std::cout << "Unsupported action" << '\n';
-      std::cout << "Valid values get|set|move|list|delete" << '\n';
-      exit( 1 );
-    }
-  }
-
-  if ( key.empty() && file.empty() )
-  {
-    std::cout << "Key not specified" << '\n';
-    options.writeToStream( std::cout );
-    exit( 1 );
-  }
-
-  if ( action == "set"s && value.empty() )
-  {
-    std::cout << "Value not specified" << '\n';
-    options.writeToStream( std::cout );
-    exit( 1 );
-  }
-
-  if ( action == "move"s && value.empty() )
-  {
-    std::cout << "Destination key not specified" << '\n';
-    options.writeToStream( std::cout );
-    exit( 1 );
-  }
-
   if ( logLevel == "debug" ) nanolog::set_log_level( nanolog::LogLevel::DEBUG );
   else if ( logLevel == "info" ) nanolog::set_log_level( nanolog::LogLevel::INFO );
   else if ( logLevel == "warn" ) nanolog::set_log_level( nanolog::LogLevel::WARN );
@@ -110,17 +71,53 @@ int main( int argc, char const * const * argv )
 
   try
   {
-    if ( !file.empty() )
+    if ( file.empty() )
     {
-      spt::configdb::client::import( server, port, file );
-    }
-    else
-    {
+      if ( action.empty() )
+      {
+        std::cout << "Action not specified" << '\n';
+        options.writeToStream( std::cout );
+        exit( 1 );
+      }
+
+      const std::vector<std::string> actions{ "delete"s ,"get"s, "list"s, "move"s, "set"s };
+      if ( std::find( std::begin( actions ), std::end( actions ), action ) == std::end( actions ) )
+      {
+        std::cout << "Unsupported action" << '\n';
+        std::cout << "Valid values get|set|move|list|delete" << '\n';
+        exit( 1 );
+      }
+
+      if ( key.empty() )
+      {
+        std::cout << "Key not specified" << '\n';
+        options.writeToStream( std::cout );
+        exit( 1 );
+      }
+
+      if ( action == "set"s && value.empty() )
+      {
+        std::cout << "Value not specified" << '\n';
+        options.writeToStream( std::cout );
+        exit( 1 );
+      }
+
+      if ( action == "move"s && value.empty() )
+      {
+        std::cout << "Destination key not specified" << '\n';
+        options.writeToStream( std::cout );
+        exit( 1 );
+      }
+
       if ( action == "get"s ) spt::configdb::client::get( server, port, key );
       else if ( action == "list"s ) spt::configdb::client::list( server, port, key );
       else if ( action == "set"s ) spt::configdb::client::set( server, port, key, value );
       else if ( action == "move"s ) spt::configdb::client::move( server, port, key, value );
       else if ( action == "delete"s ) spt::configdb::client::remove( server, port, key );
+    }
+    else
+    {
+      spt::configdb::client::import( server, port, file );
     }
   }
   catch ( const std::exception& ex )

@@ -126,4 +126,24 @@ namespace spt::configdb::api
    * @return The child node names for each `path`.  If a `path` has no children, returns `std::nullopt` for it.
    */
   std::vector<NodePair> list( const std::vector<std::string_view>& paths );
+
+  /**
+   * Tuple holding the response along with the number of records imported out
+   * of total number of lines in the input file.  The number of records imported
+   * may be lower than the total if lines were omitted due to not having a space
+   * separated *key* and *value*.
+   */
+  using ImportResponse = std::tuple<bool, std::size_t, uint32_t>;
+  /**
+   * Bulk import *key-value* pairs from a space separated file.  The first space
+   * in a line is taken as the delimiter between a *key* and its associated *value*.
+   * Rest of the line is read as the *value*.
+   *
+   * **Note:** The entire file is imported in a *single* transaction.  This
+   * imposes memory related constraints on the size of file that can be imported.
+   *
+   * @param file The space separated plain text file to bulk import.
+   * @return `true` if the transaction succeeds.
+   */
+  ImportResponse import( const std::string& file );
 }

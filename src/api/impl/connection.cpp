@@ -7,6 +7,7 @@
 #include "../common/log/NanoLog.h"
 #include "../common/model/request_generated.h"
 
+#include <fstream>
 #include <mutex>
 #include <boost/asio/connect.hpp>
 
@@ -163,6 +164,53 @@ auto Connection::move( const std::vector<Pair>& kvs ) -> const model::Response*
   fb.Finish( request );
 
   return write( fb, "MMove" );
+}
+
+auto Connection::import( const std::string& file ) -> ImportResponse
+{
+  auto f = std::fstream{ file };
+  if ( ! f.is_open() )
+  {
+    LOG_WARN << "Error opening file " << file;
+    return { nullptr, 0, 0 };
+  }
+
+  uint32_t count = 0;
+  auto lines = std::vector<std::string>{};
+  lines.reserve( 64 );
+
+  auto kvs = std::vector<spt::configdb::api::Pair>{};
+  kvs.reserve( lines.size() );
+
+  std::string line;
+  while ( std::getline( f, line ) )
+  {
+    ++count;
+    lines.push_back( line );
+    auto lv = std::string_view{ lines.back() };
+
+    auto idx = lv.find( ' ', 0 );
+    if ( idx == std::string_view::npos )
+    {
+      LOG_WARN << "Ignoring invalid line " << lv;
+      continue;
+    }
+    auto end = idx;
+
+    auto vidx = lv.find( ' ', end + 1 );
+    while ( vidx != std::string_view::npos && lv.substr( end + 1, vidx - end - 1 ).empty() )
+    {
+      ++end;
+      vidx = lv.find( ' ', end + 1 );
+    }
+
+    LOG_INFO << "Creating key: " << lv.substr( 0, idx ) << "; value: " << lv.substr( end + 1 );
+    kvs.emplace_back( lv.substr( 0, idx ), lv.substr( end + 1 ) );
+  }
+
+  f.close();
+
+  return { set( kvs ), lines.size(), count };
 }
 
 boost::asio::ip::tcp::socket& Connection::socket()

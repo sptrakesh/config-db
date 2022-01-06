@@ -374,3 +374,30 @@ auto spt::configdb::api::list( const std::vector<std::string_view>& paths ) -> s
   LOG_INFO << "Retrieved " << int(size(paths)) << " paths";
   return results;
 }
+
+auto spt::configdb::api::import( const std::string& file ) -> ImportResponse
+{
+  auto popt = papi::PoolHolder::instance().pool.acquire();
+  if ( !popt )
+  {
+    LOG_CRIT << "Error acquiring connection from pool";
+    return {false, 0, 0};
+  }
+
+  const auto& [response, size, count] = ( *popt )->import( file );
+  if ( !response )
+  {
+    LOG_WARN << "Unable to import (" << int(size) << '/' << count << ") key-values";
+    return { false, size, count };
+  }
+
+  if ( response->value_type() != model::ResultVariant::Success ||
+      !response->value_as<model::Success>()->value() )
+  {
+    LOG_WARN << "Error importing (" << int(size) << '/' << count << ") key-values";
+    return { false, size, count };
+  }
+
+  LOG_INFO << "Imported (" << int(size) << '/' << count << ") key-values";
+  return { true, size, count };
+}
