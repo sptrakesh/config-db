@@ -24,6 +24,8 @@ RUN apk add --no-cache libcurl snappy readline \
   && chown spt:spt /opt/spt/logs /opt/spt/data
 
 COPY --from=base /opt/spt/bin /opt/spt/bin
+#COPY --from=base /opt/spt/include /opt/spt/include
+#COPY --from=base /opt/spt/lib /opt/spt/lib
 COPY docker/scripts/*.sh /opt/spt/bin/
 
 WORKDIR /opt/spt

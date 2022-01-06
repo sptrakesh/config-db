@@ -9,12 +9,7 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(Catch2)
 
 file( GLOB_RECURSE test_SRCS *.cpp *.h )
-
-set( test_SRCS ${test_SRCS} )
-
-# Create the application
 add_executable(unitTest ${test_SRCS} )
-
 target_link_libraries(unitTest
   PRIVATE configdb-common configdb-lib Catch2::Catch2 Boost::boost rocksdb ${OPENSSL_LIBRARIES} z
 )
