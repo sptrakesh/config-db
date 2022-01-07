@@ -10,6 +10,7 @@
 #include <fstream>
 #include <mutex>
 #include <boost/asio/connect.hpp>
+#include <boost/asio/write.hpp>
 
 using spt::configdb::api::impl::Connection;
 
@@ -240,7 +241,7 @@ auto Connection::write( const flatbuffers::FlatBufferBuilder& fb, std::string_vi
   os.write( reinterpret_cast<const char*>( &n ), sizeof(flatbuffers::uoffset_t) );
   os.write( reinterpret_cast<const char*>( fb.GetBufferPointer() ), fb.GetSize() );
 
-  const auto isize = s.send( buffer.data() );
+  const auto isize = boost::asio::write( s, buffer );
   buffer.consume( isize );
 
   auto osize = s.receive( buffer.prepare( 256 ) );
