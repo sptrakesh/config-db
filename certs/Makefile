@@ -2,7 +2,7 @@
 
 server_certificate:client_certificate 
 
-	@openssl genrsa -out server.key 4096
+	@openssl genrsa -out server.key 2048
 
 	@echo --------------------------------------------------
 	@echo "Generating server Certificate"
@@ -20,7 +20,7 @@ server_certificate:client_certificate
 	
 client_certificate:root_certificate
 	
-	@openssl genrsa -out client.key 4096
+	@openssl genrsa -out client.key 2048
 
 	@echo --------------------------------------------------
 	@echo "Generating client Certificate"
@@ -36,7 +36,7 @@ client_certificate:root_certificate
 
 root_certificate:clean
 	
-	@openssl genrsa -des3 -out ca.key 4096
+	@openssl genrsa -des3 -out ca.key 2048
 
 	@echo --------------------------------------------------
 	@echo "Generating root Certificate"
