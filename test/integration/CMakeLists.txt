@@ -11,6 +11,6 @@ FetchContent_MakeAvailable(Catch2)
 file( GLOB_RECURSE test_SRCS *.cpp *.h )
 add_executable(integration ${test_SRCS} )
 target_link_libraries(integration
-  PRIVATE configdb-common configdb-lib configdb-api Catch2::Catch2 Boost::boost flatbuffers z
+  PRIVATE configdb-common configdb-lib configdb-api Catch2::Catch2 Boost::boost flatbuffers ${OPENSSL_LIBRARIES} z
 )
 

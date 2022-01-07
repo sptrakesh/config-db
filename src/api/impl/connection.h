@@ -8,6 +8,7 @@
 #include <string_view>
 
 #include <boost/asio/io_context.hpp>
+#include <boost/asio/ssl.hpp>
 #include <boost/asio/streambuf.hpp>
 #include <boost/asio/ip/tcp.hpp>
 
@@ -49,10 +50,14 @@ namespace spt::configdb::api::impl
     void invalid() { status = false; }
 
   private:
+    using SecureSocket = boost::asio::ssl::stream<boost::asio::ip::tcp::socket>;
+    static boost::asio::ssl::context createContext();
+
     boost::asio::ip::tcp::socket& socket();
     const model::Response* write( const flatbuffers::FlatBufferBuilder& fb, std::string_view context );
 
-    boost::asio::ip::tcp::socket s{ spt::configdb::ContextHolder::instance().ioc };
+    boost::asio::ssl::context ctx{ createContext() };
+    SecureSocket s{ spt::configdb::ContextHolder::instance().ioc, ctx };
     boost::asio::ip::tcp::resolver resolver{ spt::configdb::ContextHolder::instance().ioc };
     boost::asio::streambuf buffer;
     bool status{ true };

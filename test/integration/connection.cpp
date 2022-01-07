@@ -12,14 +12,36 @@
 using spt::configdb::itest::tcp::Connection;
 using namespace std::string_view_literals;
 
-Connection::Connection( boost::asio::io_context& ioc ) : s{ ioc }, resolver{ ioc }
+Connection::Connection( boost::asio::io_context& ioc ) : s{ ioc, ctx }, resolver{ ioc }
 {
-  boost::asio::connect( s, resolver.resolve( "localhost", "2022" ) );
+  s.set_verify_mode( boost::asio::ssl::verify_none );
+  boost::asio::connect( s.next_layer(), resolver.resolve( "localhost", "2022" ) );
+  boost::system::error_code ec;
+  s.handshake( boost::asio::ssl::stream_base::client, ec );
+  if ( ec ) LOG_CRIT << "Error during SSL handshake. " << ec.message();
 }
 
 Connection::~Connection()
 {
-  if ( s.is_open() ) s.close();
+  if ( s.next_layer().is_open() ) s.next_layer().close();
+}
+
+boost::asio::ssl::context Connection::createContext()
+{
+  auto ctx = boost::asio::ssl::context( boost::asio::ssl::context::tlsv12_client );
+
+#ifdef __APPLE__
+  ctx.load_verify_file( "../../../certs/ca.crt" );
+  ctx.use_certificate_file( "../../../certs/client.crt", boost::asio::ssl::context::pem );
+  ctx.use_private_key_file( "../../../certs/client.key", boost::asio::ssl::context::pem );
+#else
+  ctx.load_verify_file( "/opt/spt/certs/ca.crt" );
+  ctx.use_certificate_file( "/opt/spt/certs/client.crt", boost::asio::ssl::context::pem );
+  ctx.use_private_key_file( "/opt/spt/certs/client.key", boost::asio::ssl::context::pem );
+#endif
+
+  ctx.set_verify_mode( boost::asio::ssl::verify_none );
+  return ctx;
 }
 
 auto Connection::write( const flatbuffers::FlatBufferBuilder& fb, std::string_view context ) -> Tuple
@@ -29,10 +51,10 @@ auto Connection::write( const flatbuffers::FlatBufferBuilder& fb, std::string_vi
   os.write( reinterpret_cast<const char*>( &n ), sizeof(flatbuffers::uoffset_t) );
   os.write( reinterpret_cast<const char*>( fb.GetBufferPointer() ), fb.GetSize() );
 
-  const auto isize = s.send( buffer.data() );
+  const auto isize = s.next_layer().send( buffer.data() );
   buffer.consume( isize );
 
-  auto osize = s.receive( buffer.prepare( 256 ) );
+  auto osize = s.next_layer().receive( buffer.prepare( 256 ) );
   buffer.commit( osize );
   std::size_t read = osize;
 
@@ -50,7 +72,7 @@ auto Connection::write( const flatbuffers::FlatBufferBuilder& fb, std::string_vi
   while ( read < ( len + sizeof(len) ) )
   {
     LOG_INFO << "Iteration " << ++i;
-    osize = s.receive( buffer.prepare( 256 ) );
+    osize = s.next_layer().receive( buffer.prepare( 256 ) );
     buffer.commit( osize );
     read += osize;
   }
@@ -75,10 +97,10 @@ std::size_t Connection::noop()
   std::ostream os{ &buffer };
   os.write( message.data(), message.size() );
 
-  const auto isize = s.send( buffer.data() );
+  const auto isize = s.next_layer().send( buffer.data() );
   buffer.consume( isize );
 
-  auto osize = s.receive( buffer.prepare( 8 ) );
+  auto osize = s.next_layer().receive( buffer.prepare( 8 ) );
   buffer.commit( osize );
   return osize;
 }

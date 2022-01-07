@@ -15,7 +15,7 @@ using spt::configdb::api::impl::Connection;
 
 namespace spt::configdb::api::pconnection
 {
-  std::mutex mutex;
+  std::mutex mutex{};
   std::string server{};
   std::string port{};
 }
@@ -41,17 +41,45 @@ auto spt::configdb::api::impl::create() -> std::unique_ptr<Connection>
 
 Connection::Connection( std::string_view server, std::string_view port )
 {
-  boost::asio::connect( s, resolver.resolve( server, port ) );
+  s.set_verify_mode( boost::asio::ssl::verify_none );
+  auto endpoints = resolver.resolve( server, port );
+  boost::asio::connect( s.lowest_layer(), endpoints );
+  boost::system::error_code ec;
+  s.handshake( boost::asio::ssl::stream_base::client, ec );
+  if ( ec )
+  {
+    LOG_CRIT << "Error during SSL handshake. " << ec.message();
+    invalid();
+  }
 }
 
 Connection::~Connection()
 {
-  if ( s.is_open() )
+  if ( s.next_layer().is_open() )
   {
     boost::system::error_code ec;
-    s.close( ec );
+    s.next_layer().close( ec );
     if ( ec ) LOG_CRIT << "Error closing socket. " << ec.message();
   }
+}
+
+boost::asio::ssl::context Connection::createContext()
+{
+  auto ctx = boost::asio::ssl::context( boost::asio::ssl::context::tlsv12_client );
+
+#ifdef __APPLE__
+  ctx.load_verify_file( "../../../certs/ca.crt" );
+  ctx.use_certificate_file( "../../../certs/client.crt", boost::asio::ssl::context::pem );
+  ctx.use_private_key_file( "../../../certs/client.key", boost::asio::ssl::context::pem );
+#else
+  ctx.load_verify_file( "/opt/spt/certs/ca.crt" );
+  ctx.use_certificate_file( "/opt/spt/certs/client.crt", boost::asio::ssl::context::pem );
+  ctx.use_private_key_file( "/opt/spt/certs/client.key", boost::asio::ssl::context::pem );
+#endif
+
+  ctx.set_options( boost::asio::ssl::context::default_workarounds | boost::asio::ssl::context::single_dh_use );
+  ctx.set_verify_mode( boost::asio::ssl::verify_peer );
+  return ctx;
 }
 
 auto Connection::list( std::string_view key ) -> const model::Response*
@@ -215,35 +243,41 @@ auto Connection::import( const std::string& file ) -> ImportResponse
 
 boost::asio::ip::tcp::socket& Connection::socket()
 {
-  if ( ! s.is_open() )
+  if ( ! s.next_layer().is_open() )
   {
     LOG_DEBUG << "Re-opening closed connection.";
     boost::system::error_code ec;
-    boost::asio::connect( s, resolver.resolve( pconnection::server, pconnection::port ), ec );
+    boost::asio::connect( s.next_layer(), resolver.resolve( pconnection::server, pconnection::port ), ec );
     if ( ec )
     {
       LOG_WARN << "Error opening socket connection. " << ec.message();
       invalid();
-      return s;
+      return s.next_layer();
     }
     boost::asio::socket_base::keep_alive option( true );
-    s.set_option( option );
+    s.next_layer().set_option( option );
   }
 
-  return s;
+  return s.next_layer();
 }
 
 auto Connection::write( const flatbuffers::FlatBufferBuilder& fb, std::string_view context ) -> const model::Response*
 {
+  if ( !valid() )
+  {
+    LOG_WARN << "Connection not valid.";
+    return nullptr;
+  }
+
   auto n = fb.GetSize();
   std::ostream os{ &buffer };
   os.write( reinterpret_cast<const char*>( &n ), sizeof(flatbuffers::uoffset_t) );
   os.write( reinterpret_cast<const char*>( fb.GetBufferPointer() ), fb.GetSize() );
 
-  const auto isize = s.send( buffer.data() );
+  const auto isize = s.next_layer().send( buffer.data() );
   buffer.consume( isize );
 
-  auto osize = s.receive( buffer.prepare( 256 ) );
+  auto osize = s.next_layer().receive( buffer.prepare( 256 ) );
   buffer.commit( osize );
   std::size_t read = osize;
 
@@ -262,7 +296,7 @@ auto Connection::write( const flatbuffers::FlatBufferBuilder& fb, std::string_vi
   while ( read < ( len + sizeof(len) ) )
   {
     LOG_DEBUG << "Iteration " << ++i;
-    osize = s.receive( buffer.prepare( 256 ) );
+    osize = s.next_layer().receive( buffer.prepare( 256 ) );
     buffer.commit( osize );
     read += osize;
   }

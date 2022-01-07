@@ -6,6 +6,7 @@
 
 #include <tuple>
 #include <boost/asio/io_context.hpp>
+#include <boost/asio/ssl.hpp>
 #include <boost/asio/streambuf.hpp>
 #include <boost/asio/ip/tcp.hpp>
 
@@ -27,7 +28,11 @@ namespace spt::configdb::itest::tcp
     std::size_t noop();
 
   private:
-    boost::asio::ip::tcp::socket s;
+    using SecureSocket = boost::asio::ssl::stream<boost::asio::ip::tcp::socket>;
+    static boost::asio::ssl::context createContext();
+
+    boost::asio::ssl::context ctx{ createContext() };
+    SecureSocket s;
     boost::asio::ip::tcp::resolver resolver;
     boost::asio::streambuf buffer;
   };

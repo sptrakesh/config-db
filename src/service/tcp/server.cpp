@@ -15,11 +15,14 @@
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/detached.hpp>
 #include <boost/asio/redirect_error.hpp>
+#include <boost/asio/ssl.hpp>
 #include <boost/asio/use_awaitable.hpp>
 #include <boost/asio/write.hpp>
 #include <boost/asio/ip/tcp.hpp>
 
 using boost::asio::use_awaitable;
+using SecureSocket = boost::asio::ssl::stream<boost::asio::ip::tcp::socket>;
+
 
 #if defined(BOOST_ASIO_ENABLE_HANDLER_TRACKING)
 # define use_awaitable \
@@ -28,8 +31,7 @@ using boost::asio::use_awaitable;
 
 namespace spt::configdb::tcp::coroutine
 {
-  boost::asio::awaitable<void> write( boost::asio::ip::tcp::socket& socket,
-      const flatbuffers::FlatBufferBuilder& fb )
+  boost::asio::awaitable<void> write( SecureSocket& socket, const flatbuffers::FlatBufferBuilder& fb )
   {
     auto size = fb.GetSize();
     std::vector<boost::asio::const_buffer> buffers;
@@ -41,8 +43,7 @@ namespace spt::configdb::tcp::coroutine
     if ( ec ) LOG_WARN << "Error writing to socket. " << ec.message();
   }
 
-  boost::asio::awaitable<void> get( boost::asio::ip::tcp::socket& socket,
-      const model::Request* request )
+  boost::asio::awaitable<void> get( SecureSocket& socket, const model::Request* request )
   {
     std::vector<std::string_view> keys;
     for ( auto&& kv : *request->data() ) keys.emplace_back( kv->key()->string_view() );
@@ -78,8 +79,7 @@ namespace spt::configdb::tcp::coroutine
     co_await write( socket, fb );
   }
 
-  boost::asio::awaitable<void> list( boost::asio::ip::tcp::socket& socket,
-      const model::Request* request )
+  boost::asio::awaitable<void> list( SecureSocket& socket, const model::Request* request )
   {
     std::vector<std::string_view> keys;
     for ( auto&& kv : *request->data() ) keys.emplace_back( kv->key()->string_view() );
@@ -115,8 +115,7 @@ namespace spt::configdb::tcp::coroutine
     co_await write( socket, fb );
   }
 
-  boost::asio::awaitable<void> put( boost::asio::ip::tcp::socket& socket,
-      const model::Request* request )
+  boost::asio::awaitable<void> put( SecureSocket& socket, const model::Request* request )
   {
     std::vector<db::Pair> pairs;
     for ( auto&& kv : *request->data() ) pairs.emplace_back( kv->key()->string_view(), kv->value()->string_view() );
@@ -129,8 +128,7 @@ namespace spt::configdb::tcp::coroutine
     co_await write( socket, fb );
   }
 
-  boost::asio::awaitable<void> remove( boost::asio::ip::tcp::socket& socket,
-      const model::Request* request )
+  boost::asio::awaitable<void> remove( SecureSocket& socket, const model::Request* request )
   {
     std::vector<std::string_view> keys;
     for ( auto&& kv : *request->data() ) keys.emplace_back( kv->key()->string_view() );
@@ -143,8 +141,7 @@ namespace spt::configdb::tcp::coroutine
     co_await write( socket, fb );
   }
 
-  boost::asio::awaitable<void> move( boost::asio::ip::tcp::socket& socket,
-      const model::Request* request )
+  boost::asio::awaitable<void> move( SecureSocket& socket, const model::Request* request )
   {
     std::vector<db::Pair> pairs;
     for ( auto&& kv : *request->data() ) pairs.emplace_back( kv->key()->string_view(), kv->value()->string_view() );
@@ -157,8 +154,7 @@ namespace spt::configdb::tcp::coroutine
     co_await write( socket, fb );
   }
 
-  boost::asio::awaitable<void> process( boost::asio::ip::tcp::socket& socket,
-      const model::Request* request )
+  boost::asio::awaitable<void> process( SecureSocket& socket, const model::Request* request )
   {
     switch ( request->action() )
     {
@@ -180,7 +176,7 @@ namespace spt::configdb::tcp::coroutine
     }
   }
 
-  boost::asio::awaitable<void> respond( boost::asio::ip::tcp::socket& socket )
+  boost::asio::awaitable<void> respond( SecureSocket& socket )
   {
     using namespace std::string_view_literals;
 
@@ -198,12 +194,6 @@ namespace spt::configdb::tcp::coroutine
       return std::size_t( len + sizeof(len) );
     };
 
-    const auto eof = []( const boost::system::error_code& ec )
-    {
-      static const std::string msg{ "End of file" };
-      return boost::algorithm::starts_with( ec.message(), msg );
-    };
-
     const auto brokenPipe = []( const boost::system::error_code& ec )
     {
       static const std::string msg{ "Broken pipe" };
@@ -211,20 +201,7 @@ namespace spt::configdb::tcp::coroutine
     };
 
     boost::system::error_code ec;
-    std::size_t osize = co_await socket.async_read_some( boost::asio::buffer( data ),
-        boost::asio::redirect_error( boost::asio::use_awaitable, ec ) );
-    if ( ec )
-    {
-      if ( !eof( ec ) )
-      {
-        LOG_WARN << "Error reading from socket. " << ec.message();
-        auto message = "err"sv;
-        co_await boost::asio::async_write( socket, boost::asio::buffer( message ),
-            boost::asio::redirect_error( boost::asio::use_awaitable, ec ) );
-        if ( ec && !brokenPipe( ec ) ) LOG_WARN << "Error writing error to socket. " << ec.message();
-      }
-      co_return;
-    }
+    std::size_t osize = co_await socket.async_read_some( boost::asio::buffer( data ), boost::asio::use_awaitable );
     const auto docSize = documentSize( osize );
 
     // echo, noop, ping etc.
@@ -254,20 +231,7 @@ namespace spt::configdb::tcp::coroutine
     LOG_DEBUG << "Read " << int(osize) << " bytes, total size " << int(docSize);
     while ( docSize < maxBytes && read != docSize )
     {
-      osize = co_await socket.async_read_some( boost::asio::buffer( data ),
-          boost::asio::redirect_error( boost::asio::use_awaitable, ec ) );
-      if ( ec )
-      {
-        if ( !eof( ec ) )
-        {
-          LOG_WARN << "Error reading from socket. " << ec.message();
-          auto message = "err"sv;
-          co_await boost::asio::async_write( socket, boost::asio::buffer( message ),
-              boost::asio::redirect_error( boost::asio::use_awaitable, ec ) );
-          if ( ec && !brokenPipe( ec ) ) LOG_WARN << "Error writing error to socket. " << ec.message();
-        }
-        co_return;
-      }
+      osize = co_await socket.async_read_some( boost::asio::buffer( data ), boost::asio::use_awaitable );
       rbuf.insert( rbuf.end(), data, data + osize );
       read += osize;
     }
@@ -287,10 +251,21 @@ namespace spt::configdb::tcp::coroutine
     co_await process( socket, request );
   }
 
-  boost::asio::awaitable<void> serve( boost::asio::ip::tcp::socket socket )
+  boost::asio::awaitable<void> serve( SecureSocket socket )
   {
     try
     {
+      boost::system::error_code ec;
+      co_await socket.async_handshake( boost::asio::ssl::stream_base::server,
+          boost::asio::redirect_error( boost::asio::use_awaitable, ec ) );
+      if ( ec )
+      {
+        LOG_WARN << "Handshake error. " << ec.message();
+        socket.next_layer().close( ec );
+        if ( ec ) LOG_WARN << "Error closing socket. " << ec.message();
+        co_return;
+      }
+
       for (;;)
       {
         co_await respond( socket );
@@ -303,8 +278,30 @@ namespace spt::configdb::tcp::coroutine
     }
   }
 
+  boost::asio::ssl::context createSSLContext()
+  {
+    auto ctx = boost::asio::ssl::context( boost::asio::ssl::context::tlsv12_server );
+    ctx.set_options(
+        boost::asio::ssl::context::default_workarounds |
+            boost::asio::ssl::context::single_dh_use );
+
+#ifdef __APPLE__
+    ctx.load_verify_file( "../../../certs/ca.crt" );
+    ctx.use_certificate_file( "../../../certs/server.crt", boost::asio::ssl::context::pem );
+    ctx.use_private_key_file( "../../../certs/server.key", boost::asio::ssl::context::pem );
+#else
+    ctx.load_verify_file( "/opt/spt/certs/ca.crt" );
+    ctx.use_certificate_file( "/opt/spt/certs/server.crt", boost::asio::ssl::context::pem );
+    ctx.use_private_key_file( "/opt/spt/certs/server.key", boost::asio::ssl::context::pem );
+#endif
+    ctx.set_verify_mode( boost::asio::ssl::verify_peer | boost::asio::ssl::verify_fail_if_no_peer_cert );
+
+    return ctx;
+  }
+
   boost::asio::awaitable<void> listener( int port )
   {
+    auto ctx = createSSLContext();
     auto executor = co_await boost::asio::this_coro::executor;
     boost::asio::ip::tcp::acceptor acceptor( executor,
         { boost::asio::ip::tcp::v4(), static_cast<boost::asio::ip::port_type>( port ) } );
@@ -312,7 +309,8 @@ namespace spt::configdb::tcp::coroutine
     {
       if ( ContextHolder::instance().ioc.stopped() ) break;
       boost::asio::ip::tcp::socket socket = co_await acceptor.async_accept( use_awaitable );
-      boost::asio::co_spawn( executor, serve( std::move(socket) ), boost::asio::detached );
+      auto ss = SecureSocket{ std::move( socket ), ctx };
+      boost::asio::co_spawn( executor, serve( std::move(ss) ), boost::asio::detached );
     }
   }
 }
@@ -321,7 +319,7 @@ int spt::configdb::tcp::start( int port )
 {
   namespace net = boost::asio;
   boost::asio::co_spawn( ContextHolder::instance().ioc, coroutine::listener( port ), boost::asio::detached );
-  LOG_INFO << "TCP service started";
+  LOG_INFO << "TCP service started on port " << port;
 
   ContextHolder::instance().ioc.run();
   LOG_INFO << "TCP service stopped";
