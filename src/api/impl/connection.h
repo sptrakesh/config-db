@@ -53,7 +53,7 @@ namespace spt::configdb::api::impl
     using SecureSocket = boost::asio::ssl::stream<boost::asio::ip::tcp::socket>;
     static boost::asio::ssl::context createContext();
 
-    boost::asio::ip::tcp::socket& socket();
+    void socket();
     const model::Response* write( const flatbuffers::FlatBufferBuilder& fb, std::string_view context );
 
     boost::asio::ssl::context ctx{ createContext() };

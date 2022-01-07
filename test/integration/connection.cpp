@@ -7,6 +7,8 @@
 #include "../../src/common/model/request_generated.h"
 
 #include <boost/asio/connect.hpp>
+#include <boost/asio/read.hpp>
+#include <boost/asio/write.hpp>
 #include <flatbuffers/minireflect.h>
 
 using spt::configdb::itest::tcp::Connection;
@@ -28,7 +30,7 @@ Connection::~Connection()
 
 boost::asio::ssl::context Connection::createContext()
 {
-  auto ctx = boost::asio::ssl::context( boost::asio::ssl::context::tlsv12_client );
+  auto ctx = boost::asio::ssl::context( boost::asio::ssl::context::tlsv13_client );
 
 #ifdef __APPLE__
   ctx.load_verify_file( "../../../certs/ca.crt" );
@@ -51,10 +53,10 @@ auto Connection::write( const flatbuffers::FlatBufferBuilder& fb, std::string_vi
   os.write( reinterpret_cast<const char*>( &n ), sizeof(flatbuffers::uoffset_t) );
   os.write( reinterpret_cast<const char*>( fb.GetBufferPointer() ), fb.GetSize() );
 
-  const auto isize = s.next_layer().send( buffer.data() );
+  const auto isize = boost::asio::read( s, buffer );
   buffer.consume( isize );
 
-  auto osize = s.next_layer().receive( buffer.prepare( 256 ) );
+  auto osize = boost::asio::read( s, buffer.prepare( 256 ) );
   buffer.commit( osize );
   std::size_t read = osize;
 
@@ -72,7 +74,7 @@ auto Connection::write( const flatbuffers::FlatBufferBuilder& fb, std::string_vi
   while ( read < ( len + sizeof(len) ) )
   {
     LOG_INFO << "Iteration " << ++i;
-    osize = s.next_layer().receive( buffer.prepare( 256 ) );
+    osize = boost::asio::read( s, buffer.prepare( 256 ) );
     buffer.commit( osize );
     read += osize;
   }
@@ -97,10 +99,10 @@ std::size_t Connection::noop()
   std::ostream os{ &buffer };
   os.write( message.data(), message.size() );
 
-  const auto isize = s.next_layer().send( buffer.data() );
+  const auto isize = boost::asio::write( s, buffer );
   buffer.consume( isize );
 
-  auto osize = s.next_layer().receive( buffer.prepare( 8 ) );
+  auto osize = boost::asio::read( s, buffer.prepare( 8 ) );
   buffer.commit( osize );
   return osize;
 }

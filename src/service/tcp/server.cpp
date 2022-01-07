@@ -20,14 +20,7 @@
 #include <boost/asio/write.hpp>
 #include <boost/asio/ip/tcp.hpp>
 
-using boost::asio::use_awaitable;
 using SecureSocket = boost::asio::ssl::stream<boost::asio::ip::tcp::socket>;
-
-
-#if defined(BOOST_ASIO_ENABLE_HANDLER_TRACKING)
-# define use_awaitable \
-  boost::asio::use_awaitable_t(__FILE__, __LINE__, __PRETTY_FUNCTION__)
-#endif
 
 namespace spt::configdb::tcp::coroutine
 {
@@ -35,12 +28,14 @@ namespace spt::configdb::tcp::coroutine
   {
     auto size = fb.GetSize();
     std::vector<boost::asio::const_buffer> buffers;
+    buffers.reserve( 2 );
     buffers.emplace_back( &size, sizeof(size) );
     buffers.emplace_back( fb.GetBufferPointer(), size );
     boost::system::error_code ec;
     co_await boost::asio::async_write( socket, buffers,
         boost::asio::redirect_error( boost::asio::use_awaitable, ec ) );
     if ( ec ) LOG_WARN << "Error writing to socket. " << ec.message();
+    else LOG_DEBUG << "Finished writing response of size " << int(size + sizeof(size));
   }
 
   boost::asio::awaitable<void> get( SecureSocket& socket, const model::Request* request )
@@ -251,10 +246,33 @@ namespace spt::configdb::tcp::coroutine
     co_await process( socket, request );
   }
 
-  boost::asio::awaitable<void> serve( SecureSocket socket )
+  boost::asio::ssl::context createSSLContext()
+  {
+    auto ctx = boost::asio::ssl::context( boost::asio::ssl::context::tlsv13_server );
+    ctx.set_options(
+        boost::asio::ssl::context::default_workarounds |
+        boost::asio::ssl::context::single_dh_use );
+
+#ifdef __APPLE__
+    ctx.load_verify_file( "../../../certs/ca.crt" );
+    ctx.use_certificate_file( "../../../certs/server.crt", boost::asio::ssl::context::pem );
+    ctx.use_private_key_file( "../../../certs/server.key", boost::asio::ssl::context::pem );
+#else
+    ctx.load_verify_file( "/opt/spt/certs/ca.crt" );
+    ctx.use_certificate_file( "/opt/spt/certs/server.crt", boost::asio::ssl::context::pem );
+    ctx.use_private_key_file( "/opt/spt/certs/server.key", boost::asio::ssl::context::pem );
+#endif
+    ctx.set_verify_mode( boost::asio::ssl::verify_peer | boost::asio::ssl::verify_fail_if_no_peer_cert );
+
+    return ctx;
+  }
+
+  boost::asio::awaitable<void> serve( boost::asio::ip::tcp::socket s )
   {
     try
     {
+      auto ctx = createSSLContext();
+      auto socket = SecureSocket{ std::move( s ), ctx };
       boost::system::error_code ec;
       co_await socket.async_handshake( boost::asio::ssl::stream_base::server,
           boost::asio::redirect_error( boost::asio::use_awaitable, ec ) );
@@ -278,39 +296,16 @@ namespace spt::configdb::tcp::coroutine
     }
   }
 
-  boost::asio::ssl::context createSSLContext()
-  {
-    auto ctx = boost::asio::ssl::context( boost::asio::ssl::context::tlsv12_server );
-    ctx.set_options(
-        boost::asio::ssl::context::default_workarounds |
-            boost::asio::ssl::context::single_dh_use );
-
-#ifdef __APPLE__
-    ctx.load_verify_file( "../../../certs/ca.crt" );
-    ctx.use_certificate_file( "../../../certs/server.crt", boost::asio::ssl::context::pem );
-    ctx.use_private_key_file( "../../../certs/server.key", boost::asio::ssl::context::pem );
-#else
-    ctx.load_verify_file( "/opt/spt/certs/ca.crt" );
-    ctx.use_certificate_file( "/opt/spt/certs/server.crt", boost::asio::ssl::context::pem );
-    ctx.use_private_key_file( "/opt/spt/certs/server.key", boost::asio::ssl::context::pem );
-#endif
-    ctx.set_verify_mode( boost::asio::ssl::verify_peer | boost::asio::ssl::verify_fail_if_no_peer_cert );
-
-    return ctx;
-  }
-
   boost::asio::awaitable<void> listener( int port )
   {
-    auto ctx = createSSLContext();
     auto executor = co_await boost::asio::this_coro::executor;
     boost::asio::ip::tcp::acceptor acceptor( executor,
         { boost::asio::ip::tcp::v4(), static_cast<boost::asio::ip::port_type>( port ) } );
     for (;;)
     {
       if ( ContextHolder::instance().ioc.stopped() ) break;
-      boost::asio::ip::tcp::socket socket = co_await acceptor.async_accept( use_awaitable );
-      auto ss = SecureSocket{ std::move( socket ), ctx };
-      boost::asio::co_spawn( executor, serve( std::move(ss) ), boost::asio::detached );
+      boost::asio::ip::tcp::socket socket = co_await acceptor.async_accept( boost::asio::use_awaitable );
+      boost::asio::co_spawn( executor, serve( std::move(socket) ), boost::asio::detached );
     }
   }
 }

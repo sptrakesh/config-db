@@ -10,6 +10,8 @@
 #include <fstream>
 #include <mutex>
 #include <boost/asio/connect.hpp>
+#include <boost/asio/read.hpp>
+#include <boost/asio/write.hpp>
 
 using spt::configdb::api::impl::Connection;
 
@@ -65,7 +67,7 @@ Connection::~Connection()
 
 boost::asio::ssl::context Connection::createContext()
 {
-  auto ctx = boost::asio::ssl::context( boost::asio::ssl::context::tlsv12_client );
+  auto ctx = boost::asio::ssl::context( boost::asio::ssl::context::tlsv13_client );
 
 #ifdef __APPLE__
   ctx.load_verify_file( "../../../certs/ca.crt" );
@@ -241,7 +243,7 @@ auto Connection::import( const std::string& file ) -> ImportResponse
   return { set( kvs ), lines.size(), count };
 }
 
-boost::asio::ip::tcp::socket& Connection::socket()
+void Connection::socket()
 {
   if ( ! s.next_layer().is_open() )
   {
@@ -252,17 +254,18 @@ boost::asio::ip::tcp::socket& Connection::socket()
     {
       LOG_WARN << "Error opening socket connection. " << ec.message();
       invalid();
-      return s.next_layer();
+      return;
     }
     boost::asio::socket_base::keep_alive option( true );
     s.next_layer().set_option( option );
   }
 
-  return s.next_layer();
+  return;
 }
 
 auto Connection::write( const flatbuffers::FlatBufferBuilder& fb, std::string_view context ) -> const model::Response*
 {
+  socket();
   if ( !valid() )
   {
     LOG_WARN << "Connection not valid.";
@@ -274,10 +277,10 @@ auto Connection::write( const flatbuffers::FlatBufferBuilder& fb, std::string_vi
   os.write( reinterpret_cast<const char*>( &n ), sizeof(flatbuffers::uoffset_t) );
   os.write( reinterpret_cast<const char*>( fb.GetBufferPointer() ), fb.GetSize() );
 
-  const auto isize = s.next_layer().send( buffer.data() );
+  const auto isize = boost::asio::write( s, buffer );
   buffer.consume( isize );
 
-  auto osize = s.next_layer().receive( buffer.prepare( 256 ) );
+  auto osize = boost::asio::read( s, buffer.prepare( 256 ) );
   buffer.commit( osize );
   std::size_t read = osize;
 
@@ -296,7 +299,7 @@ auto Connection::write( const flatbuffers::FlatBufferBuilder& fb, std::string_vi
   while ( read < ( len + sizeof(len) ) )
   {
     LOG_DEBUG << "Iteration " << ++i;
-    osize = s.next_layer().receive( buffer.prepare( 256 ) );
+    osize = boost::asio::read( s, buffer.prepare( 256 ) );
     buffer.commit( osize );
     read += osize;
   }
