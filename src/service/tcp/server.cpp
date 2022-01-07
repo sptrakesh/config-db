@@ -35,7 +35,7 @@ namespace spt::configdb::tcp::coroutine
     co_await boost::asio::async_write( socket, buffers,
         boost::asio::redirect_error( boost::asio::use_awaitable, ec ) );
     if ( ec ) LOG_WARN << "Error writing to socket. " << ec.message();
-    else LOG_DEBUG << "Finished writing response of size " << int(size + sizeof(size));
+    else LOG_DEBUG << "Finished writing buffer of size " << int(size) << " + " << int(sizeof(size)) << " bytes";
   }
 
   boost::asio::awaitable<void> get( SecureSocket& socket, const model::Request* request )
@@ -291,7 +291,7 @@ namespace spt::configdb::tcp::coroutine
     }
     catch ( const std::exception& e )
     {
-      static const auto eof{ "End of file" };
+      static const auto eof{ "stream truncated" };
       if ( !boost::algorithm::starts_with( e.what(), eof ) ) LOG_WARN << "Exception servicing request " << e.what();
     }
   }
