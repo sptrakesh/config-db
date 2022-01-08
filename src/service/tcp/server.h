@@ -8,5 +8,5 @@
 
 namespace spt::configdb::tcp
 {
-  int start( int port );
+  int start( int port, bool ssl );
 }

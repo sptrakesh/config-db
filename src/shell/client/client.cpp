@@ -195,9 +195,9 @@ namespace spt::configdb::client::pclient
   }
 }
 
-int spt::configdb::client::run( std::string_view server, std::string_view port )
+int spt::configdb::client::run( std::string_view server, std::string_view port, bool ssl )
 {
-  api::init( server, port );
+  api::init( server, port, ssl );
 
   using namespace std::literals;
   std::cout << "Enter commands followed by <ENTER>" << '\n';

@@ -177,31 +177,54 @@ namespace spt::configdb::http::endpoints
       }
     } );
   }
-}
 
-int spt::configdb::http::start( const std::string& port, int threads )
-{
-  boost::asio::ssl::context tls{ boost::asio::ssl::context::tlsv12_server };
+  int startWithSSL( const std::string& port, int threads )
+  {
+    boost::asio::ssl::context tls{ boost::asio::ssl::context::tlsv12_server };
 #ifdef __APPLE__
-  tls.load_verify_file( "../../../certs/ca.crt" );
-  tls.use_certificate_file( "../../../certs/server.crt", boost::asio::ssl::context::pem );
-  tls.use_private_key_file( "../../../certs/server.key", boost::asio::ssl::context::pem );
+    tls.load_verify_file( "../../../certs/ca.crt" );
+    tls.use_certificate_file( "../../../certs/server.crt", boost::asio::ssl::context::pem );
+    tls.use_private_key_file( "../../../certs/server.key", boost::asio::ssl::context::pem );
 #else
-  tls.load_verify_file( "/opt/spt/certs/ca.crt" );
+    tls.load_verify_file( "/opt/spt/certs/ca.crt" );
   tls.use_certificate_file( "/opt/spt/certs/server.crt", boost::asio::ssl::context::pem );
   tls.use_private_key_file( "/opt/spt/certs/server.key", boost::asio::ssl::context::pem );
 #endif
 
-  boost::system::error_code ec;
-  nghttp2::asio_http2::server::configure_tls_context_easy( ec, tls );
+    boost::system::error_code ec;
+    nghttp2::asio_http2::server::configure_tls_context_easy( ec, tls );
 
+    nghttp2::asio_http2::server::http2 server;
+    server.num_threads( threads );
+
+    endpoints::setup( server );
+
+    LOG_INFO << "HTTP service starting on port " << port;
+    if ( server.listen_and_serve( ec, tls, "0.0.0.0"s, port, true ) ) {
+      LOG_CRIT << "error: " << ec.message();
+      return 1;
+    }
+
+    ContextHolder::instance().ioc.run();
+    LOG_INFO << "Stopping server";
+    server.stop();
+    server.join();
+
+    return 0;
+  }
+}
+
+int spt::configdb::http::start( const std::string& port, int threads, bool ssl )
+{
+  if ( ssl ) return endpoints::startWithSSL( port, threads );
+
+  boost::system::error_code ec;
   nghttp2::asio_http2::server::http2 server;
   server.num_threads( threads );
 
   endpoints::setup( server );
 
-  LOG_INFO << "HTTP service starting on port " << port;
-  if ( server.listen_and_serve( ec, tls, "0.0.0.0"s, port, true ) ) {
+  if ( server.listen_and_serve( ec, "0.0.0.0"s, port, true ) ) {
     LOG_CRIT << "error: " << ec.message();
     return 1;
   }

@@ -12,6 +12,6 @@ int main( int argc, char* argv[] )
 {
   nanolog::set_log_level( nanolog::LogLevel::DEBUG );
   nanolog::initialize( nanolog::GuaranteedLogger(), "/tmp/", "config-db-itest", false );
-  spt::configdb::api::init( "localhost", "2022" );
+  spt::configdb::api::init( "localhost", "2022", true );
   return Catch::Session().run( argc, argv );
 }

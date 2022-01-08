@@ -31,11 +31,13 @@ int main( int argc, char const * const * argv )
   std::string key{};
   std::string value{};
   std::string file{};
+  bool ssl = false;
   bool help = false;
 
   auto options = clara::Help(help) |
       Opt(server, "localhost")["-s"]["--server"]("Server to connect to (default localhost).") |
       Opt(port, "2020")["-p"]["--port"]("TCP port for the server (default 2020)") |
+      Opt(ssl, "true")["-t"]["--with-ssl"]("Use SSL to connect to service (default false)") |
       Opt(file, "file.txt")["-f"]["--file"]("File to bulk import data from") |
       Opt(action, "set")["-a"]["--action"]("Action to perform against the database.") |
       Opt(key, "/key")["-k"]["--key"]("Key or path to apply action to") |
@@ -109,15 +111,15 @@ int main( int argc, char const * const * argv )
         exit( 1 );
       }
 
-      if ( action == "get"s ) spt::configdb::client::get( server, port, key );
-      else if ( action == "list"s ) spt::configdb::client::list( server, port, key );
-      else if ( action == "set"s ) spt::configdb::client::set( server, port, key, value );
-      else if ( action == "move"s ) spt::configdb::client::move( server, port, key, value );
-      else if ( action == "delete"s ) spt::configdb::client::remove( server, port, key );
+      if ( action == "get"s ) spt::configdb::client::get( server, port, key, ssl );
+      else if ( action == "list"s ) spt::configdb::client::list( server, port, key, ssl );
+      else if ( action == "set"s ) spt::configdb::client::set( server, port, key, value, ssl );
+      else if ( action == "move"s ) spt::configdb::client::move( server, port, key, value, ssl );
+      else if ( action == "delete"s ) spt::configdb::client::remove( server, port, key, ssl );
     }
     else
     {
-      spt::configdb::client::import( server, port, file );
+      spt::configdb::client::import( server, port, file, ssl );
     }
   }
   catch ( const std::exception& ex )

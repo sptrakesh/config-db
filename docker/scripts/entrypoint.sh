@@ -33,6 +33,12 @@ Defaults()
     ENABLE_CACHE="true"
     echo "ENABLE_CACHE not set.  Will default to $ENABLE_CACHE"
   fi
+
+  if [ -z "$ENABLE_SSL" ]
+  then
+    ENABLE_SSL="false"
+    echo "ENABLE_SSL not set.  Will default to $ENABLE_SSL"
+  fi
 }
 
 Args()
@@ -57,7 +63,7 @@ Service()
   echo "Starting config-db service"
   /opt/spt/bin/configdb --console true --log-dir ${LOGDIR}/ --log-level $LOG_LEVEL \
     --http-port $HTTP_PORT --tcp-port $TCP_PORT --threads $THREADS \
-    --enable-cache $ENABLE_CACHE $args
+    --enable-cache $ENABLE_CACHE --with-ssl $ENABLE_SSL $args
 }
 
 Defaults && Args && Service

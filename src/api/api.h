@@ -17,8 +17,9 @@ namespace spt::configdb::api
    *
    * @param server The hostname of the server to connect to.
    * @param port The TCP port to connect to.
+   * @param ssl Specify `true` to use SSL connection to service.
    */
-  void init( std::string_view server, std::string_view port );
+  void init( std::string_view server, std::string_view port, bool ssl );
 
   /**
    * Retrieve the stored value for the specified `key`.

@@ -9,10 +9,10 @@
 
 namespace spt::configdb::client
 {
-  void get( std::string_view server, std::string_view port, std::string_view key );
-  void list( std::string_view server, std::string_view port, std::string_view path );
-  void set( std::string_view server, std::string_view port, std::string_view key, std::string_view value );
-  void move( std::string_view server, std::string_view port, std::string_view key, std::string_view destination );
-  void remove( std::string_view server, std::string_view port, std::string_view key );
-  void import( std::string_view server, std::string_view port, const std::string& file );
+  void get( std::string_view server, std::string_view port, std::string_view key, bool ssl );
+  void list( std::string_view server, std::string_view port, std::string_view path, bool ssl );
+  void set( std::string_view server, std::string_view port, std::string_view key, std::string_view value, bool ssl );
+  void move( std::string_view server, std::string_view port, std::string_view key, std::string_view destination, bool ssl );
+  void remove( std::string_view server, std::string_view port, std::string_view key, bool ssl );
+  void import( std::string_view server, std::string_view port, const std::string& file, bool ssl );
 }
