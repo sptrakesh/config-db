@@ -16,6 +16,7 @@
 * [Docker](#docker)
 * [Build](#build)
 * [Run](#run)
+  * [SSL](#ssl)
 * [Acknowledgements](#acknowledgements)
 
 A simple configuration database similar to Apache Zookeeper, Etcd, etc., built
@@ -25,7 +26,7 @@ All values are stored encrypted using `aes-256-cbc` on disk.
 
 
 ## Keys
-All keys are required to represent UNIX *path like* structures.  Keys that do
+All keys are assumed to represent UNIX *path like* structures.  Keys that do
 not at least start with a leading `/` character are internally replaced with
 a leading `/` character.  This means that keys `key` and `/key` are treated
 as identical.
@@ -199,6 +200,13 @@ deployed to the `/opt/spt/bin` directory.
 The `configsh` application provides a *shell* to interact with the database.
 The server should be running and the TCP port open for the application to connect.
 
+The following command line options are supported by the shell:
+* `-s | --server` The TCP server hostname to connect to.  Default `localhost`.
+* `-p | --port` The TCP port to connect to.  Default `2020` (`2022` on Mac OS X).
+* `-t | --with-ssl` Specify `true` to connect over SSL to the server.
+* `-l | --log-level` The level for the logger.  Accepted values `debug|info|warn|critical`.  Default `info`.
+* `-o | --log-dir` The directory to write log files to.  The path *must* end with a trailing `/`.  Default `/tmp/`.
+
 The following shows a simple CRUD type interaction via the shell.
 
 <details>
@@ -252,6 +260,17 @@ required.
 argument must be quoted if they contain spaces or other special characters.
 
 The server should be running and the TCP port open for the application to connect.
+
+The following command line options are supported by the CLI application:
+* `-s | --server` The TCP server hostname to connect to.  Default `localhost`.
+* `-p | --port` The TCP port to connect to.  Default `2020` (`2022` on Mac OS X).
+* `-t | --with-ssl` Specify `true` to connect over SSL to the server.
+* `-l | --log-level` The level for the logger.  Accepted values `debug|info|warn|critical`.  Default `info`.
+* `-o | --log-dir` The directory to write log files to.  The path *must* end with a trailing `/`.  Default `/tmp/`.
+* `-f | --file` The file to bulk import into the database.  If specified, other commands are ignored.
+* `-a | --action` The action to perform.  One of `get|set|move|delete|list`.
+* `-k | --key` The *key* to act upon.
+* `-v | --value` The *value* to `set`.  For `move` this is the destination path.
 
 The following shows a simple CRUD type interaction via the cli. These were using
 the default values for `server [-s|--server]` and `port [-p|--port]` options.
@@ -323,8 +342,17 @@ It is possible to run the integration tests against the docker container instead
 of the service running locally.
 
 ```shell
-docker run -d --rm -p 6006:6000 -p 2022:2020 --name config-db sptrakesh/config-db
+docker run -d --rm -p 6006:6000 -p 2022:2020 -e "ENABLE_SSL=true" --name config-db sptrakesh/config-db
 ```
+
+The following environment variables can be used to customise the container:
+* `HTTP_PORT` - The port to run the HTTP/2 service on.  Default `6000`.
+* `TCP_PORT` - The port to run the TCP service on.  Default `2020`.
+* `THREADS` - The number of threads to use for the services.  Default `4`.
+* `LOG_LEVEL` - The level to use for logging.  One of `debug|info|warn|critical`.  Default `info`.
+* `ENABLE_CACHE` - Use to turn off temporary value caching.  Default `true`.
+* `ENABLE_SSL` - Use to run SSL services.  Default `false`.
+* `ENCRYPTION_SECRET` - Use to specify the secret used to AES encrypt values.  Default is internal to the system.
 
 
 ## Build
@@ -351,13 +379,14 @@ use environment variables to specify the comman line options.
   `6000` (`6006` on Apple).  Specify via `HTTP_PORT` environment variable to docker.
 * **-t | --tcp-port** - The port on which the TCP/IP service listens.  Default
   `2020` (`2022` on Apple).  Specify via `TCP_PORT` environment variable to docker.
+* **-s | --with-ssl** - Enable SSL on the HTTP and TCP services.  See [SSL](#ssl) for details.
 * **-n | --threads** - The number of threads for both TCP/IP and HTTP/2 services.
   Default to number of hardware threads.  The Docker entrypoint defaults to `4`.
   Specify via `THREADS` environment variable to docker.
 * **-e | --encryption-secret** - The secret to use to encrypt values.  Default
   value is internal to the system.  Specify via `ENCRYPTION_SECRET` environment
   variable to docker.
-* **-c | --enable-cache** - Enables temporary cache for keys read from the database.
+* **-x | --enable-cache** - Enables temporary cache for keys read from the database.
   Default `false`.  Specify via `ENABLE_CACHE` environment variable to docker.
 
 Sample command to run the service
@@ -369,6 +398,28 @@ docker run -d --rm -p 6000:6000 -p 2022:2020 \
   -e "ENCRYPTION_SECRET=abc123" -e "LOG_LEVEL=debug" \
   --name config-db config-db
 ```
+
+
+### SSL
+SSL wrappers are enabled for both the TCP and HTTP/2 services.  The package includes
+self-signed certificates.  The [Makefile](certs/Makefile) can be modified to
+generate self-signed certificates for your purposes.  The easier way to override
+the certificates is to volume mount the `/opt/spt/certs` directory when running
+the docker container.
+
+At present, the file names are hard-coded:
+* `ca.crt` - The root CA used to verify.
+* `server.crt` - The server certificate file.
+* `server.key` - The server key file.
+* `client.crt` - The client certificate file.
+* `client.key` - The client key file.
+
+**Note:** There is definitely an overhead when using SSL.  The integration test
+suite that ran in less than `100ms` now takes about `900ms`.  With `4096`
+bit keys, it takes about `1.3s`.
+
+**Note:** The TCP service only supports [TLS 1.3](https://www.ietf.org/blog/tls13/)
+
 
 ## Acknowledgements
 This software has been developed mainly using work other people/projects have contributed.

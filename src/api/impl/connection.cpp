@@ -4,7 +4,6 @@
 
 #include "api.h"
 #include "connection.h"
-#include "../common/log/NanoLog.h"
 #include "../common/model/request_generated.h"
 
 #include <fstream>
@@ -12,22 +11,26 @@
 #include <boost/asio/connect.hpp>
 #include <boost/asio/write.hpp>
 
+using spt::configdb::api::impl::BaseConnection;
 using spt::configdb::api::impl::Connection;
+using spt::configdb::api::impl::SSLConnection;
 
 namespace spt::configdb::api::pconnection
 {
-  std::mutex mutex;
+  std::mutex mutex{};
   std::string server{};
   std::string port{};
+  bool ssl{ false };
 }
 
-void spt::configdb::api::init( std::string_view server, std::string_view port )
+void spt::configdb::api::init( std::string_view server, std::string_view port, bool ssl )
 {
   auto lock = std::unique_lock<std::mutex>( pconnection::mutex );
   if ( pconnection::server.empty() )
   {
     pconnection::server.append( server.data(), server.size() );
     pconnection::port.append( port.data(), port.size() );
+    pconnection::ssl = ssl;
   }
   else
   {
@@ -35,8 +38,12 @@ void spt::configdb::api::init( std::string_view server, std::string_view port )
   }
 }
 
-auto spt::configdb::api::impl::create() -> std::unique_ptr<Connection>
+auto spt::configdb::api::impl::create() -> std::unique_ptr<BaseConnection>
 {
+  if ( pconnection::ssl )
+  {
+    return std::make_unique<SSLConnection>( pconnection::server, pconnection::port );
+  }
   return std::make_unique<Connection>( pconnection::server, pconnection::port );
 }
 
@@ -55,7 +62,50 @@ Connection::~Connection()
   }
 }
 
-auto Connection::list( std::string_view key ) -> const model::Response*
+SSLConnection::SSLConnection( std::string_view server, std::string_view port ) : BaseConnection()
+{
+  s.set_verify_mode( boost::asio::ssl::verify_none );
+  auto endpoints = resolver.resolve( server, port );
+  boost::asio::connect( s.lowest_layer(), endpoints );
+  boost::system::error_code ec;
+  s.handshake( boost::asio::ssl::stream_base::client, ec );
+  if ( ec )
+  {
+    LOG_CRIT << "Error during SSL handshake. " << ec.message();
+    invalid();
+  }
+}
+
+SSLConnection::~SSLConnection()
+{
+  if ( s.next_layer().is_open() )
+  {
+    boost::system::error_code ec;
+    s.next_layer().close( ec );
+    if ( ec ) LOG_CRIT << "Error closing socket. " << ec.message();
+  }
+}
+
+boost::asio::ssl::context SSLConnection::createContext()
+{
+  auto ctx = boost::asio::ssl::context( boost::asio::ssl::context::tlsv13_client );
+
+#ifdef __APPLE__
+  ctx.load_verify_file( "../../../certs/ca.crt" );
+  ctx.use_certificate_file( "../../../certs/client.crt", boost::asio::ssl::context::pem );
+  ctx.use_private_key_file( "../../../certs/client.key", boost::asio::ssl::context::pem );
+#else
+  ctx.load_verify_file( "/opt/spt/certs/ca.crt" );
+  ctx.use_certificate_file( "/opt/spt/certs/client.crt", boost::asio::ssl::context::pem );
+  ctx.use_private_key_file( "/opt/spt/certs/client.key", boost::asio::ssl::context::pem );
+#endif
+
+  ctx.set_options( boost::asio::ssl::context::default_workarounds | boost::asio::ssl::context::single_dh_use );
+  ctx.set_verify_mode( boost::asio::ssl::verify_peer );
+  return ctx;
+}
+
+auto BaseConnection::list( std::string_view key ) -> const model::Response*
 {
   auto fb = flatbuffers::FlatBufferBuilder{};
   auto vec = std::vector<flatbuffers::Offset<model::KeyValue>>{ model::CreateKeyValue( fb, fb.CreateString( key ) ) };
@@ -65,7 +115,7 @@ auto Connection::list( std::string_view key ) -> const model::Response*
   return write( fb, "List" );
 }
 
-auto Connection::get( std::string_view key ) -> const model::Response*
+auto BaseConnection::get( std::string_view key ) -> const model::Response*
 {
   auto fb = flatbuffers::FlatBufferBuilder{};
   auto vec = std::vector<flatbuffers::Offset<model::KeyValue>>{ model::CreateKeyValue( fb, fb.CreateString( key ) ) };
@@ -75,7 +125,7 @@ auto Connection::get( std::string_view key ) -> const model::Response*
   return write( fb, "Get" );
 }
 
-auto Connection::set( std::string_view key, std::string_view value ) -> const model::Response*
+auto BaseConnection::set( std::string_view key, std::string_view value ) -> const model::Response*
 {
   auto fb = flatbuffers::FlatBufferBuilder{};
   auto vec = std::vector<flatbuffers::Offset<model::KeyValue>>{
@@ -86,7 +136,7 @@ auto Connection::set( std::string_view key, std::string_view value ) -> const mo
   return write( fb, "Set" );
 }
 
-auto Connection::remove( std::string_view key ) -> const model::Response*
+auto BaseConnection::remove( std::string_view key ) -> const model::Response*
 {
   auto fb = flatbuffers::FlatBufferBuilder{};
   auto vec = std::vector<flatbuffers::Offset<model::KeyValue>>{ model::CreateKeyValue( fb, fb.CreateString( key ) ) };
@@ -96,7 +146,7 @@ auto Connection::remove( std::string_view key ) -> const model::Response*
   return write( fb, "Delete" );
 }
 
-auto Connection::move( std::string_view key, std::string_view dest ) -> const model::Response*
+auto BaseConnection::move( std::string_view key, std::string_view dest ) -> const model::Response*
 {
   auto fb = flatbuffers::FlatBufferBuilder{};
   auto vec = std::vector<flatbuffers::Offset<model::KeyValue>>{
@@ -107,7 +157,7 @@ auto Connection::move( std::string_view key, std::string_view dest ) -> const mo
   return write( fb, "Move" );
 }
 
-auto Connection::list( const std::vector<std::string_view>& keys ) -> const model::Response*
+auto BaseConnection::list( const std::vector<std::string_view>& keys ) -> const model::Response*
 {
   auto fb = flatbuffers::FlatBufferBuilder{};
   auto vec = std::vector<flatbuffers::Offset<model::KeyValue>>{};
@@ -119,7 +169,7 @@ auto Connection::list( const std::vector<std::string_view>& keys ) -> const mode
   return write( fb, "MList" );
 }
 
-auto Connection::get( const std::vector<std::string_view>& keys ) -> const model::Response*
+auto BaseConnection::get( const std::vector<std::string_view>& keys ) -> const model::Response*
 {
   auto fb = flatbuffers::FlatBufferBuilder{};
   auto vec = std::vector<flatbuffers::Offset<model::KeyValue>>{};
@@ -131,7 +181,7 @@ auto Connection::get( const std::vector<std::string_view>& keys ) -> const model
   return write( fb, "MGet" );
 }
 
-auto Connection::set( const std::vector<Pair>& kvs ) -> const model::Response*
+auto BaseConnection::set( const std::vector<Pair>& kvs ) -> const model::Response*
 {
   auto fb = flatbuffers::FlatBufferBuilder{};
   auto vec = std::vector<flatbuffers::Offset<model::KeyValue>>{};
@@ -143,7 +193,7 @@ auto Connection::set( const std::vector<Pair>& kvs ) -> const model::Response*
   return write( fb, "MSet" );
 }
 
-auto Connection::remove( const std::vector<std::string_view>& keys ) -> const model::Response*
+auto BaseConnection::remove( const std::vector<std::string_view>& keys ) -> const model::Response*
 {
   auto fb = flatbuffers::FlatBufferBuilder{};
   auto vec = std::vector<flatbuffers::Offset<model::KeyValue>>{};
@@ -155,7 +205,7 @@ auto Connection::remove( const std::vector<std::string_view>& keys ) -> const mo
   return write( fb, "MDelete" );
 }
 
-auto Connection::move( const std::vector<Pair>& kvs ) -> const model::Response*
+auto BaseConnection::move( const std::vector<Pair>& kvs ) -> const model::Response*
 {
   auto fb = flatbuffers::FlatBufferBuilder{};
   auto vec = std::vector<flatbuffers::Offset<model::KeyValue>>{};
@@ -167,7 +217,7 @@ auto Connection::move( const std::vector<Pair>& kvs ) -> const model::Response*
   return write( fb, "MMove" );
 }
 
-auto Connection::import( const std::string& file ) -> ImportResponse
+auto BaseConnection::import( const std::string& file ) -> ImportResponse
 {
   auto f = std::fstream{ file };
   if ( ! f.is_open() )
@@ -214,72 +264,46 @@ auto Connection::import( const std::string& file ) -> ImportResponse
   return { set( kvs ), lines.size(), count };
 }
 
-boost::asio::ip::tcp::socket& Connection::socket()
+void Connection::socket()
 {
-  if ( ! s.is_open() )
-  {
-    LOG_DEBUG << "Re-opening closed connection.";
-    boost::system::error_code ec;
-    boost::asio::connect( s, resolver.resolve( pconnection::server, pconnection::port ), ec );
-    if ( ec )
-    {
-      LOG_WARN << "Error opening socket connection. " << ec.message();
-      invalid();
-      return s;
-    }
-    boost::asio::socket_base::keep_alive option( true );
-    s.set_option( option );
-  }
+  if ( s.is_open() ) return;
 
-  return s;
+  LOG_DEBUG << "Re-opening closed connection.";
+  boost::system::error_code ec;
+  boost::asio::connect( s, resolver.resolve( pconnection::server, pconnection::port ), ec );
+  if ( ec )
+  {
+    LOG_WARN << "Error opening socket connection. " << ec.message();
+    invalid();
+    return;
+  }
+  boost::asio::socket_base::keep_alive option( true );
+  s.set_option( option );
+}
+
+void SSLConnection::socket()
+{
+  if ( s.next_layer().is_open() ) return;
+
+  LOG_DEBUG << "Re-opening closed connection.";
+  boost::system::error_code ec;
+  boost::asio::connect( s.next_layer(), resolver.resolve( pconnection::server, pconnection::port ), ec );
+  if ( ec )
+  {
+    LOG_WARN << "Error opening socket connection. " << ec.message();
+    invalid();
+    return;
+  }
+  boost::asio::socket_base::keep_alive option( true );
+  s.next_layer().set_option( option );
 }
 
 auto Connection::write( const flatbuffers::FlatBufferBuilder& fb, std::string_view context ) -> const model::Response*
 {
-  auto n = fb.GetSize();
-  std::ostream os{ &buffer };
-  os.write( reinterpret_cast<const char*>( &n ), sizeof(flatbuffers::uoffset_t) );
-  os.write( reinterpret_cast<const char*>( fb.GetBufferPointer() ), fb.GetSize() );
+  return writeImpl( fb, context, s );
+}
 
-  const auto isize = boost::asio::write( s, buffer );
-  buffer.consume( isize );
-
-  auto osize = s.receive( buffer.prepare( 256 ) );
-  buffer.commit( osize );
-  std::size_t read = osize;
-
-  if ( read < 5 )
-  {
-    LOG_WARN << "Invalid short response for " << context;
-    return nullptr;
-  }
-
-  const auto d = reinterpret_cast<const uint8_t*>( buffer.data().data() );
-  uint32_t len;
-  memcpy( &len, d, sizeof(len) );
-  LOG_DEBUG << "Read " << int(read) << " bytes, total size " << int(len);
-
-  auto i = 0;
-  while ( read < ( len + sizeof(len) ) )
-  {
-    LOG_DEBUG << "Iteration " << ++i;
-    osize = s.receive( buffer.prepare( 256 ) );
-    buffer.commit( osize );
-    read += osize;
-  }
-
-  LOG_DEBUG << "Read " << int(read) << " bytes, total size " << int(len);
-  const auto d1 = reinterpret_cast<const uint8_t*>( buffer.data().data() );
-  auto verifier = flatbuffers::Verifier(  d1 + sizeof(len), len );
-  auto ok = model::VerifyResponseBuffer( verifier );
-  buffer.consume( buffer.size() );
-
-  if ( !ok )
-  {
-    LOG_WARN << "Invalid buffer for " << context;
-    invalid();
-    return nullptr;
-  }
-
-  return model::GetResponse( d1 + sizeof(len) );
+auto SSLConnection::write( const flatbuffers::FlatBufferBuilder& fb, std::string_view context ) -> const model::Response*
+{
+  return writeImpl( fb, context, s );
 }

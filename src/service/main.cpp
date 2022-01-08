@@ -27,15 +27,17 @@ int main( int argc, char const * const * argv )
   std::string httpPort{ "6000" };
   int tcpPort{ 2020 };
 #endif
+  bool ssl = false;
   bool help = false;
 
   auto options = clara::Help(help) |
       Opt(conf.logging.console, "true")["-c"]["--console"]("Log to console (default false)") |
       Opt(httpPort, "6000")["-p"]["--http-port"]("Port on which to listen for http/2 traffic (default 6000)") |
       Opt(tcpPort, "2020")["-t"]["--tcp-port"]("Port on which to listen for tcp traffic (default 2020)") |
+      Opt(ssl, "true")["-s"]["--with-ssl"]("Enable SSL wrappers for services (default false)") |
       Opt(conf.threads, "8")["-n"]["--threads"]("Number of server threads to spawn (default system)") |
       Opt(conf.encryption.secret, "AESEncryptionKey")["-e"]["--encryption-secret"]("Secret to use to encrypt values (default internal)") |
-      Opt(conf.enableCache, "true")["-c"]["--enable-cache"]("Enable temporary cache for key values (default false)") |
+      Opt(conf.enableCache, "true")["-x"]["--enable-cache"]("Enable temporary cache for key values (default false)") |
       Opt(conf.logging.level, "info")["-l"]["--log-level"]("Log level to use [debug|info|warn|critical] (default info).") |
       Opt(conf.logging.dir, "logs/")["-o"]["--log-dir"]("Log directory (default logs/)");
 
@@ -70,8 +72,8 @@ int main( int argc, char const * const * argv )
 
   std::vector<std::thread> v;
   v.reserve( conf.threads );
-  v.emplace_back( [httpPort, &conf]{ spt::configdb::http::start( httpPort, conf.threads ); } );
-  v.emplace_back( [tcpPort]{ spt::configdb::tcp::start( tcpPort ); } );
+  v.emplace_back( [httpPort, &conf, ssl]{ spt::configdb::http::start( httpPort, conf.threads, ssl ); } );
+  v.emplace_back( [tcpPort, ssl]{ spt::configdb::tcp::start( tcpPort, ssl ); } );
 
   boost::asio::signal_set signals( spt::configdb::ContextHolder::instance().ioc, SIGINT, SIGTERM );
   signals.async_wait( [&](auto const&, int ) { spt::configdb::ContextHolder::instance().ioc.stop(); } );

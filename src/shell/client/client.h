@@ -8,5 +8,5 @@
 
 namespace spt::configdb::client
 {
-  int run( std::string_view server, std::string_view port );
+  int run( std::string_view server, std::string_view port, bool ssl );
 }

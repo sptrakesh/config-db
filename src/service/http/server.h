@@ -8,5 +8,5 @@
 
 namespace spt::configdb::http
 {
-  int start( const std::string& port, int threads );
+  int start( const std::string& port, int threads, bool ssl );
 }

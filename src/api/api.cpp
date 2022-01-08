@@ -21,7 +21,7 @@ namespace spt::configdb::api::papi
     PoolHolder(const PoolHolder&) = delete;
     PoolHolder& operator=(const PoolHolder&) = delete;
 
-    spt::configdb::pool::Pool<impl::Connection> pool{ spt::configdb::api::impl::create, pool::Configuration{} };
+    spt::configdb::pool::Pool<impl::BaseConnection> pool{ spt::configdb::api::impl::create, pool::Configuration{} };
 
   private:
     PoolHolder() = default;

@@ -3,17 +3,18 @@
 //
 
 #include "client.h"
-#include "../api/api.h"
 #include "../api/impl/connection.h"
-#include "../common/log/NanoLog.h"
 
 #include <iostream>
 
 void spt::configdb::client::get( std::string_view server,
-    std::string_view port, std::string_view key )
+    std::string_view port, std::string_view key, bool ssl )
 {
-  auto connection = api::impl::Connection{ server, port };
-  auto response = connection.get( key );
+  std::unique_ptr<api::impl::BaseConnection> connection;
+  if ( ssl ) connection = std::make_unique<api::impl::SSLConnection>( server, port );
+  else connection = std::make_unique<api::impl::Connection>( server, port );
+
+  auto response = connection->get( key );
   if ( !response )
   {
     LOG_WARN << "Error retrieving key " << key;
@@ -48,10 +49,13 @@ void spt::configdb::client::get( std::string_view server,
 }
 
 void spt::configdb::client::list( std::string_view server,
-    std::string_view port, std::string_view path )
+    std::string_view port, std::string_view path, bool ssl )
 {
-  auto connection = api::impl::Connection{ server, port };
-  auto response = connection.list( path );
+  std::unique_ptr<api::impl::BaseConnection> connection;
+  if ( ssl ) connection = std::make_unique<api::impl::SSLConnection>( server, port );
+  else connection = std::make_unique<api::impl::Connection>( server, port );
+
+  auto response = connection->list( path );
   if ( !response )
   {
     LOG_WARN << "Error list path " << path;
@@ -96,10 +100,13 @@ void spt::configdb::client::list( std::string_view server,
 }
 
 void spt::configdb::client::set( std::string_view server,
-    std::string_view port, std::string_view key, std::string_view value )
+    std::string_view port, std::string_view key, std::string_view value, bool ssl )
 {
-  auto connection = api::impl::Connection{ server, port };
-  auto response = connection.set( key, value );
+  std::unique_ptr<api::impl::BaseConnection> connection;
+  if ( ssl ) connection = std::make_unique<api::impl::SSLConnection>( server, port );
+  else connection = std::make_unique<api::impl::Connection>( server, port );
+
+  auto response = connection->set( key, value );
   if ( !response )
   {
     LOG_WARN << "Error setting key " << key;
@@ -127,10 +134,13 @@ void spt::configdb::client::set( std::string_view server,
 }
 
 void spt::configdb::client::move( std::string_view server,
-    std::string_view port, std::string_view key, std::string_view dest )
+    std::string_view port, std::string_view key, std::string_view dest, bool ssl )
 {
-  auto connection = api::impl::Connection{ server, port };
-  auto response = connection.move( key, dest );
+  std::unique_ptr<api::impl::BaseConnection> connection;
+  if ( ssl ) connection = std::make_unique<api::impl::SSLConnection>( server, port );
+  else connection = std::make_unique<api::impl::Connection>( server, port );
+
+  auto response = connection->move( key, dest );
   if ( !response )
   {
     LOG_WARN << "Error moving key " << key << " to " << dest;
@@ -158,10 +168,13 @@ void spt::configdb::client::move( std::string_view server,
 }
 
 void spt::configdb::client::remove( std::string_view server,
-    std::string_view port, std::string_view key )
+    std::string_view port, std::string_view key, bool ssl )
 {
-  auto connection = api::impl::Connection{ server, port };
-  auto response = connection.remove( key );
+  std::unique_ptr<api::impl::BaseConnection> connection;
+  if ( ssl ) connection = std::make_unique<api::impl::SSLConnection>( server, port );
+  else connection = std::make_unique<api::impl::Connection>( server, port );
+
+  auto response = connection->remove( key );
   if ( !response )
   {
     LOG_WARN << "Error removing key " << key;
@@ -188,10 +201,13 @@ void spt::configdb::client::remove( std::string_view server,
   }
 }
 
-void spt::configdb::client::import( std::string_view server, std::string_view port, const std::string& file )
+void spt::configdb::client::import( std::string_view server, std::string_view port, const std::string& file, bool ssl )
 {
-  auto connection = api::impl::Connection{ server, port };
-  const auto& [response, size, count] = connection.import( file );
+  std::unique_ptr<api::impl::BaseConnection> connection;
+  if ( ssl ) connection = std::make_unique<api::impl::SSLConnection>( server, port );
+  else connection = std::make_unique<api::impl::Connection>( server, port );
+
+  const auto& [response, size, count] = connection->import( file );
   if ( !response )
   {
     LOG_WARN << "Error importing (" << int(size) << '/' << count << ") keys from file " << file;

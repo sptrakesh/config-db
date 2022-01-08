@@ -27,6 +27,7 @@ COPY --from=base /opt/spt/bin /opt/spt/bin
 #COPY --from=base /opt/spt/include /opt/spt/include
 #COPY --from=base /opt/spt/lib /opt/spt/lib
 COPY docker/scripts/*.sh /opt/spt/bin/
+COPY certs /opt/spt/certs
 
 WORKDIR /opt/spt
 ENV LD_LIBRARY_PATH=/usr/lib \
