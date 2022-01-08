@@ -16,6 +16,7 @@
 * [Docker](#docker)
 * [Build](#build)
 * [Run](#run)
+  * [SSL](#ssl)
 * [Acknowledgements](#acknowledgements)
 
 A simple configuration database similar to Apache Zookeeper, Etcd, etc., built
@@ -25,7 +26,7 @@ All values are stored encrypted using `aes-256-cbc` on disk.
 
 
 ## Keys
-All keys are required to represent UNIX *path like* structures.  Keys that do
+All keys are assumed to represent UNIX *path like* structures.  Keys that do
 not at least start with a leading `/` character are internally replaced with
 a leading `/` character.  This means that keys `key` and `/key` are treated
 as identical.
@@ -369,6 +370,26 @@ docker run -d --rm -p 6000:6000 -p 2022:2020 \
   -e "ENCRYPTION_SECRET=abc123" -e "LOG_LEVEL=debug" \
   --name config-db config-db
 ```
+
+
+### SSL
+SSL wrappers are enabled for both the TCP and HTTP/2 services.  The package includes
+self-signed certificates.  The [Makefile](certs/Makefile) can be modified to
+generate self-signed certificates for your purposes.  The easier way to override
+the certificates is to volume mount the `/opt/spt/certs` directory when running
+the docker container.
+
+At present, the file names are hard-coded:
+* `ca.crt` - The root CA used to verify.
+* `server.crt` - The server certificate file.
+* `server.key` - The server key file.
+* `client.crt` - The client certificate file.
+* `client.key` - The client key file.
+
+**Note:** There is definitely an overhead when using SSL.  The integration test
+suite that ran in less than `100ms` now takes about `900ms`.  With `4096`
+bit keys, it took about `1.3s`.
+
 
 ## Acknowledgements
 This software has been developed mainly using work other people/projects have contributed.
