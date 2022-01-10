@@ -5,7 +5,7 @@
 #include "server.h"
 #include "../common/contextholder.h"
 #include "../common/log/NanoLog.h"
-#include "../lib/db/crud.h"
+#include "../lib/db/storage.h"
 
 #include <charconv>
 #include <boost/algorithm/string/replace.hpp>
@@ -84,7 +84,10 @@ namespace spt::configdb::http::endpoints
       }
 
       const auto key = boost::algorithm::replace_first_copy( req.uri().path, "/key"sv, ""sv );
-      auto result = db::set( key, *body );
+      auto opts = model::RequestData::Options{};
+      auto iter = req.header().find( "x-config-db-if-not-exists"s );
+      if ( iter != req.header().end() ) opts.ifNotExists = iter->second.value == "true"s;
+      auto result = db::set( model::RequestData{ key, *body, std::move( opts ) } );
       if ( result )
       {
         return write( 200, R"({"code": 200, "cause": "Ok"})"s, res );

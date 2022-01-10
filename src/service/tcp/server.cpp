@@ -7,7 +7,7 @@
 #include "../common/log/NanoLog.h"
 #include "../common/model/request_generated.h"
 #include "../common/model/response_generated.h"
-#include "../lib/db/crud.h"
+#include "../lib/db/storage.h"
 
 #include <vector>
 
@@ -116,8 +116,13 @@ namespace spt::configdb::tcp::coroutine
   template <typename Socket>
   boost::asio::awaitable<void> put( Socket& socket, const model::Request* request )
   {
-    std::vector<db::Pair> pairs;
-    for ( auto&& kv : *request->data() ) pairs.emplace_back( kv->key()->string_view(), kv->value()->string_view() );
+    std::vector<model::RequestData> pairs;
+    for ( auto&& kv : *request->data() )
+    {
+      auto opts = model::RequestData::Options{};
+      opts.ifNotExists = kv->options()->if_not_exists();
+      pairs.emplace_back( kv->key()->string_view(), kv->value()->string_view(), std::move( opts ) );
+    }
 
     auto value = db::set( pairs );
     auto fb = flatbuffers::FlatBufferBuilder{};
@@ -144,8 +149,13 @@ namespace spt::configdb::tcp::coroutine
   template <typename Socket>
   boost::asio::awaitable<void> move( Socket& socket, const model::Request* request )
   {
-    std::vector<db::Pair> pairs;
-    for ( auto&& kv : *request->data() ) pairs.emplace_back( kv->key()->string_view(), kv->value()->string_view() );
+    std::vector<model::RequestData> pairs;
+    for ( auto&& kv : *request->data() )
+    {
+      auto opts = model::RequestData::Options{};
+      opts.ifNotExists = kv->options()->if_not_exists();
+      pairs.emplace_back( kv->key()->string_view(), kv->value()->string_view(), std::move( opts ) );
+    }
 
     auto value = db::move( pairs );
     auto fb = flatbuffers::FlatBufferBuilder{};

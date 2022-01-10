@@ -14,6 +14,7 @@
 
 #include "../common/contextholder.h"
 #include "../common/log/NanoLog.h"
+#include "../common/model/request.h"
 #include "../../src/common/model/response_generated.h"
 
 namespace spt::configdb::api::impl
@@ -29,19 +30,18 @@ namespace spt::configdb::api::impl
     // CRUD
     const model::Response* list( std::string_view key );
     const model::Response* get( std::string_view key );
-    const model::Response* set( std::string_view key, std::string_view value );
+    const model::Response* set( const model::RequestData& data );
     const model::Response* remove( std::string_view key );
-    const model::Response* move( std::string_view key, std::string_view value );
+    const model::Response* move( const model::RequestData& data );
 
     // Batch
     const model::Response* list( const std::vector<std::string_view>& keys );
     const model::Response* get( const std::vector<std::string_view>& keys );
 
-    using Pair = std::pair<std::string_view, std::string_view>;
-    const model::Response* set( const std::vector<Pair>& kvs );
+    const model::Response* set( const std::vector<model::RequestData>& kvs );
 
     const model::Response* remove( const std::vector<std::string_view>& keys );
-    const model::Response* move( const std::vector<Pair>& kvs );
+    const model::Response* move( const std::vector<model::RequestData>& kvs );
 
     // File import
     using ImportResponse = std::tuple<const model::Response*, std::size_t, uint32_t>;

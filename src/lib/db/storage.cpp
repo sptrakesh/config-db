@@ -3,7 +3,7 @@
 //
 
 #include "encrypter.h"
-#include "crud.h"
+#include "storage.h"
 #include "model/configuration.h"
 #include "util/cache.h"
 #include "../common/log/NanoLog.h"
@@ -99,20 +99,20 @@ namespace spt::configdb::db::internal
       return ret;
     }
 
-    bool set( std::string_view key, std::string_view value )
+    bool set( const model::RequestData& data )
     {
-      if ( key.empty() )
+      if ( data.key.empty() )
       {
         LOG_INFO << "Rejecting request for empty key";
         return false;
       }
 
       auto txn = db->BeginTransaction( rocksdb::WriteOptions{} );
-      if ( const auto saved = set( key, value, txn ); !saved ) return saved;
+      if ( const auto saved = set( data.key, data.value, data.options, txn ); !saved ) return saved;
 
       if ( const auto s = txn->Commit(); !s.ok() )
       {
-        LOG_WARN << "Error writing to key [" << key << "]. " << s.ToString();
+        LOG_WARN << "Error writing to key [" << data.key << "]. " << s.ToString();
         return false;
       }
 
@@ -138,20 +138,20 @@ namespace spt::configdb::db::internal
       return true;
     }
 
-    bool move( std::string_view key, std::string_view dest )
+    bool move( const model::RequestData& data )
     {
-      if ( key.empty() )
+      if ( data.key.empty() )
       {
         LOG_INFO << "Rejecting request for empty key";
         return false;
       }
 
       auto txn = db->BeginTransaction( rocksdb::WriteOptions{} );
-      if ( const auto s = move( key, dest, txn ); !s ) return s;
+      if ( const auto s = move( data.key, data.value, data.options, txn ); !s ) return s;
 
       if ( const auto s = txn->Commit(); !s.ok())
       {
-        LOG_WARN << "Error removing key [" << key << "]. " << s.ToString();
+        LOG_WARN << "Error removing key [" << data.key << "]. " << s.ToString();
         return false;
       }
 
@@ -265,15 +265,15 @@ namespace spt::configdb::db::internal
       return result;
     }
 
-    bool set( const std::vector<Pair>& kvs )
+    bool set( const std::vector<model::RequestData>& kvs )
     {
       auto txn = db->BeginTransaction( rocksdb::WriteOptions{} );
 
-      for ( auto&& [key, value] : kvs )
+      for ( auto&& data : kvs )
       {
-        if ( const auto s = set( key, value, txn ); !s )
+        if ( const auto s = set( data.key, data.value, data.options, txn ); !s )
         {
-          LOG_WARN << "Error setting key " << key;
+          LOG_WARN << "Error setting key " << data.key;
           return s;
         }
       }
@@ -309,15 +309,15 @@ namespace spt::configdb::db::internal
       return true;
     }
 
-    bool move( const std::vector<Pair>& kvs )
+    bool move( const std::vector<model::RequestData>& kvs )
     {
       auto txn = db->BeginTransaction( rocksdb::WriteOptions{} );
 
-      for ( auto&& [key, dest] : kvs )
+      for ( auto&& data : kvs )
       {
-        if ( const auto s = move( key, dest, txn ); !s )
+        if ( const auto s = move( data.key, data.value, data.options, txn ); !s )
         {
-          LOG_WARN << "Error moving key " << key << " to destination " << dest;
+          LOG_WARN << "Error moving key " << data.key << " to destination " << data.value;
           return s;
         }
       }
@@ -415,7 +415,8 @@ namespace spt::configdb::db::internal
       return ks;
     }
 
-    bool set( std::string_view key, std::string_view value, rocksdb::Transaction* txn )
+    bool set( std::string_view key, std::string_view value,
+        const model::RequestData::Options& opts, rocksdb::Transaction* txn )
     {
       const auto rollback = [txn]()
       {
@@ -435,6 +436,23 @@ namespace spt::configdb::db::internal
       auto v = ( *encrypter )->encrypt( value );
 
       auto ks = getKey( key );
+
+      if ( opts.ifNotExists )
+      {
+        std::string va;
+        const auto s = txn->Get( rocksdb::ReadOptions{}, handles[1], rocksdb::Slice{ ks }, &va );
+        if ( s.ok() )
+        {
+          LOG_INFO << "Key " << key << " exists and ifNotExists set to true";
+          return false;
+        }
+        if ( !s.IsNotFound() )
+        {
+          LOG_WARN << "Error checking existence of Key " << key << ". " << s.ToString();
+          return false;
+        }
+      }
+
       LOG_INFO << "Setting key " << ks;
       if (
           const auto s = txn->Put( handles[1], rocksdb::Slice{ ks }, rocksdb::Slice{ v } );
@@ -610,6 +628,13 @@ namespace spt::configdb::db::internal
           auto [status,empty] = removeChildNode( path, child, value, txn );
           if ( !status ) return false;
           if ( !empty ) break;
+
+          if ( const auto s1 = txn->Get( rocksdb::ReadOptions{}, handles[1],
+              rocksdb::Slice{ path }, &value ); s1.ok() )
+          {
+            LOG_INFO << "Path " << path << " has value, not moving up tree";
+            break;
+          }
         }
         else if ( s.IsNotFound() )
         {
@@ -720,7 +745,8 @@ namespace spt::configdb::db::internal
       return tuples;
     }
 
-    bool move( std::string_view key, std::string_view dest, rocksdb::Transaction* txn )
+    bool move( std::string_view key, std::string_view dest,
+        const model::RequestData::Options& opts, rocksdb::Transaction* txn )
     {
       auto encrypter = pool.acquire();
       if ( !encrypter )
@@ -729,13 +755,32 @@ namespace spt::configdb::db::internal
         return false;
       }
 
+      auto ks = getKey( key );
+      auto ds = getKey( dest );
+
+      if ( opts.ifNotExists )
+      {
+        std::string va;
+        const auto s = txn->Get( rocksdb::ReadOptions{}, handles[1], rocksdb::Slice{ ds }, &va );
+        if ( s.ok() )
+        {
+          LOG_INFO << "Destination key " << ds << " exists and ifNotExists set to true";
+          return false;
+        }
+        if ( !s.IsNotFound() )
+        {
+          LOG_WARN << "Error checking existence of destination key " << ds << ". " << s.ToString();
+          return false;
+        }
+      }
+
       std::string value;
 
-      if ( const auto s = txn->Get( rocksdb::ReadOptions{}, handles[1], rocksdb::Slice{ key }, &value );
+      if ( const auto s = txn->Get( rocksdb::ReadOptions{}, handles[1], rocksdb::Slice{ ks }, &value );
           !s.ok() )
       {
-        if ( s.IsNotFound() ) LOG_WARN << "Key " << key << " not found.";
-        else LOG_WARN << "Error retrieving key " << key << ". " << s.ToString();
+        if ( s.IsNotFound() ) LOG_WARN << "Key " << ks << " not found.";
+        else LOG_WARN << "Error retrieving key " << ks << ". " << s.ToString();
         return false;
       }
       value = ( *encrypter )->decrypt( value );
@@ -749,7 +794,7 @@ namespace spt::configdb::db::internal
         return s;
       }
 
-      if ( const auto s = set( dest, value, txn ); !s )
+      if ( const auto s = set( dest, value, opts, txn ); !s )
       {
         if ( const auto st = txn->Rollback(); !st.ok() )
         {
@@ -832,9 +877,9 @@ std::optional<std::string> spt::configdb::db::get( std::string_view key )
   return internal::Database::instance().get( key );
 }
 
-bool spt::configdb::db::set( std::string_view key, std::string_view value )
+bool spt::configdb::db::set( const model::RequestData& data )
 {
-  return internal::Database::instance().set( key, value );
+  return internal::Database::instance().set( data );
 }
 
 bool spt::configdb::db::remove( std::string_view key )
@@ -842,9 +887,9 @@ bool spt::configdb::db::remove( std::string_view key )
   return internal::Database::instance().remove( key );
 }
 
-bool spt::configdb::db::move( std::string_view key, std::string_view dest )
+bool spt::configdb::db::move( const model::RequestData& data )
 {
-  return internal::Database::instance().move( key, dest );
+  return internal::Database::instance().move( data );
 }
 
 auto spt::configdb::db::list( std::string_view key ) -> Nodes
@@ -857,7 +902,7 @@ auto spt::configdb::db::get( const std::vector<std::string_view>& keys ) -> std:
   return internal::Database::instance().get( keys );
 }
 
-bool spt::configdb::db::set( const std::vector<Pair>& kvs )
+bool spt::configdb::db::set( const std::vector<model::RequestData>& kvs )
 {
   return internal::Database::instance().set( kvs );
 }
@@ -867,7 +912,7 @@ bool spt::configdb::db::remove( const std::vector<std::string_view>& keys )
   return internal::Database::instance().remove( keys );
 }
 
-bool spt::configdb::db::move( const std::vector<Pair>& kvs )
+bool spt::configdb::db::move( const std::vector<model::RequestData>& kvs )
 {
   return internal::Database::instance().move( kvs );
 }

@@ -42,6 +42,15 @@ SCENARIO( "API CRUD test", "api-crud" )
       REQUIRE( *value == "value modified"sv );
     }
 
+    AND_WHEN( "Update rejected due to if not exists" )
+    {
+      auto opts = spt::configdb::model::RequestData::Options{};
+      opts.ifNotExists = true;
+      auto data = spt::configdb::model::RequestData{ key, "value"sv, std::move( opts ) };
+      const auto status = set( data );
+      REQUIRE_FALSE( status );
+    }
+
     AND_WHEN( "Removing the key" )
     {
       const auto status = remove( key );

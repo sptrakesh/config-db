@@ -10,16 +10,18 @@
 #include <tuple>
 #include <vector>
 
+#include "../../common/model/request.h"
+
 namespace spt::configdb::db
 {
   void init();
 
   // CRUD
   std::optional<std::string> get( std::string_view key );
-  bool set( std::string_view key, std::string_view value );
+  bool set( const model::RequestData& data );
   bool remove( std::string_view key );
 
-  bool move( std::string_view key, std::string_view dest );
+  bool move( const model::RequestData& data );
 
   // Hierarchy
   using Nodes = std::optional<std::vector<std::string>>;
@@ -29,11 +31,10 @@ namespace spt::configdb::db
   using KeyValue = std::pair<std::string, std::optional<std::string>>;
   std::vector<KeyValue> get( const std::vector<std::string_view>& keys );
 
-  using Pair = std::pair<std::string_view, std::string_view>;
-  bool set( const std::vector<Pair>& kvs );
+  bool set( const std::vector<model::RequestData>& kvs );
 
   bool remove( const std::vector<std::string_view>& keys );
-  bool move( const std::vector<Pair>& kvs );
+  bool move( const std::vector<model::RequestData>& kvs );
 
   using NodePair = std::tuple<std::string, std::optional<std::vector<std::string>>>;
   std::vector<NodePair> list( const std::vector<std::string_view>& keys );

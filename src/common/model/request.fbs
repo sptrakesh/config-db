@@ -4,11 +4,19 @@ namespace spt.configdb.model;
 
 enum Action:byte { Get = 0, Put, Delete, List, Move = 4 }
 
+// Additional options primarily around storing data (Put action).
+table Options
+{
+  /// Only set the value if key does not exist.  Can be used as a locking mechanism.
+  if_not_exists:bool = false;
+}
+
 // For Move, specify the destination key as the value
 table KeyValue
 {
   key:string;
   value:string;
+  options:Options;
 }
 
 table Request

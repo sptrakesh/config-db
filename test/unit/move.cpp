@@ -3,11 +3,12 @@
 //
 
 #include <catch2/catch.hpp>
-#include "../../src/lib/db/crud.h"
+#include "../../src/lib/db/storage.h"
 
 using namespace std::string_literals;
 using namespace std::string_view_literals;
 using namespace spt::configdb::db;
+using spt::configdb::model::RequestData;
 
 SCENARIO( "Move test", "move" )
 {
@@ -18,7 +19,7 @@ SCENARIO( "Move test", "move" )
 
     WHEN( "Creating the key" )
     {
-      const auto status = set( key, "value"sv );
+      const auto status = set( RequestData{ key, "value"sv } );
       REQUIRE( status );
     }
 
@@ -40,7 +41,7 @@ SCENARIO( "Move test", "move" )
 
     AND_WHEN( "Moving the key to dest" )
     {
-      const auto status = move( key, dest );
+      const auto status = move( RequestData{ key, dest } );
       REQUIRE( status );
     }
 

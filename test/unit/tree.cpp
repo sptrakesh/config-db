@@ -2,11 +2,12 @@
 // Created by Rakesh on 27/12/2021.
 //
 #include <catch2/catch.hpp>
-#include "../../src/lib/db/crud.h"
+#include "../../src/lib/db/storage.h"
 
 using namespace std::string_literals;
 using namespace std::string_view_literals;
 using namespace spt::configdb::db;
+using spt::configdb::model::RequestData;
 
 SCENARIO( "Tree concept test" )
 {
@@ -17,9 +18,9 @@ SCENARIO( "Tree concept test" )
 
     WHEN( "Setting both root nodes" )
     {
-      auto status = set( key1, "value1"sv );
+      auto status = set( RequestData{ key1, "value1"sv } );
       REQUIRE( status );
-      status = set( key2, "value2"sv );
+      status = set( RequestData{ key2, "value2"sv } );
       REQUIRE( status );
     }
 
@@ -65,7 +66,7 @@ SCENARIO( "Tree concept test" )
 
     WHEN( "Setting a value for the deep path" )
     {
-      auto status = set( key, "value"sv );
+      auto status = set( RequestData{ key, "value"sv } );
       REQUIRE( status );
     }
 
@@ -133,13 +134,13 @@ SCENARIO( "Tree concept test" )
 
     WHEN( "Creating the multi-level tree" )
     {
-      auto status = set( key1, "value"sv );
+      auto status = set( RequestData{ key1, "value"sv } );
       REQUIRE( status );
-      status = set( key2, "value"sv );
+      status = set( RequestData{ key2, "value"sv } );
       REQUIRE( status );
-      status = set( key3, "value"sv );
+      status = set( RequestData{ key3, "value"sv } );
       REQUIRE( status );
-      status = set( key4, "value"sv );
+      status = set( RequestData{ key4, "value"sv } );
       REQUIRE( status );
     }
 
@@ -218,6 +219,12 @@ SCENARIO( "Tree concept test" )
       REQUIRE( (*children)[0] == "key1"s );
     }
 
+    AND_WHEN( "Setting a value for the first deep path parent" )
+    {
+      const auto status = set( RequestData{ "/key1/key2"sv, "value"sv } );
+      REQUIRE( status );
+    }
+
     AND_WHEN( "Removing second deep path" )
     {
       const auto status = remove( key2 );
@@ -237,6 +244,29 @@ SCENARIO( "Tree concept test" )
       REQUIRE( children->size() == 2 );
       REQUIRE( (*children)[0] == "key3"s );
       REQUIRE( (*children)[1] == "key4"s );
+    }
+
+    AND_WHEN( "Listing first node" )
+    {
+      const auto children = list( "/key1"sv );
+      REQUIRE( children );
+      REQUIRE( children->size() == 2 );
+      REQUIRE( (*children)[0] == "key2"s );
+      REQUIRE( (*children)[1] == "key21"s );
+    }
+
+    AND_WHEN( "Listing root node" )
+    {
+      const auto children = list( "/"sv );
+      REQUIRE( children );
+      REQUIRE( children->size() == 1 );
+      REQUIRE( (*children)[0] == "key1"s );
+    }
+
+    AND_WHEN( "Removing first deep path parent" )
+    {
+      const auto status = remove( "/key1/key2"sv );
+      REQUIRE( status );
     }
 
     AND_WHEN( "Listing first node" )

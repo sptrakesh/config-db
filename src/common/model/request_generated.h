@@ -12,11 +12,16 @@ namespace spt {
 namespace configdb {
 namespace model {
 
+struct Options;
+struct OptionsBuilder;
+
 struct KeyValue;
 struct KeyValueBuilder;
 
 struct Request;
 struct RequestBuilder;
+
+inline const flatbuffers::TypeTable *OptionsTypeTable();
 
 inline const flatbuffers::TypeTable *KeyValueTypeTable();
 
@@ -61,6 +66,70 @@ inline const char *EnumNameAction(Action e) {
   return EnumNamesAction()[index];
 }
 
+struct Options FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+  typedef OptionsBuilder Builder;
+  struct Traits;
+  static const flatbuffers::TypeTable *MiniReflectTypeTable() {
+    return OptionsTypeTable();
+  }
+  enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
+    VT_IF_NOT_EXISTS = 4
+  };
+  /// Only set the value if key does not exist.  Can be used as a locking mechanism.
+  bool if_not_exists() const {
+    return GetField<uint8_t>(VT_IF_NOT_EXISTS, 0) != 0;
+  }
+  template<size_t Index>
+  auto get_field() const {
+         if constexpr (Index == 0) return if_not_exists();
+    else static_assert(Index != Index, "Invalid Field Index");
+  }
+  bool Verify(flatbuffers::Verifier &verifier) const {
+    return VerifyTableStart(verifier) &&
+           VerifyField<uint8_t>(verifier, VT_IF_NOT_EXISTS) &&
+           verifier.EndTable();
+  }
+};
+
+struct OptionsBuilder {
+  typedef Options Table;
+  flatbuffers::FlatBufferBuilder &fbb_;
+  flatbuffers::uoffset_t start_;
+  void add_if_not_exists(bool if_not_exists) {
+    fbb_.AddElement<uint8_t>(Options::VT_IF_NOT_EXISTS, static_cast<uint8_t>(if_not_exists), 0);
+  }
+  explicit OptionsBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+        : fbb_(_fbb) {
+    start_ = fbb_.StartTable();
+  }
+  flatbuffers::Offset<Options> Finish() {
+    const auto end = fbb_.EndTable(start_);
+    auto o = flatbuffers::Offset<Options>(end);
+    return o;
+  }
+};
+
+inline flatbuffers::Offset<Options> CreateOptions(
+    flatbuffers::FlatBufferBuilder &_fbb,
+    bool if_not_exists = false) {
+  OptionsBuilder builder_(_fbb);
+  builder_.add_if_not_exists(if_not_exists);
+  return builder_.Finish();
+}
+
+struct Options::Traits {
+  using type = Options;
+  static auto constexpr Create = CreateOptions;
+  static constexpr auto name = "Options";
+  static constexpr auto fully_qualified_name = "spt.configdb.model.Options";
+  static constexpr std::array<const char *, 1> field_names = {
+    "if_not_exists"
+  };
+  template<size_t Index>
+  using FieldType = decltype(std::declval<type>().get_field<Index>());
+  static constexpr size_t fields_number = 1;
+};
+
 struct KeyValue FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef KeyValueBuilder Builder;
   struct Traits;
@@ -69,7 +138,8 @@ struct KeyValue FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   }
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_KEY = 4,
-    VT_VALUE = 6
+    VT_VALUE = 6,
+    VT_OPTIONS = 8
   };
   const flatbuffers::String *key() const {
     return GetPointer<const flatbuffers::String *>(VT_KEY);
@@ -77,10 +147,14 @@ struct KeyValue FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::String *value() const {
     return GetPointer<const flatbuffers::String *>(VT_VALUE);
   }
+  const spt::configdb::model::Options *options() const {
+    return GetPointer<const spt::configdb::model::Options *>(VT_OPTIONS);
+  }
   template<size_t Index>
   auto get_field() const {
          if constexpr (Index == 0) return key();
     else if constexpr (Index == 1) return value();
+    else if constexpr (Index == 2) return options();
     else static_assert(Index != Index, "Invalid Field Index");
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
@@ -89,6 +163,8 @@ struct KeyValue FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            verifier.VerifyString(key()) &&
            VerifyOffset(verifier, VT_VALUE) &&
            verifier.VerifyString(value()) &&
+           VerifyOffset(verifier, VT_OPTIONS) &&
+           verifier.VerifyTable(options()) &&
            verifier.EndTable();
   }
 };
@@ -102,6 +178,9 @@ struct KeyValueBuilder {
   }
   void add_value(flatbuffers::Offset<flatbuffers::String> value) {
     fbb_.AddOffset(KeyValue::VT_VALUE, value);
+  }
+  void add_options(flatbuffers::Offset<spt::configdb::model::Options> options) {
+    fbb_.AddOffset(KeyValue::VT_OPTIONS, options);
   }
   explicit KeyValueBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -117,8 +196,10 @@ struct KeyValueBuilder {
 inline flatbuffers::Offset<KeyValue> CreateKeyValue(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<flatbuffers::String> key = 0,
-    flatbuffers::Offset<flatbuffers::String> value = 0) {
+    flatbuffers::Offset<flatbuffers::String> value = 0,
+    flatbuffers::Offset<spt::configdb::model::Options> options = 0) {
   KeyValueBuilder builder_(_fbb);
+  builder_.add_options(options);
   builder_.add_value(value);
   builder_.add_key(key);
   return builder_.Finish();
@@ -129,25 +210,28 @@ struct KeyValue::Traits {
   static auto constexpr Create = CreateKeyValue;
   static constexpr auto name = "KeyValue";
   static constexpr auto fully_qualified_name = "spt.configdb.model.KeyValue";
-  static constexpr std::array<const char *, 2> field_names = {
+  static constexpr std::array<const char *, 3> field_names = {
     "key",
-    "value"
+    "value",
+    "options"
   };
   template<size_t Index>
   using FieldType = decltype(std::declval<type>().get_field<Index>());
-  static constexpr size_t fields_number = 2;
+  static constexpr size_t fields_number = 3;
 };
 
 inline flatbuffers::Offset<KeyValue> CreateKeyValueDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     const char *key = nullptr,
-    const char *value = nullptr) {
+    const char *value = nullptr,
+    flatbuffers::Offset<spt::configdb::model::Options> options = 0) {
   auto key__ = key ? _fbb.CreateString(key) : 0;
   auto value__ = value ? _fbb.CreateString(value) : 0;
   return spt::configdb::model::CreateKeyValue(
       _fbb,
       key__,
-      value__);
+      value__,
+      options);
 }
 
 struct Request FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
@@ -262,17 +346,35 @@ inline const flatbuffers::TypeTable *ActionTypeTable() {
   return &tt;
 }
 
+inline const flatbuffers::TypeTable *OptionsTypeTable() {
+  static const flatbuffers::TypeCode type_codes[] = {
+    { flatbuffers::ET_BOOL, 0, -1 }
+  };
+  static const char * const names[] = {
+    "if_not_exists"
+  };
+  static const flatbuffers::TypeTable tt = {
+    flatbuffers::ST_TABLE, 1, type_codes, nullptr, nullptr, nullptr, names
+  };
+  return &tt;
+}
+
 inline const flatbuffers::TypeTable *KeyValueTypeTable() {
   static const flatbuffers::TypeCode type_codes[] = {
     { flatbuffers::ET_STRING, 0, -1 },
-    { flatbuffers::ET_STRING, 0, -1 }
+    { flatbuffers::ET_STRING, 0, -1 },
+    { flatbuffers::ET_SEQUENCE, 0, 0 }
+  };
+  static const flatbuffers::TypeFunction type_refs[] = {
+    spt::configdb::model::OptionsTypeTable
   };
   static const char * const names[] = {
     "key",
-    "value"
+    "value",
+    "options"
   };
   static const flatbuffers::TypeTable tt = {
-    flatbuffers::ST_TABLE, 2, type_codes, nullptr, nullptr, nullptr, names
+    flatbuffers::ST_TABLE, 3, type_codes, type_refs, nullptr, nullptr, names
   };
   return &tt;
 }

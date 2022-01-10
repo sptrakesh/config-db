@@ -4,6 +4,7 @@
 * [Protocols](#protocols)
   * [TCP/IP](#tcpip)
   * [HTTP/2](#http2)
+    * [Headers](#custom-headers)
 * [Messages](#messages)
   * [Request](#request)
   * [Response](#response)
@@ -95,6 +96,13 @@ retrieve child node names for the specified path.
 
 See [example](test/integration/curl.sh) for sample HTTP requests and responses.
 
+#### Custom headers
+Request options as defined in the flatbuffers schema can be specified using
+custom HTTP headers when making request to the HTTP/2 service.
+* `x-config-db-if-not-exists` - Use to specify the `if_not_exists` property.
+  A value of `true` is interpreted as the boolean value `true`.  Any other values
+  are interpreted as `false`.  See the `PutNotExists` function in the example.
+
 **Note:** The HTTP service does not support batch (multiple *key*) operations.
 
 **Note:** The HTTP service does not support *move* operations.
@@ -107,6 +115,16 @@ curl -s --http2-prior-knowledge -XPUT -H "content-type: text/plain" -d "value" $
 ```
 ```json
 {"code": 200, "cause": "Ok"}
+```
+
+#### PutNotExists
+```shell
+# PUT request
+url='http://localhost:6006/key/test'
+curl -s --http2-prior-knowledge -XPUT -H "content-type: text/plain" -H "x-config-db-if-not-exists: true" -d "value" $url
+```
+```json
+{"code": 412, "cause": "Unable to save"}
 ```
 
 #### GET
@@ -271,6 +289,8 @@ The following command line options are supported by the CLI application:
 * `-a | --action` The action to perform.  One of `get|set|move|delete|list`.
 * `-k | --key` The *key* to act upon.
 * `-v | --value` The *value* to `set`.  For `move` this is the destination path.
+
+See [sample](test/integration/configctl.sh) integration test suite.
 
 The following shows a simple CRUD type interaction via the cli. These were using
 the default values for `server [-s|--server]` and `port [-p|--port]` options.

@@ -3,11 +3,12 @@
 //
 
 #include <catch2/catch.hpp>
-#include "../../src/lib/db/crud.h"
+#include "../../src/lib/db/storage.h"
 
 using namespace std::string_literals;
 using namespace std::string_view_literals;
 using namespace spt::configdb::db;
+using spt::configdb::model::RequestData;
 
 SCENARIO( "Persistence test", "persistence" )
 {
@@ -17,7 +18,8 @@ SCENARIO( "Persistence test", "persistence" )
 
     WHEN( "Setting a key-value pair" )
     {
-      const auto status = set( key, "value"sv );
+      const auto data = RequestData{ key, "value"sv };
+      const auto status = set( data );
       REQUIRE( status );
     }
 
@@ -40,7 +42,7 @@ SCENARIO( "Persistence test", "persistence" )
 
     AND_WHEN( "Updating the value" )
     {
-      const auto status = set( key, "value modified"sv );
+      const auto status = set( RequestData{ key, "value modified"sv } );
       REQUIRE( status );
     }
 

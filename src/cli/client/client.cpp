@@ -106,7 +106,7 @@ void spt::configdb::client::set( std::string_view server,
   if ( ssl ) connection = std::make_unique<api::impl::SSLConnection>( server, port );
   else connection = std::make_unique<api::impl::Connection>( server, port );
 
-  auto response = connection->set( key, value );
+  auto response = connection->set( model::RequestData{ key, value } );
   if ( !response )
   {
     LOG_WARN << "Error setting key " << key;
@@ -140,7 +140,7 @@ void spt::configdb::client::move( std::string_view server,
   if ( ssl ) connection = std::make_unique<api::impl::SSLConnection>( server, port );
   else connection = std::make_unique<api::impl::Connection>( server, port );
 
-  auto response = connection->move( key, dest );
+  auto response = connection->move( model::RequestData{ key, dest } );
   if ( !response )
   {
     LOG_WARN << "Error moving key " << key << " to " << dest;

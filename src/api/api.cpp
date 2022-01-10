@@ -70,6 +70,12 @@ std::optional<std::string> spt::configdb::api::get( std::string_view key )
 
 bool spt::configdb::api::set( std::string_view key, std::string_view value )
 {
+  auto data = model::RequestData{ key, value };
+  return set( data );
+}
+
+bool spt::configdb::api::set( const model::RequestData& data )
+{
   auto popt = papi::PoolHolder::instance().pool.acquire();
   if ( !popt )
   {
@@ -77,21 +83,21 @@ bool spt::configdb::api::set( std::string_view key, std::string_view value )
     return false;
   }
 
-  auto response = (*popt)->set( key, value );
+  auto response = (*popt)->set( data );
   if ( !response )
   {
-    LOG_WARN << "Unable to set key " << key;
+    LOG_WARN << "Unable to set key " << data.key;
     return false;
   }
 
   if ( response->value_type() != model::ResultVariant::Success ||
       !response->value_as<model::Success>()->value() )
   {
-    LOG_WARN << "Error setting key " << key;
+    LOG_WARN << "Error setting key " << data.key;
     return false;
   }
 
-  LOG_INFO << "Set key " << key;
+  LOG_INFO << "Set key " << data.key;
   return true;
 }
 
@@ -124,6 +130,12 @@ bool spt::configdb::api::remove( std::string_view key )
 
 bool spt::configdb::api::move( std::string_view key, std::string_view dest )
 {
+  auto data = model::RequestData{ key, dest };
+  return move( data );
+}
+
+bool spt::configdb::api::move( const model::RequestData& data )
+{
   auto popt = papi::PoolHolder::instance().pool.acquire();
   if ( !popt )
   {
@@ -131,21 +143,21 @@ bool spt::configdb::api::move( std::string_view key, std::string_view dest )
     return false;
   }
 
-  auto response = (*popt)->move( key, dest );
+  auto response = (*popt)->move( data );
   if ( !response )
   {
-    LOG_WARN << "Unable to move key " << key << " to destination " << dest;
+    LOG_WARN << "Unable to move key " << data.key << " to destination " << data.value;
     return false;
   }
 
   if ( response->value_type() != model::ResultVariant::Success ||
       !response->value_as<model::Success>()->value() )
   {
-    LOG_WARN << "Error moving key " << key << " to destination " << dest;
+    LOG_WARN << "Error moving key " << data.key << " to destination " << data.value;
     return false;
   }
 
-  LOG_INFO << "Moved key " << key << " to dest " << dest;
+  LOG_INFO << "Moved key " << data.key << " to dest " << data.value;
   return true;
 }
 
@@ -243,6 +255,14 @@ auto spt::configdb::api::get( const std::vector<std::string_view>& keys ) -> std
 
 bool spt::configdb::api::set( const std::vector<Pair>& kvs )
 {
+  auto vec = std::vector<model::RequestData>{};
+  vec.reserve( kvs.size() );
+  for ( auto&& [key, value] : kvs ) vec.emplace_back( key, value );
+  return set( vec );
+}
+
+bool spt::configdb::api::set( const std::vector<model::RequestData>& kvs )
+{
   auto popt = papi::PoolHolder::instance().pool.acquire();
   if ( !popt )
   {
@@ -296,6 +316,14 @@ bool spt::configdb::api::remove( const std::vector<std::string_view>& keys )
 }
 
 bool spt::configdb::api::move( const std::vector<Pair>& kvs )
+{
+  auto vec = std::vector<model::RequestData>{};
+  vec.reserve( kvs.size() );
+  for ( auto&& [key, value] : kvs ) vec.emplace_back( key, value );
+  return api::move( vec );
+}
+
+bool spt::configdb::api::move( const std::vector<model::RequestData>& kvs )
 {
   auto popt = papi::PoolHolder::instance().pool.acquire();
   if ( !popt )

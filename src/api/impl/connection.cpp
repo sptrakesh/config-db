@@ -125,12 +125,13 @@ auto BaseConnection::get( std::string_view key ) -> const model::Response*
   return write( fb, "Get" );
 }
 
-auto BaseConnection::set( std::string_view key, std::string_view value ) -> const model::Response*
+auto BaseConnection::set( const model::RequestData& data ) -> const model::Response*
 {
   auto fb = flatbuffers::FlatBufferBuilder{};
+  auto opts = model::CreateOptions( fb, data.options.ifNotExists );
   auto vec = std::vector<flatbuffers::Offset<model::KeyValue>>{
-    model::CreateKeyValue( fb, fb.CreateString( key ), fb.CreateString( value ) ) };
-  auto request = CreateRequest( fb, model::Action::Put, fb.CreateVector( vec ) );
+    model::CreateKeyValue( fb, fb.CreateString( data.key ), fb.CreateString( data.value ), opts ) };
+  auto request = model::CreateRequest( fb, model::Action::Put, fb.CreateVector( vec ) );
   fb.Finish( request );
 
   return write( fb, "Set" );
@@ -146,11 +147,12 @@ auto BaseConnection::remove( std::string_view key ) -> const model::Response*
   return write( fb, "Delete" );
 }
 
-auto BaseConnection::move( std::string_view key, std::string_view dest ) -> const model::Response*
+auto BaseConnection::move( const model::RequestData& data ) -> const model::Response*
 {
   auto fb = flatbuffers::FlatBufferBuilder{};
+  auto opts = model::CreateOptions( fb, data.options.ifNotExists );
   auto vec = std::vector<flatbuffers::Offset<model::KeyValue>>{
-      model::CreateKeyValue( fb, fb.CreateString( key ), fb.CreateString( dest ) ) };
+      model::CreateKeyValue( fb, fb.CreateString( data.key ), fb.CreateString( data.value ), opts ) };
   auto request = CreateRequest( fb, model::Action::Move, fb.CreateVector( vec ) );
   fb.Finish( request );
 
@@ -181,12 +183,16 @@ auto BaseConnection::get( const std::vector<std::string_view>& keys ) -> const m
   return write( fb, "MGet" );
 }
 
-auto BaseConnection::set( const std::vector<Pair>& kvs ) -> const model::Response*
+auto BaseConnection::set( const std::vector<model::RequestData>& kvs ) -> const model::Response*
 {
   auto fb = flatbuffers::FlatBufferBuilder{};
   auto vec = std::vector<flatbuffers::Offset<model::KeyValue>>{};
   vec.reserve( kvs.size() );
-  for ( auto&& [key, value] : kvs ) vec.push_back( model::CreateKeyValue( fb, fb.CreateString( key ), fb.CreateString( value ) ) );
+  for ( auto&& data : kvs )
+  {
+    auto opts = model::CreateOptions( fb, data.options.ifNotExists );
+    vec.push_back( model::CreateKeyValue( fb, fb.CreateString( data.key ), fb.CreateString( data.value ), opts ) );
+  }
   auto request = CreateRequest( fb, model::Action::Put, fb.CreateVector( vec ) );
   fb.Finish( request );
 
@@ -205,12 +211,16 @@ auto BaseConnection::remove( const std::vector<std::string_view>& keys ) -> cons
   return write( fb, "MDelete" );
 }
 
-auto BaseConnection::move( const std::vector<Pair>& kvs ) -> const model::Response*
+auto BaseConnection::move( const std::vector<model::RequestData>& kvs ) -> const model::Response*
 {
   auto fb = flatbuffers::FlatBufferBuilder{};
   auto vec = std::vector<flatbuffers::Offset<model::KeyValue>>{};
   vec.reserve( kvs.size() );
-  for ( auto&& [key, value] : kvs ) vec.push_back( model::CreateKeyValue( fb, fb.CreateString( key ), fb.CreateString( value ) ) );
+  for ( auto&& data : kvs )
+  {
+    auto opts = model::CreateOptions( fb, data.options.ifNotExists );
+    vec.push_back( model::CreateKeyValue( fb, fb.CreateString( data.key ), fb.CreateString( data.value ), opts ) );
+  }
   auto request = CreateRequest( fb, model::Action::Move, fb.CreateVector( vec ) );
   fb.Finish( request );
 
@@ -230,7 +240,7 @@ auto BaseConnection::import( const std::string& file ) -> ImportResponse
   auto lines = std::vector<std::string>{};
   lines.reserve( 64 );
 
-  auto kvs = std::vector<spt::configdb::api::Pair>{};
+  auto kvs = std::vector<model::RequestData>{};
   kvs.reserve( lines.size() );
 
   std::string line;

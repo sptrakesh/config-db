@@ -1,15 +1,15 @@
 #!/bin/sh
 
-url='https://localhost:6006/key/test/key'
+url='http://localhost:6006/key/test/key'
 if [ "$1" = "docker" ]
 then
-  url='https://localhost:6000/key/test/key'
+  url='http://localhost:6000/key/test/key'
 fi
 
-lurl='https://localhost:6006/list/test'
+lurl='http://localhost:6006/list/test'
 if [ "$1" = "docker" ]
 then
-  lurl='https://localhost:6000/list/test'
+  lurl='http://localhost:6000/list/test'
 fi
 
 Put()
@@ -21,6 +21,18 @@ Put()
     echo "Saved key-value pair"
   else
     echo "Error saving key-value pair"
+  fi
+}
+
+PutNotExists()
+{
+  echo "PUT request for key test with if_not_exists"
+  value=`curl -s -k --http2-prior-knowledge -XPUT -H "content-type: text/plain" -H "x-config-db-if-not-exists: true" -d "value" $url | jq -r .code`
+  if [ "$value" = "412" ]
+  then
+    echo "Updating existing key-value pair rejected due to header"
+  else
+    echo "Error.  Updated key-value pair"
   fi
 }
 
@@ -60,4 +72,4 @@ Delete()
   fi
 }
 
-Put && Get && List && Delete
+Put && Get && List && PutNotExists && Delete

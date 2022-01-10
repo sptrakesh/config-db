@@ -10,6 +10,8 @@
 #include <tuple>
 #include <vector>
 
+#include "../common/model/request.h"
+
 namespace spt::configdb::api
 {
   /**
@@ -41,6 +43,17 @@ namespace spt::configdb::api
   bool set( std::string_view key, std::string_view value );
 
   /**
+   * Set the value for the specified `key`.  Creates or updates in the database.
+   *
+   * If the `options.ifNotExists` is set to `true`, will only create if `key`
+   * does not exist.  Update will fail.
+   *
+   * @param data The request data.
+   * @return `true` if the transaction succeeded.
+   */
+  bool set( const model::RequestData& data );
+
+  /**
    * Remove the specified `key` from the database.
    *
    * Removes the child from parent hierarchy.
@@ -62,6 +75,19 @@ namespace spt::configdb::api
    * @return `true` if transaction succeeds.
    */
   bool move( std::string_view key, std::string_view dest );
+
+  bool move( const model::RequestData& data );
+
+  /**
+   * Move the specified `key` to the `dest` in a transaction.
+   *
+   * If the `options.ifNotExists` is set to `true`, will only succeed if the
+   * destination path specified by the `value` does not exist.
+   *
+   * @param data The request data with the `key` and `value` which represents the destination`key`.
+   * @return `true` if transaction succeeds.
+   */
+  bool move( const model::RequestData& data );
 
   using Nodes = std::optional<std::vector<std::string>>;
   /**
@@ -100,6 +126,16 @@ namespace spt::configdb::api
   bool set( const std::vector<Pair>& kvs );
 
   /**
+   * Set a batch of *key-value* pairs in a single transaction.
+   *
+   * If any operation in the batch fails, the entire transaction is *rolled back*.
+   *
+   * @param kvs
+   * @return
+   */
+  bool set( const std::vector<model::RequestData>& kvs );
+
+  /**
    * Remove a batch of `keys` from the database in a single transaction.
    *
    * If any operation in the batch fails, the entire transaction is *rolled back*.
@@ -118,6 +154,16 @@ namespace spt::configdb::api
    * @return `true` if the transaction succeeds.
    */
   bool move( const std::vector<Pair>& kvs );
+
+  /**
+   * Move the specified batch of keys in a single transaction.
+   *
+   * If any operation in the batch fails, the entire transaction is *rolled back*.
+   *
+   * @param kvs
+   * @return
+   */
+  bool move( const std::vector<model::RequestData>& kvs );
 
   using NodePair = std::tuple<std::string, std::optional<std::vector<std::string>>>;
   /**

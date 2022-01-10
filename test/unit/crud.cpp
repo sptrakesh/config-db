@@ -3,11 +3,12 @@
 //
 
 #include <catch2/catch.hpp>
-#include "../../src/lib/db/crud.h"
+#include "../../src/lib/db/storage.h"
 
 using namespace std::string_literals;
 using namespace std::string_view_literals;
 using namespace spt::configdb::db;
+using spt::configdb::model::RequestData;
 
 SCENARIO( "CRUD test", "crud" )
 {
@@ -17,7 +18,7 @@ SCENARIO( "CRUD test", "crud" )
 
     WHEN( "Setting a key-value pair" )
     {
-      const auto status = set( key, "value"sv );
+      const auto status = set( RequestData{ key, "value"sv } );
       REQUIRE( status );
     }
 
@@ -30,7 +31,7 @@ SCENARIO( "CRUD test", "crud" )
 
     AND_WHEN( "Updating the value" )
     {
-      const auto status = set( key, "value modified"sv );
+      const auto status = set( RequestData{ key, "value modified"sv } );
       REQUIRE( status );
     }
 
@@ -39,6 +40,14 @@ SCENARIO( "CRUD test", "crud" )
       const auto value = get( key );
       REQUIRE( value );
       REQUIRE( *value == "value modified"sv );
+    }
+
+    AND_WHEN( "Updating rejected with if not exists" )
+    {
+      auto opts = RequestData::Options{};
+      opts.ifNotExists = true;
+      const auto status = set( RequestData{ key, "value"sv, std::move( opts ) } );
+      REQUIRE_FALSE( status );
     }
 
     AND_WHEN( "Removing the key" )
@@ -66,7 +75,7 @@ SCENARIO( "CRUD test", "crud" )
 
     WHEN( "Setting a key-value pair" )
     {
-      const auto status = set( key, "value"sv );
+      const auto status = set( RequestData{ key, "value"sv } );
       REQUIRE_FALSE( status );
     }
 
