@@ -6,8 +6,6 @@
 
 #include "flatbuffers/flatbuffers.h"
 
-#include "keyvalue_generated.h"
-
 namespace spt {
 namespace configdb {
 namespace model {
@@ -33,35 +31,38 @@ enum class Action : int8_t {
   Delete = 2,
   List = 3,
   Move = 4,
+  TTL = 5,
   MIN = Get,
-  MAX = Move
+  MAX = TTL
 };
 
-inline const Action (&EnumValuesAction())[5] {
+inline const Action (&EnumValuesAction())[6] {
   static const Action values[] = {
     Action::Get,
     Action::Put,
     Action::Delete,
     Action::List,
-    Action::Move
+    Action::Move,
+    Action::TTL
   };
   return values;
 }
 
 inline const char * const *EnumNamesAction() {
-  static const char * const names[6] = {
+  static const char * const names[7] = {
     "Get",
     "Put",
     "Delete",
     "List",
     "Move",
+    "TTL",
     nullptr
   };
   return names;
 }
 
 inline const char *EnumNameAction(Action e) {
-  if (flatbuffers::IsOutRange(e, Action::Get, Action::Move)) return "";
+  if (flatbuffers::IsOutRange(e, Action::Get, Action::TTL)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesAction()[index];
 }
@@ -73,20 +74,27 @@ struct Options FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     return OptionsTypeTable();
   }
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
-    VT_IF_NOT_EXISTS = 4
+    VT_IF_NOT_EXISTS = 4,
+    VT_EXPIRATION_IN_SECONDS = 6
   };
   /// Only set the value if key does not exist.  Can be used as a locking mechanism.
   bool if_not_exists() const {
     return GetField<uint8_t>(VT_IF_NOT_EXISTS, 0) != 0;
   }
+  /// Expire key after specified number of seconds.  Default value of 0 indicates no expiration.
+  uint32_t expiration_in_seconds() const {
+    return GetField<uint32_t>(VT_EXPIRATION_IN_SECONDS, 0);
+  }
   template<size_t Index>
   auto get_field() const {
          if constexpr (Index == 0) return if_not_exists();
+    else if constexpr (Index == 1) return expiration_in_seconds();
     else static_assert(Index != Index, "Invalid Field Index");
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<uint8_t>(verifier, VT_IF_NOT_EXISTS) &&
+           VerifyField<uint32_t>(verifier, VT_EXPIRATION_IN_SECONDS) &&
            verifier.EndTable();
   }
 };
@@ -97,6 +105,9 @@ struct OptionsBuilder {
   flatbuffers::uoffset_t start_;
   void add_if_not_exists(bool if_not_exists) {
     fbb_.AddElement<uint8_t>(Options::VT_IF_NOT_EXISTS, static_cast<uint8_t>(if_not_exists), 0);
+  }
+  void add_expiration_in_seconds(uint32_t expiration_in_seconds) {
+    fbb_.AddElement<uint32_t>(Options::VT_EXPIRATION_IN_SECONDS, expiration_in_seconds, 0);
   }
   explicit OptionsBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -111,8 +122,10 @@ struct OptionsBuilder {
 
 inline flatbuffers::Offset<Options> CreateOptions(
     flatbuffers::FlatBufferBuilder &_fbb,
-    bool if_not_exists = false) {
+    bool if_not_exists = false,
+    uint32_t expiration_in_seconds = 0) {
   OptionsBuilder builder_(_fbb);
+  builder_.add_expiration_in_seconds(expiration_in_seconds);
   builder_.add_if_not_exists(if_not_exists);
   return builder_.Finish();
 }
@@ -122,12 +135,13 @@ struct Options::Traits {
   static auto constexpr Create = CreateOptions;
   static constexpr auto name = "Options";
   static constexpr auto fully_qualified_name = "spt.configdb.model.Options";
-  static constexpr std::array<const char *, 1> field_names = {
-    "if_not_exists"
+  static constexpr std::array<const char *, 2> field_names = {
+    "if_not_exists",
+    "expiration_in_seconds"
   };
   template<size_t Index>
   using FieldType = decltype(std::declval<type>().get_field<Index>());
-  static constexpr size_t fields_number = 1;
+  static constexpr size_t fields_number = 2;
 };
 
 struct KeyValue FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
@@ -328,6 +342,7 @@ inline const flatbuffers::TypeTable *ActionTypeTable() {
     { flatbuffers::ET_CHAR, 0, 0 },
     { flatbuffers::ET_CHAR, 0, 0 },
     { flatbuffers::ET_CHAR, 0, 0 },
+    { flatbuffers::ET_CHAR, 0, 0 },
     { flatbuffers::ET_CHAR, 0, 0 }
   };
   static const flatbuffers::TypeFunction type_refs[] = {
@@ -338,23 +353,26 @@ inline const flatbuffers::TypeTable *ActionTypeTable() {
     "Put",
     "Delete",
     "List",
-    "Move"
+    "Move",
+    "TTL"
   };
   static const flatbuffers::TypeTable tt = {
-    flatbuffers::ST_ENUM, 5, type_codes, type_refs, nullptr, nullptr, names
+    flatbuffers::ST_ENUM, 6, type_codes, type_refs, nullptr, nullptr, names
   };
   return &tt;
 }
 
 inline const flatbuffers::TypeTable *OptionsTypeTable() {
   static const flatbuffers::TypeCode type_codes[] = {
-    { flatbuffers::ET_BOOL, 0, -1 }
+    { flatbuffers::ET_BOOL, 0, -1 },
+    { flatbuffers::ET_UINT, 0, -1 }
   };
   static const char * const names[] = {
-    "if_not_exists"
+    "if_not_exists",
+    "expiration_in_seconds"
   };
   static const flatbuffers::TypeTable tt = {
-    flatbuffers::ST_TABLE, 1, type_codes, nullptr, nullptr, nullptr, names
+    flatbuffers::ST_TABLE, 2, type_codes, nullptr, nullptr, nullptr, names
   };
   return &tt;
 }

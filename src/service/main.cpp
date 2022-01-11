@@ -2,6 +2,7 @@
 // Created by Rakesh on 25/12/2021.
 //
 
+#include "clearexpired.h"
 #include "http/server.h"
 #include "tcp/server.h"
 #include "../common/contextholder.h"
@@ -69,11 +70,13 @@ int main( int argc, char const * const * argv )
   nanolog::initialize( nanolog::GuaranteedLogger(), conf.logging.dir, "config-db", conf.logging.console );
 
   spt::configdb::db::init();
+  auto cleaner = spt::configdb::service::ClearExpired{};
 
   std::vector<std::thread> v;
-  v.reserve( conf.threads );
+  v.reserve( conf.threads + 3 );
   v.emplace_back( [httpPort, &conf, ssl]{ spt::configdb::http::start( httpPort, conf.threads, ssl ); } );
   v.emplace_back( [tcpPort, ssl]{ spt::configdb::tcp::start( tcpPort, ssl ); } );
+  v.emplace_back( [&cleaner]{ cleaner.run(); } );
 
   boost::asio::signal_set signals( spt::configdb::ContextHolder::instance().ioc, SIGINT, SIGTERM );
   signals.async_wait( [&](auto const&, int ) { spt::configdb::ContextHolder::instance().ioc.stop(); } );
@@ -95,12 +98,13 @@ int main( int argc, char const * const * argv )
     }
   };
 
-  for( auto i = conf.threads - 2; i > 0; --i )
+  for( auto i = conf.threads; i > 0; --i )
   {
     v.emplace_back( [&run] { run(); } );
   }
 
   run();
+  cleaner.stop();
 
   for ( auto&& t : v )
   {

@@ -11,7 +11,7 @@
 #include "../common/pool/pool.h"
 
 #include <algorithm>
-#include <chrono>
+#include <charconv>
 #include <limits>
 #include <memory>
 
@@ -156,6 +156,18 @@ namespace spt::configdb::db::internal
       }
 
       return true;
+    }
+
+    std::chrono::seconds ttl( std::string_view key )
+    {
+      auto ks = getKey( key );
+      std::string value;
+      if ( const auto s = db->Get( rocksdb::ReadOptions{}, handles[3], rocksdb::Slice{ ks }, &value ); s.ok() )
+      {
+        return parseTTL( value );
+      }
+
+      return std::chrono::seconds{ 0 };
     }
 
     Nodes list( std::string_view key )
@@ -331,6 +343,41 @@ namespace spt::configdb::db::internal
       return true;
     }
 
+    std::vector<TTLPair> ttl( const std::vector<std::string_view>& vec )
+    {
+      std::vector<rocksdb::Slice> keys;
+      keys.reserve( vec.size() );
+      std::vector<rocksdb::PinnableSlice> values;
+      std::vector<rocksdb::Status> statuses;
+
+      for ( auto&& key: vec ) keys.emplace_back( key );
+
+      values.resize( keys.size() );
+      statuses.resize( keys.size() );
+      db->MultiGet( rocksdb::ReadOptions{}, handles[3], keys.size(),
+          keys.data(), values.data(), statuses.data() );
+
+      std::vector<TTLPair> result;
+      result.reserve( vec.size() );
+      for ( std::size_t i = 0; i < vec.size(); ++i )
+      {
+        auto ks = keys[i].ToString();
+
+        if ( statuses[i].ok() )
+        {
+          auto ttl = parseTTL( values[i].ToStringView() );
+          result.emplace_back( ks, ttl );
+        }
+        else
+        {
+          LOG_WARN << "Error retrieving path " << vec[i] << ". " << statuses[i].ToString();
+          result.emplace_back( ks, std::chrono::seconds{ 0 } );
+        }
+      }
+
+      return result;
+    }
+
     std::vector<NodePair> list( const std::vector<std::string_view>& vec )
     {
       std::vector<rocksdb::Slice> keys;
@@ -379,6 +426,85 @@ namespace spt::configdb::db::internal
       return result;
     }
 
+    struct IteratorHolder
+    {
+      IteratorHolder( rocksdb::TransactionDB& db, rocksdb::ColumnFamilyHandle* handle )
+      {
+        auto now = std::chrono::high_resolution_clock::now();
+        auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>( now.time_since_epoch() ).count();
+        limit = std::to_string( ns );
+        lv = limit;
+        slice = rocksdb::Slice{ limit };
+
+        auto opts = rocksdb::ReadOptions{};
+        opts.iterate_upper_bound = &slice;
+
+        it = db.NewIterator( opts, handle );
+      }
+
+      ~IteratorHolder() { delete it; }
+
+      IteratorHolder(const IteratorHolder&) = delete;
+      IteratorHolder& operator=(const IteratorHolder&) = delete;
+
+      auto SeekToFirst() { return it->SeekToFirst(); }
+      auto Valid() { return it->Valid(); }
+      auto Next() { return it->Next(); }
+      auto key() { return it->key(); }
+      auto value() { return it->value(); }
+
+    private:
+      std::string limit;
+      std::string_view lv;
+      rocksdb::Slice slice;
+      rocksdb::Iterator* it;
+    };
+
+    void clearExpired( const std::atomic_bool& stop )
+    {
+      auto txn = db->BeginTransaction( rocksdb::WriteOptions{} );
+      auto it = IteratorHolder{ *db, handles[4] };
+
+      std::vector<std::tuple<std::string,std::string>> keys;
+      keys.reserve( 32 );
+
+      for ( it.SeekToFirst(); it.Valid(); it.Next() )
+      {
+        keys.emplace_back( it.key().ToString(), it.value().ToString() );
+        if ( stop.load() ) break;
+      }
+
+      if ( stop.load() ) return;
+      auto total = 0;
+      auto count = 0;
+      for ( auto&& [key, value] : keys )
+      {
+        LOG_INFO << "Removing expired key " << value;
+        if ( remove( value, txn, false ) )
+        {
+          ++count;
+
+          if ( const auto s = txn->Delete( handles[4], rocksdb::Slice{ key } ); !s.ok() )
+          {
+            LOG_WARN << "Error deleting expired key handle " << key;
+          }
+        }
+        else LOG_WARN << "Error removing expired key " << value;
+        ++total;
+
+        if ( stop.load() ) break;
+      }
+
+      if ( const auto s = txn->Commit(); !s.ok() )
+      {
+        LOG_CRIT << "Error committing transaction after removing expired keys";
+      }
+      else if ( count > 0 )
+      {
+        LOG_INFO << "Removed " << count << '/' << total << " expired keys";
+      }
+    }
+
     void reopen()
     {
       close();
@@ -420,7 +546,7 @@ namespace spt::configdb::db::internal
     {
       const auto rollback = [txn]()
       {
-        if ( const auto s = txn->Rollback(); !s.ok())
+        if ( const auto s = txn->Rollback(); !s.ok() )
         {
           LOG_CRIT << "Error rolling back transaction. " << s.ToString();
         }
@@ -440,32 +566,63 @@ namespace spt::configdb::db::internal
       if ( opts.ifNotExists )
       {
         std::string va;
-        const auto s = txn->Get( rocksdb::ReadOptions{}, handles[1], rocksdb::Slice{ ks }, &va );
-        if ( s.ok() )
+        const auto s = txn->Get( rocksdb::ReadOptions{}, handles[1],
+            rocksdb::Slice{ ks }, &va );
+        if ( s.ok())
         {
           LOG_INFO << "Key " << key << " exists and ifNotExists set to true";
           return false;
         }
-        if ( !s.IsNotFound() )
+        if ( !s.IsNotFound())
         {
-          LOG_WARN << "Error checking existence of Key " << key << ". " << s.ToString();
+          LOG_WARN << "Error checking existence of Key " << key << ". "
+                   << s.ToString();
           return false;
         }
       }
 
       LOG_INFO << "Setting key " << ks;
-      if (
-          const auto s = txn->Put( handles[1], rocksdb::Slice{ ks }, rocksdb::Slice{ v } );
-          !s.ok() )
+      if ( const auto s = txn->Put( handles[1], rocksdb::Slice{ ks }, rocksdb::Slice{ v } );
+          !s.ok())
       {
         LOG_WARN << "Error setting key " << key << ". " << s.ToString();
         return rollback();
       }
 
-      if ( !manageTree( ks, txn ) )
+      if ( !manageTree( ks, txn ))
       {
         LOG_WARN << "Error managing tree for key " << key;
         return rollback();
+      }
+
+      if ( opts.expirationInSeconds > 0 )
+      {
+        auto now = std::chrono::high_resolution_clock::now();
+        now += std::chrono::seconds{ opts.expirationInSeconds };
+        auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>( now.time_since_epoch() ).count();
+
+        std::string ts;
+        ts.reserve( 32 );
+        ts.append( std::to_string( ns ) );
+
+        if ( const auto s = txn->Put( handles[3], rocksdb::Slice{ ks }, rocksdb::Slice{ ts } );
+            !s.ok() )
+        {
+          LOG_WARN << "Error setting expiration for key " << key << ". " << s.ToString();
+          return rollback();
+        }
+
+        now = std::chrono::high_resolution_clock::now();
+        auto ns1 = std::chrono::duration_cast<std::chrono::nanoseconds>( now.time_since_epoch() ).count();
+        ts.append( std::to_string( ns1 ) );
+
+        if ( const auto s = txn->Put( handles[4], rocksdb::Slice{ ts }, rocksdb::Slice{ ks } );
+          !s.ok() )
+        {
+          LOG_WARN << "Error setting expiration for key " << key << ", dest " << ts << ". " << s.ToString();
+          return rollback();
+        }
+        else LOG_DEBUG << "Setting expiration for key " << key << ", dest " << ts << ". " << s.ToString();
       }
 
       if ( model::Configuration::instance().enableCache )
@@ -584,11 +741,12 @@ namespace spt::configdb::db::internal
       return true;
     }
 
-    bool remove( std::string_view key, rocksdb::Transaction* txn )
+    bool remove( std::string_view key, rocksdb::Transaction* txn, bool rollbackOnError = true )
     {
-      const auto rollback = [&txn]()
+      const auto rollback = [&txn, rollbackOnError]()
       {
-        if ( const auto s = txn->Rollback(); !s.ok())
+        if ( !rollbackOnError ) return false;
+        if ( const auto s = txn->Rollback(); !s.ok() )
         {
           LOG_CRIT << "Error rolling back transaction. " << s.ToString();
         }
@@ -599,7 +757,13 @@ namespace spt::configdb::db::internal
       LOG_INFO << "Removing key " << ks;
       if ( const auto s = txn->Delete( handles[1], rocksdb::Slice{ ks } ); !s.ok() )
       {
-        LOG_WARN << "Error removing key " << key << ". " << s.ToString();
+        LOG_WARN << "Error removing key " << key << " from keys column. " << s.ToString();
+        return rollback();
+      }
+
+      if ( const auto s = txn->Delete( handles[3], rocksdb::Slice{ ks } ); !s.ok() )
+      {
+        LOG_WARN << "Error removing key " << key << " from expiration column. " << s.ToString();
         return rollback();
       }
 
@@ -745,6 +909,28 @@ namespace spt::configdb::db::internal
       return tuples;
     }
 
+    std::chrono::seconds parseTTL( std::string_view value )
+    {
+      std::chrono::seconds exp{ 0 };
+      uint64_t v{ 0 };
+      auto [p, ec] = std::from_chars( value.data(), value.data() + value.size(), v );
+      if ( ec != std::errc() )
+      {
+        LOG_WARN << "Error parsing expiration time " << value;
+        return exp;
+      }
+
+      std::chrono::nanoseconds ns{ v };
+      if ( const auto cns = std::chrono::duration_cast<std::chrono::nanoseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() );
+          ns > cns )
+      {
+        exp = std::chrono::duration_cast<std::chrono::seconds>( ns - cns );
+        LOG_DEBUG << "Parsed ttl " << int(exp.count());
+      }
+
+      return exp;
+    }
+
     bool move( std::string_view key, std::string_view dest,
         const model::RequestData::Options& opts, rocksdb::Transaction* txn )
     {
@@ -775,7 +961,6 @@ namespace spt::configdb::db::internal
       }
 
       std::string value;
-
       if ( const auto s = txn->Get( rocksdb::ReadOptions{}, handles[1], rocksdb::Slice{ ks }, &value );
           !s.ok() )
       {
@@ -785,7 +970,17 @@ namespace spt::configdb::db::internal
       }
       value = ( *encrypter )->decrypt( value );
 
-      if ( const auto s = remove( key, txn ); !s )
+      std::chrono::seconds exp{ opts.expirationInSeconds };
+      if ( opts.expirationInSeconds == 0 )
+      {
+        std::string nsv;
+        if ( const auto s = txn->Get( rocksdb::ReadOptions{}, handles[3], rocksdb::Slice{ ks }, &nsv ); s.ok() )
+        {
+          exp = parseTTL( nsv );
+        }
+      }
+
+      if ( const auto s = remove( ks, txn ); !s )
       {
         if ( const auto st = txn->Rollback(); !st.ok() )
         {
@@ -794,7 +989,10 @@ namespace spt::configdb::db::internal
         return s;
       }
 
-      if ( const auto s = set( dest, value, opts, txn ); !s )
+      auto nopts = model::RequestData::Options{};
+      nopts.ifNotExists = opts.ifNotExists;
+      nopts.expirationInSeconds = exp.count();
+      if ( const auto s = set( ds, value, nopts, txn ); !s )
       {
         if ( const auto st = txn->Rollback(); !st.ok() )
         {
@@ -813,11 +1011,15 @@ namespace spt::configdb::db::internal
 #else
       static const std::string dbpath{ "/opt/spt/data" };
 #endif
-      const auto cfopts = rocksdb::ColumnFamilyOptions{};
+      auto cfopts = rocksdb::ColumnFamilyOptions{};
+      // TODO: move to config
+      cfopts.OptimizeForPointLookup( 8 );
       std::vector<rocksdb::ColumnFamilyDescriptor> families{
           { rocksdb::kDefaultColumnFamilyName, cfopts },
           { "data"s, cfopts },
-          { "forrest"s, cfopts }
+          { "forrest"s, cfopts },
+          { "expiration"s, cfopts },
+          { "expiring"s, rocksdb::ColumnFamilyOptions{} }
       };
 
       handles.reserve( families.size() );
@@ -892,6 +1094,11 @@ bool spt::configdb::db::move( const model::RequestData& data )
   return internal::Database::instance().move( data );
 }
 
+std::chrono::seconds spt::configdb::db::ttl( std::string_view key )
+{
+  return internal::Database::instance().ttl( key );
+}
+
 auto spt::configdb::db::list( std::string_view key ) -> Nodes
 {
   return internal::Database::instance().list( key );
@@ -917,9 +1124,19 @@ bool spt::configdb::db::move( const std::vector<model::RequestData>& kvs )
   return internal::Database::instance().move( kvs );
 }
 
+auto spt::configdb::db::ttl( const std::vector<std::string_view>& keys ) -> std::vector<TTLPair>
+{
+  return internal::Database::instance().ttl( keys );
+}
+
 auto spt::configdb::db::list( const std::vector<std::string_view>& keys ) -> std::vector<NodePair>
 {
   return internal::Database::instance().list( keys );
+}
+
+void spt::configdb::db::clearExpired( const std::atomic_bool& stop )
+{
+  internal::Database::instance().clearExpired( stop );
 }
 
 void spt::configdb::db::reopen()

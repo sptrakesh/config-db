@@ -33,15 +33,15 @@ namespace spt::configdb::api::impl
     const model::Response* set( const model::RequestData& data );
     const model::Response* remove( std::string_view key );
     const model::Response* move( const model::RequestData& data );
+    const model::Response* ttl( std::string_view key );
 
     // Batch
     const model::Response* list( const std::vector<std::string_view>& keys );
     const model::Response* get( const std::vector<std::string_view>& keys );
-
     const model::Response* set( const std::vector<model::RequestData>& kvs );
-
     const model::Response* remove( const std::vector<std::string_view>& keys );
     const model::Response* move( const std::vector<model::RequestData>& kvs );
+    const model::Response* ttl( const std::vector<std::string_view>& keys );
 
     // File import
     using ImportResponse = std::tuple<const model::Response*, std::size_t, uint32_t>;

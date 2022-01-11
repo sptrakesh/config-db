@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <chrono>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -70,19 +71,23 @@ namespace spt::configdb::api
    * if any of the operations fail.  Inherent operations such as hierarchy
    * management also operate as with their direct counterparts.
    *
+   * **Note:** If the source `key` had an expiration policy, it will be applied
+   * to the destination.
+   *
    * @param key The key that is to be moved (path change).
    * @param dest The destination path for the value.
    * @return `true` if transaction succeeds.
    */
   bool move( std::string_view key, std::string_view dest );
 
-  bool move( const model::RequestData& data );
-
   /**
    * Move the specified `key` to the `dest` in a transaction.
    *
    * If the `options.ifNotExists` is set to `true`, will only succeed if the
    * destination path specified by the `value` does not exist.
+   *
+   * **Note:** If the source `key` had an expiration policy, it will be applied
+   * to the destination unless a non-zero expiration policy is specified.
    *
    * @param data The request data with the `key` and `value` which represents the destination`key`.
    * @return `true` if transaction succeeds.
@@ -97,6 +102,16 @@ namespace spt::configdb::api
    * @return The child node names, or `std::nullopt` if no children.
    */
   Nodes list( std::string_view path );
+
+  /**
+   * Retrieve the TTL value for the specified key.  The returned value is relative
+   * to the *current time*, and not the original `expirationInSeconds` value
+   * specified during the {@see set} operation.
+   *
+   * @param key The key for which the TTL value is to be retrieved.
+   * @return The seconds till expiration from now, or 0 if no TTL was set.
+   */
+  std::chrono::seconds ttl( std::string_view key );
 
   using KeyValue = std::pair<std::string, std::optional<std::string>>;
   /**
@@ -173,6 +188,15 @@ namespace spt::configdb::api
    * @return The child node names for each `path`.  If a `path` has no children, returns `std::nullopt` for it.
    */
   std::vector<NodePair> list( const std::vector<std::string_view>& paths );
+
+  using TTLPair = std::pair<std::string, std::chrono::seconds>;
+  /**
+   * Retrieve the TTL values from current time for the specified keys.
+   *
+   * @param keys The batch of keys to retrieve TTL values for.
+   * @return Pairs of `key-ttl` values.  Returns 0 for keys that does not have TTL set.
+   */
+  std::vector<TTLPair> ttl( const std::vector<std::string_view>& keys );
 
   /**
    * Tuple holding the response along with the number of records imported out

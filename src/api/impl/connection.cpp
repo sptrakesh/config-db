@@ -128,7 +128,7 @@ auto BaseConnection::get( std::string_view key ) -> const model::Response*
 auto BaseConnection::set( const model::RequestData& data ) -> const model::Response*
 {
   auto fb = flatbuffers::FlatBufferBuilder{};
-  auto opts = model::CreateOptions( fb, data.options.ifNotExists );
+  auto opts = model::CreateOptions( fb, data.options.ifNotExists, data.options.expirationInSeconds );
   auto vec = std::vector<flatbuffers::Offset<model::KeyValue>>{
     model::CreateKeyValue( fb, fb.CreateString( data.key ), fb.CreateString( data.value ), opts ) };
   auto request = model::CreateRequest( fb, model::Action::Put, fb.CreateVector( vec ) );
@@ -150,7 +150,7 @@ auto BaseConnection::remove( std::string_view key ) -> const model::Response*
 auto BaseConnection::move( const model::RequestData& data ) -> const model::Response*
 {
   auto fb = flatbuffers::FlatBufferBuilder{};
-  auto opts = model::CreateOptions( fb, data.options.ifNotExists );
+  auto opts = model::CreateOptions( fb, data.options.ifNotExists, data.options.expirationInSeconds );
   auto vec = std::vector<flatbuffers::Offset<model::KeyValue>>{
       model::CreateKeyValue( fb, fb.CreateString( data.key ), fb.CreateString( data.value ), opts ) };
   auto request = CreateRequest( fb, model::Action::Move, fb.CreateVector( vec ) );
@@ -169,6 +169,16 @@ auto BaseConnection::list( const std::vector<std::string_view>& keys ) -> const 
   fb.Finish( request );
 
   return write( fb, "MList" );
+}
+
+auto BaseConnection::ttl( std::string_view key ) -> const model::Response*
+{
+  auto fb = flatbuffers::FlatBufferBuilder{};
+  auto vec = std::vector<flatbuffers::Offset<model::KeyValue>>{ model::CreateKeyValue( fb, fb.CreateString( key ) ) };
+  auto request = CreateRequest( fb, model::Action::TTL, fb.CreateVector( vec ) );
+  fb.Finish( request );
+
+  return write( fb, "TTL" );
 }
 
 auto BaseConnection::get( const std::vector<std::string_view>& keys ) -> const model::Response*
@@ -190,7 +200,7 @@ auto BaseConnection::set( const std::vector<model::RequestData>& kvs ) -> const 
   vec.reserve( kvs.size() );
   for ( auto&& data : kvs )
   {
-    auto opts = model::CreateOptions( fb, data.options.ifNotExists );
+    auto opts = model::CreateOptions( fb, data.options.ifNotExists, data.options.expirationInSeconds );
     vec.push_back( model::CreateKeyValue( fb, fb.CreateString( data.key ), fb.CreateString( data.value ), opts ) );
   }
   auto request = CreateRequest( fb, model::Action::Put, fb.CreateVector( vec ) );
@@ -218,13 +228,25 @@ auto BaseConnection::move( const std::vector<model::RequestData>& kvs ) -> const
   vec.reserve( kvs.size() );
   for ( auto&& data : kvs )
   {
-    auto opts = model::CreateOptions( fb, data.options.ifNotExists );
+    auto opts = model::CreateOptions( fb, data.options.ifNotExists, data.options.expirationInSeconds );
     vec.push_back( model::CreateKeyValue( fb, fb.CreateString( data.key ), fb.CreateString( data.value ), opts ) );
   }
   auto request = CreateRequest( fb, model::Action::Move, fb.CreateVector( vec ) );
   fb.Finish( request );
 
   return write( fb, "MMove" );
+}
+
+auto BaseConnection::ttl( const std::vector<std::string_view>& keys ) -> const model::Response*
+{
+  auto fb = flatbuffers::FlatBufferBuilder{};
+  auto vec = std::vector<flatbuffers::Offset<model::KeyValue>>{};
+  vec.reserve( keys.size() );
+  for ( auto&& key : keys ) vec.push_back( model::CreateKeyValue( fb, fb.CreateString( key ) ) );
+  auto request = CreateRequest( fb, model::Action::TTL, fb.CreateVector( vec ) );
+  fb.Finish( request );
+
+  return write( fb, "MTTL" );
 }
 
 auto BaseConnection::import( const std::string& file ) -> ImportResponse

@@ -121,7 +121,8 @@ namespace spt::configdb::tcp::coroutine
     {
       auto opts = model::RequestData::Options{};
       opts.ifNotExists = kv->options()->if_not_exists();
-      pairs.emplace_back( kv->key()->string_view(), kv->value()->string_view(), std::move( opts ) );
+      opts.expirationInSeconds = kv->options()->expiration_in_seconds();
+      pairs.emplace_back( kv->key()->string_view(), kv->value()->string_view(), opts );
     }
 
     auto value = db::set( pairs );
@@ -154,7 +155,8 @@ namespace spt::configdb::tcp::coroutine
     {
       auto opts = model::RequestData::Options{};
       opts.ifNotExists = kv->options()->if_not_exists();
-      pairs.emplace_back( kv->key()->string_view(), kv->value()->string_view(), std::move( opts ) );
+      opts.expirationInSeconds = kv->options()->expiration_in_seconds();
+      pairs.emplace_back( kv->key()->string_view(), kv->value()->string_view(), opts );
     }
 
     auto value = db::move( pairs );
@@ -162,6 +164,34 @@ namespace spt::configdb::tcp::coroutine
     auto vt = model::CreateSuccess( fb, value );
     auto r = model::CreateResponse( fb, model::ResultVariant::Success, vt.Union() );
     fb.Finish( r );
+    co_await write( socket, fb );
+  }
+
+  template <typename Socket>
+  boost::asio::awaitable<void> ttl( Socket& socket, const model::Request* request )
+  {
+    std::vector<std::string_view> keys;
+    for ( auto&& kv : *request->data() ) keys.emplace_back( kv->key()->string_view() );
+
+    auto value = db::ttl( keys );
+    auto fb = flatbuffers::FlatBufferBuilder{};
+    auto vec = std::vector<flatbuffers::Offset<model::KeyValueResult>>{};
+
+    if ( !value.empty() )
+    {
+      vec.reserve( value.size() );
+      for ( auto&& [k, v] : value )
+      {
+        auto vt = model::CreateValue( fb, fb.CreateString( std::to_string( v.count() ) ) );
+        vec.push_back( model::CreateKeyValueResult(
+            fb, fb.CreateString( k ), model::ValueVariant::Value, vt.Union() ) );
+      }
+    }
+
+    auto rv = model::CreateKeyValueResults( fb, fb.CreateVector( vec ) );
+    auto r = model::CreateResponse( fb, model::ResultVariant::KeyValueResults, rv.Union() );
+    fb.Finish( r );
+
     co_await write( socket, fb );
   }
 
@@ -184,6 +214,9 @@ namespace spt::configdb::tcp::coroutine
       break;
     case model::Action::Move:
       co_await move( socket, request );
+      break;
+    case model::Action::TTL:
+      co_await ttl( socket, request );
       break;
     }
   }

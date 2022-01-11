@@ -84,10 +84,23 @@ namespace spt::configdb::http::endpoints
       }
 
       const auto key = boost::algorithm::replace_first_copy( req.uri().path, "/key"sv, ""sv );
+
       auto opts = model::RequestData::Options{};
       auto iter = req.header().find( "x-config-db-if-not-exists"s );
       if ( iter != req.header().end() ) opts.ifNotExists = iter->second.value == "true"s;
-      auto result = db::set( model::RequestData{ key, *body, std::move( opts ) } );
+      iter = req.header().find( "x-config-db-ttl"s );
+      if ( iter != req.header().end() )
+      {
+        auto sv = std::string_view{ iter->second.value };
+        uint64_t ttl;
+        auto [p, ec] = std::from_chars( sv.data(), sv.data() + sv.size(), ttl );
+        if ( ec != std::errc() )
+        {
+          LOG_WARN << "Invalid TTL: " << sv;
+        } else opts.expirationInSeconds = ttl;
+      }
+
+      auto result = db::set( model::RequestData{ key, *body, opts } );
       if ( result )
       {
         return write( 200, R"({"code": 200, "cause": "Ok"})"s, res );

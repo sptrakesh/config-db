@@ -46,7 +46,7 @@ SCENARIO( "CRUD test", "crud" )
     {
       auto opts = RequestData::Options{};
       opts.ifNotExists = true;
-      const auto status = set( RequestData{ key, "value"sv, std::move( opts ) } );
+      const auto status = set( RequestData{ key, "value"sv, opts } );
       REQUIRE_FALSE( status );
     }
 

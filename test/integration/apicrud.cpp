@@ -46,7 +46,7 @@ SCENARIO( "API CRUD test", "api-crud" )
     {
       auto opts = spt::configdb::model::RequestData::Options{};
       opts.ifNotExists = true;
-      auto data = spt::configdb::model::RequestData{ key, "value"sv, std::move( opts ) };
+      auto data = spt::configdb::model::RequestData{ key, "value"sv, opts };
       const auto status = set( data );
       REQUIRE_FALSE( status );
     }

@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include <atomic>
+#include <chrono>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -22,6 +24,7 @@ namespace spt::configdb::db
   bool remove( std::string_view key );
 
   bool move( const model::RequestData& data );
+  std::chrono::seconds ttl( std::string_view key );
 
   // Hierarchy
   using Nodes = std::optional<std::vector<std::string>>;
@@ -38,6 +41,12 @@ namespace spt::configdb::db
 
   using NodePair = std::tuple<std::string, std::optional<std::vector<std::string>>>;
   std::vector<NodePair> list( const std::vector<std::string_view>& keys );
+
+  using TTLPair = std::tuple<std::string, std::chrono::seconds>;
+  std::vector<TTLPair> ttl( const std::vector<std::string_view>& keys );
+
+  // To be used by expired key clearing thread
+  void clearExpired( const std::atomic_bool& stop );
 
   // For testing only
   void reopen();

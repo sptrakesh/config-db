@@ -52,6 +52,9 @@ The following *actions/commands* are supported by the service:
 * **List** - List child node names under a specified *parent path*.  Leaf nodes
   will return an error.  **Note** that parent paths are recursively removed during
   a *Delete* action if no other child nodes exist.
+* **TTL** - Retrieve the TTL for the specified *key*.  The returned value indicates
+  the remaining time relative to the request time, not the original value.  If the
+  *key* does not have a TTL policy, `0` is returned.
 
 
 ## Protocols
@@ -63,7 +66,7 @@ The models were generated from the schema files using the following command:
 
 ```shell
 (cd <path to project>/src/common/model;
-<path to>/flatc --cpp --cpp-std c++17 --cpp-static-reflection --reflect-names keyvalue.fbs request.fbs response.fbs tree.fbs)
+<path to>/flatc --cpp --cpp-std c++17 --cpp-static-reflection --reflect-names request.fbs response.fbs tree.fbs)
 ```
 
 ### TCP/IP
@@ -102,6 +105,8 @@ custom HTTP headers when making request to the HTTP/2 service.
 * `x-config-db-if-not-exists` - Use to specify the `if_not_exists` property.
   A value of `true` is interpreted as the boolean value `true`.  Any other values
   are interpreted as `false`.  See the `PutNotExists` function in the example.
+* `x-config-db-ttl` - Use to specify the `expiration_in_seconds` property.  Must
+  be a numeric value, and represent the expiration from current time in *seconds*.
 
 **Note:** The HTTP service does not support batch (multiple *key*) operations.
 
@@ -125,6 +130,18 @@ curl -s --http2-prior-knowledge -XPUT -H "content-type: text/plain" -H "x-config
 ```
 ```json
 {"code": 412, "cause": "Unable to save"}
+```
+
+#### PutWithTTL
+```shell
+curl -s --http2-prior-knowledge -XPUT \
+  -H "content-type: text/plain" \
+  -H "x-config-db-if-not-exists: true" \
+  -H "x-config-db-ttl: 5" \
+  -d "value" 'http://localhost:6006/key/test'
+```
+```json
+{"code": 200, "cause": "Ok"}
 ```
 
 #### GET
@@ -173,6 +190,12 @@ be omitted for all actions other than `Put`.
   * **value** - The *value* to set for the *key*.  This is only relevant for
     the `Put` or `Move` actions.  In the case of `Move`, the *value* is the destination
     *key* to move the *value* to.
+  * **options** - Additional options that relate to setting (or moving) *keys*.
+    * **if_not_exists** - Specify `true` if *key* should be saved only if it does
+      not exist in the database.  For `Move`, this applies to the *value* which
+      serves as the destination *key*.
+    * **expiration_in_seconds** - TTL in seconds from request time.  The *key* will
+      be automatically deleted by the system after the specified time has elapsed.
 
 ### Response
 The [response](src/common/model/response.fbs) message contains either the *value*

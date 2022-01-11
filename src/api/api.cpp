@@ -7,6 +7,8 @@
 #include "../common/pool/pool.h"
 #include "../common/log/NanoLog.h"
 
+#include <charconv>
+
 namespace spt::configdb::api::papi
 {
   struct PoolHolder
@@ -201,6 +203,48 @@ auto spt::configdb::api::list( std::string_view path ) -> Nodes
   std::vector<std::string> results;
   for ( auto&& v : *value->value() ) results.emplace_back( v->string_view() );
   return results;
+}
+
+std::chrono::seconds spt::configdb::api::ttl( std::string_view key )
+{
+  auto popt = papi::PoolHolder::instance().pool.acquire();
+  if ( !popt )
+  {
+    LOG_CRIT << "Error acquiring connection from pool";
+    return std::chrono::seconds{0};
+  }
+
+  auto response = ( *popt )->ttl( key );
+  if ( response->value_type() != model::ResultVariant::KeyValueResults )
+  {
+    LOG_WARN << "Error retrieving TTL for key " << key;
+    return std::chrono::seconds{ 0 };
+  }
+
+  auto resp = response->value_as<model::KeyValueResults>();
+  if ( resp->value()->size() != 1 )
+  {
+    LOG_WARN << "Error retrieving TTL for key " << key;
+    return std::chrono::seconds{ 0 };
+  }
+
+  if ( resp->value()->Get( 0 )->value_type() != model::ValueVariant::Value )
+  {
+    LOG_WARN << "Error retrieving TTL for key " << key;
+    return std::chrono::seconds{ 0 };
+  }
+
+  auto value = resp->value()->Get( 0 )->value_as<model::Value>();
+  LOG_INFO << "Retrieved TTL for key " << key;
+  auto sv = value->value()->string_view();
+  uint64_t v;
+  auto [p, ec] = std::from_chars( sv.data(), sv.data() + sv.size(), v );
+  if ( ec != std::errc() )
+  {
+    LOG_WARN << "Invalid TTL: " << sv;
+    return std::chrono::seconds{ 0 };
+  }
+  return std::chrono::seconds{ v };
 }
 
 auto spt::configdb::api::get( const std::vector<std::string_view>& keys ) -> std::vector<KeyValue>
@@ -400,6 +444,64 @@ auto spt::configdb::api::list( const std::vector<std::string_view>& paths ) -> s
   }
 
   LOG_INFO << "Retrieved " << int(size(paths)) << " paths";
+  return results;
+}
+
+auto spt::configdb::api::ttl( const std::vector<std::string_view>& keys ) -> std::vector<TTLPair>
+{
+  auto popt = papi::PoolHolder::instance().pool.acquire();
+  if ( !popt )
+  {
+    LOG_CRIT << "Error acquiring connection from pool";
+    return {};
+  }
+
+  auto response = ( *popt )->ttl( keys );
+  if ( !response )
+  {
+    LOG_WARN << "Error retrieving TTL values for " << int(keys.size()) << " keys";
+    return {};
+  }
+
+  if ( response->value_type() != model::ResultVariant::KeyValueResults )
+  {
+    LOG_WARN << "Error retrieving TTL values for " << int(keys.size()) << " keys";
+    return {};
+  }
+
+  auto resp = response->value_as<model::KeyValueResults>();
+  if ( resp->value()->size() != keys.size() )
+  {
+    LOG_WARN << "Error retrieving TTL values for " << int(keys.size()) << " keys";
+    return {};
+  }
+
+  std::vector<TTLPair> results;
+  results.reserve( keys.size() );
+
+  for ( auto&& r : *resp->value() )
+  {
+    if ( r->value_type() == model::ValueVariant::Value )
+    {
+      auto rv = r->value_as<model::Value>();
+      auto sv = rv->value()->string_view();
+      uint64_t v;
+      auto [p, ec] = std::from_chars( sv.data(), sv.data() + sv.size(), v );
+      if ( ec != std::errc() )
+      {
+        LOG_WARN << "Invalid TTL value: " << sv;
+        results.emplace_back( r->key()->str(), std::chrono::seconds{ 0 } );
+      }
+      results.emplace_back( r->key()->str(), std::chrono::seconds{ v } );
+    }
+    else
+    {
+      LOG_WARN << "Error retrieving TTL for key " << r->key()->string_view();
+      results.emplace_back( r->key()->str(), std::chrono::seconds{ 0 } );
+    }
+  }
+
+  LOG_INFO << "Retrieved TTL values for " << int(size(keys)) << " keys";
   return results;
 }
 

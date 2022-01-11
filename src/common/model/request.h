@@ -16,18 +16,19 @@ namespace spt::configdb::model
       ~Options() = default;
       Options(Options&&) = default;
       Options& operator=(Options&&) = default;
-
-      Options(const Options&) = delete;
-      Options& operator=(const Options&) = delete;
+      Options(const Options&) = default;
+      Options& operator=(const Options&) = default;
 
       // Store only if specified key does not exist
       bool ifNotExists{ false };
+      // Set TTL value for the key.
+      uint32_t expirationInSeconds{ 0 };
     };
 
-    RequestData() = default;
     RequestData( std::string_view k, std::string_view v ) : key{ k }, value{ v } {}
     RequestData( std::string_view k, std::string_view v, Options opts ) :
-        key{ k }, value{ v }, options{ std::move( opts ) } {}
+        key{ k }, value{ v }, options{ opts } {}
+
     ~RequestData() = default;
     RequestData(RequestData&&) = default;
     RequestData& operator=(RequestData&&) = default;

@@ -4,7 +4,7 @@ FROM sptrakesh/nghttp2 as base
 
 COPY --from=rocksdb /opt/local /opt/local
 COPY --from=flatbuffers /opt/local /opt/local
-RUN apk add --no-cache readline-dev
+RUN apk add --no-cache readline-dev snappy-dev
 
 COPY CMakeLists.txt /opt/spt/config-db/CMakeLists.txt
 COPY src /opt/spt/config-db/src

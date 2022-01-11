@@ -32,8 +32,8 @@ SCENARIO( "API Batch test", "api-batch" )
     {
       const auto keys = std::vector<std::string_view>{ key1, key2, key3, key4 };
       const auto results = get( keys );
-      REQUIRE_FALSE( results.empty());
-      REQUIRE( results.size() == keys.size());
+      REQUIRE_FALSE( results.empty() );
+      REQUIRE( results.size() == keys.size() );
       for ( auto i = 0; i < 4; ++i )
       {
         REQUIRE( results[i].first == keys[i] );
