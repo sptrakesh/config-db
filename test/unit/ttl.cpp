@@ -38,9 +38,7 @@ SCENARIO( "TTL test", "ttl" )
 
     AND_WHEN( "Setting TTL for key" )
     {
-      auto opts = RequestData::Options{};
-      opts.expirationInSeconds = 60;
-      const auto status = set( RequestData{ key, "value"sv, opts } );
+      const auto status = set( RequestData{ key, "value"sv, RequestData::Options{ 60u } } );
       REQUIRE( status );
     }
 

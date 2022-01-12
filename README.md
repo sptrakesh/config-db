@@ -405,6 +405,19 @@ sequence.  Ensure the dependencies are available under the following paths:
   See [dependencies](dependencies.md) for scripts used to install the dependencies.
 * **UNIX** - All dependencies installed under the `/opt/local` path.
 
+```shell
+git clone git@github.com:sptrakesh/config-db.git
+cd config-db
+mkdir build && cd build
+cmake 
+  -DCMAKE_PREFIX_PATH=/usr/local/boost \
+  -DCMAKE_PREFIX_PATH=/usr/local/rocksdb \
+  -DCMAKE_PREFIX_PATH=/usr/local/flatbuffers \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_INSTALL_PREFIX=/usr/local/configdb ..
+make -j12
+sudo make install
+```
 
 ## Run
 Run the service via the `/opt/spt/bin/configdb` executable.  Command line options

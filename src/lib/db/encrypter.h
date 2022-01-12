@@ -34,9 +34,6 @@ namespace spt::configdb::db
     [[nodiscard]] bool valid() const { return true; }
 
   private:
-    const unsigned char* encrypt( const char* value, int length, int& outlength );
-    char* decrypt( const unsigned char* value, int length, int& outlength );
-
     static void loadOpenSSL();
     void initContext();
     void cleanOpenSSL();

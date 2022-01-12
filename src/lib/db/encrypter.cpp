@@ -6,9 +6,7 @@
 #include "model/configuration.h"
 #include "../common/log/NanoLog.h"
 
-#include <cassert>
 #include <chrono>
-#include <cstdlib>
 #include <openssl/err.h>
 
 using spt::configdb::db::Encrypter;
@@ -29,16 +27,36 @@ std::string Encrypter::encrypt( std::string_view value )
   auto const execute = [this, value]() -> std::string
   {
     int outlen = value.size();
-    const unsigned char* outbuf = encrypt( value.data(), outlen, outlen );
+    std::string str( outlen + EVP_CIPHER_CTX_block_size( encryptingContext ), '\0' );
+    auto* outbuf = reinterpret_cast<unsigned char*>( str.data() );
 
-    if ( outbuf )
+    if ( refreshEncryptContext )
     {
-      auto sec = std::string{ reinterpret_cast<const char*>( outbuf ), static_cast<std::size_t>( outlen ) };
-      std::free( (void *)outbuf );
-      return sec;
+      EVP_EncryptInit_ex( encryptingContext, nullptr, nullptr, nullptr, nullptr );
+    }
+    else
+    {
+      refreshEncryptContext = true;
     }
 
-    return {};
+    if ( ! EVP_EncryptUpdate( encryptingContext, outbuf, &outlen,
+        reinterpret_cast<const unsigned char *>( value.data() ), outlen ) )
+    {
+      LOG_WARN << "EVP_EncryptUpdate() failed!";
+      printError();
+      return {};
+    }
+
+    int templen;
+    if ( ! EVP_EncryptFinal_ex( encryptingContext, outbuf + outlen, &templen ) )
+    {
+      LOG_WARN << "EVP_EncryptFinal() failed!";
+      printError();
+      return nullptr;
+    }
+
+    outlen += templen;
+    return std::string{ reinterpret_cast<const char*>( outbuf ), static_cast<std::size_t>( outlen ) };
   };
 
   if ( value.empty() ) return {};
@@ -58,13 +76,37 @@ std::string Encrypter::decrypt( std::string_view sec )
 
   auto const execute = [this, sec]() -> std::string
   {
-    auto* input = reinterpret_cast<const unsigned char*>( sec.data() );
     int outlen = sec.size();
-    char* decoded = decrypt( input, static_cast<int>( sec.size() ), outlen );
-    auto result = std::string{ decoded, static_cast<std::size_t>( outlen ) };
+    std::string str( outlen, '\0' );
+    auto* outbuf = reinterpret_cast<unsigned char *>( str.data() );
 
-    std::free( decoded );
-    return result;
+    if ( refreshDecryptContext )
+    {
+      EVP_DecryptInit_ex( decryptingContext, nullptr, nullptr, nullptr, nullptr );
+    }
+    else
+    {
+      refreshDecryptContext = true;
+    }
+
+    auto* input = reinterpret_cast<const unsigned char*>( sec.data() );
+    if ( ! EVP_DecryptUpdate( decryptingContext, outbuf, &outlen, input, outlen ) )
+    {
+      LOG_WARN << "EVP_DecryptUpdate() failed!";
+      printError();
+      return nullptr;
+    }
+
+    int templen;
+    if ( ! EVP_DecryptFinal_ex( decryptingContext, outbuf + outlen, &templen ) )
+    {
+      LOG_WARN << "EVP_DecryptFinal() failed!";
+      printError();
+      return nullptr;
+    }
+
+    outlen += templen;
+    return std::string{ reinterpret_cast<char*>( outbuf ), static_cast<std::size_t>( outlen ) };
   };
 
   auto start = std::chrono::high_resolution_clock::now();
@@ -74,77 +116,6 @@ std::string Encrypter::decrypt( std::string_view sec )
     " took " << std::chrono::duration_cast<std::chrono::nanoseconds>( finish - start ).count() <<
     " nanoseconds";
   return result;
-}
-
-const unsigned char* Encrypter::encrypt( const char* value, const int length, int& outlen )
-{
-  auto* outbuf = static_cast<unsigned char*>( std::calloc(
-      length + EVP_CIPHER_CTX_block_size( encryptingContext ),
-      sizeof( unsigned char ) ) );
-  assert( outbuf );
-
-  if ( refreshEncryptContext )
-  {
-    EVP_EncryptInit_ex( encryptingContext, nullptr, nullptr, nullptr, nullptr );
-  }
-  else
-  {
-    refreshEncryptContext = true;
-  }
-
-  if ( ! EVP_EncryptUpdate( encryptingContext, outbuf, &outlen,
-      reinterpret_cast<const unsigned char *>( value ), length ) )
-  {
-    LOG_WARN << "EVP_EncryptUpdate() failed!";
-    printError();
-    return nullptr;
-  }
-
-  int templen;
-  if ( ! EVP_EncryptFinal_ex( encryptingContext, outbuf + outlen, &templen ) )
-  {
-    LOG_WARN << "EVP_EncryptFinal() failed!";
-    printError();
-    return nullptr;
-  }
-
-  outlen += templen;
-
-  return outbuf;
-}
-
-char* Encrypter::decrypt( const unsigned char* input, const int inlen, int& outlen )
-{
-  auto* outbuf = static_cast<unsigned char *>( std::calloc( inlen, sizeof( unsigned char ) ) );
-  assert( outbuf );
-
-  if ( refreshDecryptContext )
-  {
-    EVP_DecryptInit_ex( decryptingContext, nullptr, nullptr, nullptr, nullptr );
-  }
-  else
-  {
-    refreshDecryptContext = true;
-  }
-
-  if ( ! EVP_DecryptUpdate( decryptingContext, outbuf, &outlen, input, inlen ) )
-  {
-    LOG_WARN << "EVP_DecryptUpdate() failed!";
-    printError();
-    return nullptr;
-  }
-
-  int templen;
-  if ( ! EVP_DecryptFinal_ex( decryptingContext, outbuf + outlen, &templen ) )
-  {
-    LOG_WARN << "EVP_DecryptFinal() failed!";
-    printError();
-    return nullptr;
-  }
-
-  outlen += templen;
-
-  return reinterpret_cast<char*>( outbuf );
 }
 
 void Encrypter::loadOpenSSL()
@@ -158,9 +129,12 @@ void Encrypter::initContext()
   constexpr static const char* scheme = "aes-256-cbc";
   auto& conf = model::Configuration::instance();
 
+  auto aesk = std::string{ conf.encryption.key };
+  auto aesi = std::string{ conf.encryption.iv };
+
   auto* salt = reinterpret_cast<const unsigned char*>( conf.encryption.salt.data() );
-  auto* aes_key = reinterpret_cast<unsigned char*>( conf.encryption.key.data() );
-  auto* aes_iv = reinterpret_cast<unsigned char*>( conf.encryption.iv.data() );
+  auto* aes_key = reinterpret_cast<unsigned char*>( aesk.data() );
+  auto* aes_iv = reinterpret_cast<unsigned char*>( aesi.data() );
 
   const EVP_CIPHER *cipher = EVP_get_cipherbyname( scheme );
   if ( ! cipher )

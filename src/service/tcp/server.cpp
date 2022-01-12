@@ -119,9 +119,8 @@ namespace spt::configdb::tcp::coroutine
     std::vector<model::RequestData> pairs;
     for ( auto&& kv : *request->data() )
     {
-      auto opts = model::RequestData::Options{};
-      opts.ifNotExists = kv->options()->if_not_exists();
-      opts.expirationInSeconds = kv->options()->expiration_in_seconds();
+      auto opts = model::RequestData::Options{
+        kv->options()->expiration_in_seconds(), kv->options()->if_not_exists() };
       pairs.emplace_back( kv->key()->string_view(), kv->value()->string_view(), opts );
     }
 
@@ -153,9 +152,8 @@ namespace spt::configdb::tcp::coroutine
     std::vector<model::RequestData> pairs;
     for ( auto&& kv : *request->data() )
     {
-      auto opts = model::RequestData::Options{};
-      opts.ifNotExists = kv->options()->if_not_exists();
-      opts.expirationInSeconds = kv->options()->expiration_in_seconds();
+      auto opts = model::RequestData::Options{
+        kv->options()->expiration_in_seconds(), kv->options()->if_not_exists() };
       pairs.emplace_back( kv->key()->string_view(), kv->value()->string_view(), opts );
     }
 

@@ -44,8 +44,7 @@ SCENARIO( "CRUD test", "crud" )
 
     AND_WHEN( "Updating rejected with if not exists" )
     {
-      auto opts = RequestData::Options{};
-      opts.ifNotExists = true;
+      auto opts = RequestData::Options{ true };
       const auto status = set( RequestData{ key, "value"sv, opts } );
       REQUIRE_FALSE( status );
     }

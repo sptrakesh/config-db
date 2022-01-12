@@ -44,8 +44,7 @@ SCENARIO( "API CRUD test", "api-crud" )
 
     AND_WHEN( "Update rejected due to if not exists" )
     {
-      auto opts = spt::configdb::model::RequestData::Options{};
-      opts.ifNotExists = true;
+      auto opts = spt::configdb::model::RequestData::Options{ true };
       auto data = spt::configdb::model::RequestData{ key, "value"sv, opts };
       const auto status = set( data );
       REQUIRE_FALSE( status );

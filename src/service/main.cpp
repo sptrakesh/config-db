@@ -20,7 +20,7 @@
 int main( int argc, char const * const * argv )
 {
   using clara::Opt;
-  auto& conf = spt::configdb::model::Configuration::instance();
+  auto& conf = const_cast<spt::configdb::model::Configuration&>( spt::configdb::model::Configuration::instance() );
 #if __APPLE__
   std::string httpPort{ "6006" };
   int tcpPort{ 2022 };

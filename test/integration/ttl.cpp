@@ -59,8 +59,7 @@ SCENARIO( "TTL test", "[ttl]" )
 
     AND_WHEN( "Setting a TTL for the keys" )
     {
-      auto opts = RequestData::Options{};
-      opts.expirationInSeconds = 2;
+      auto opts = RequestData::Options{ 2u };
       auto kvs = std::vector<RequestData>{};
       kvs.reserve( 2 );
       kvs.emplace_back( key1, "value"sv, opts );
@@ -84,8 +83,7 @@ SCENARIO( "TTL test", "[ttl]" )
 
     AND_WHEN( "Moving the keys" )
     {
-      auto opts = RequestData::Options{};
-      opts.expirationInSeconds = 4;
+      auto opts = RequestData::Options{ 4u };
       auto kvs = std::vector<RequestData>{};
       kvs.reserve( 2 );
       kvs.emplace_back( key1, dest1, opts );

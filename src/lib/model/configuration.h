@@ -37,7 +37,7 @@ namespace spt::configdb::model
       bool console = false;
     };
 
-    static Configuration& instance()
+    static const Configuration& instance()
     {
       static Configuration c;
       return c;
