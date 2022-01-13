@@ -1006,14 +1006,9 @@ namespace spt::configdb::db::internal
 
     void init()
     {
-#ifdef __APPLE__
-      static const std::string dbpath{ "/tmp/config-db" };
-#else
-      static const std::string dbpath{ "/opt/spt/data" };
-#endif
+      auto& conf = model::Configuration::instance();
       auto cfopts = rocksdb::ColumnFamilyOptions{};
-      // TODO: move to config
-      cfopts.OptimizeForPointLookup( 8 );
+      cfopts.OptimizeForPointLookup( conf.storage.blockCacheSizeMb );
       std::vector<rocksdb::ColumnFamilyDescriptor> families{
           { rocksdb::kDefaultColumnFamilyName, cfopts },
           { "data"s, cfopts },
@@ -1032,10 +1027,10 @@ namespace spt::configdb::db::internal
       rocksdb::TransactionDB* tdb;
 
       if ( const auto status = rocksdb::TransactionDB::Open(
-            dbopts, rocksdb::TransactionDBOptions{}, dbpath, families, &handles, &tdb );
+            dbopts, rocksdb::TransactionDBOptions{}, conf.storage.dbpath, families, &handles, &tdb );
           !status.ok() )
       {
-        LOG_CRIT << "Error opening database at path " << dbpath << ". " << status.ToString();
+        LOG_CRIT << "Error opening database at path " << conf.storage.dbpath << ". " << status.ToString();
         throw DbOpenException{};
       }
 

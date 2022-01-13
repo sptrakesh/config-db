@@ -6,10 +6,11 @@
 #include "../common/contextholder.h"
 #include "../common/log/NanoLog.h"
 #include "../lib/db/storage.h"
+#include "../lib/model/configuration.h"
 
 #include <charconv>
 #include <boost/algorithm/string/replace.hpp>
-#include <boost/json/src.hpp>
+#include <boost/json.hpp>
 #include <nghttp2/asio_http2_server.h>
 
 using namespace std::string_literals;
@@ -196,16 +197,11 @@ namespace spt::configdb::http::endpoints
 
   int startWithSSL( const std::string& port, int threads )
   {
+    auto& conf = model::Configuration::instance();
     boost::asio::ssl::context tls{ boost::asio::ssl::context::tlsv12_server };
-#ifdef __APPLE__
-    tls.load_verify_file( "../../../certs/ca.crt" );
-    tls.use_certificate_file( "../../../certs/server.crt", boost::asio::ssl::context::pem );
-    tls.use_private_key_file( "../../../certs/server.key", boost::asio::ssl::context::pem );
-#else
-    tls.load_verify_file( "/opt/spt/certs/ca.crt" );
-  tls.use_certificate_file( "/opt/spt/certs/server.crt", boost::asio::ssl::context::pem );
-  tls.use_private_key_file( "/opt/spt/certs/server.key", boost::asio::ssl::context::pem );
-#endif
+    tls.load_verify_file( conf.ssl.caCertificate );
+    tls.use_certificate_file( conf.ssl.certificate, boost::asio::ssl::context::pem );
+    tls.use_private_key_file( conf.ssl.key, boost::asio::ssl::context::pem );
 
     boost::system::error_code ec;
     nghttp2::asio_http2::server::configure_tls_context_easy( ec, tls );

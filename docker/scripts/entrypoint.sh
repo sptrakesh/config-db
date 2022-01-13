@@ -61,9 +61,14 @@ Service()
   fi
 
   echo "Starting config-db service"
-  /opt/spt/bin/configdb --console true --log-dir ${LOGDIR}/ --log-level $LOG_LEVEL \
-    --http-port $HTTP_PORT --tcp-port $TCP_PORT --threads $THREADS \
-    --enable-cache $ENABLE_CACHE --with-ssl $ENABLE_SSL $args
+  if [ -n "$CONFIG_FILE" ]
+  then
+    /opt/spt/bin/configdb --config-file $CONFIG_FILE
+  else
+    /opt/spt/bin/configdb --console true --log-dir ${LOGDIR}/ --log-level $LOG_LEVEL \
+      --http-port $HTTP_PORT --tcp-port $TCP_PORT --threads $THREADS \
+      --enable-cache $ENABLE_CACHE --with-ssl $ENABLE_SSL $args
+  fi
 }
 
 Defaults && Args && Service

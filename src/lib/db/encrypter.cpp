@@ -151,7 +151,7 @@ void Encrypter::initContext()
       reinterpret_cast<const unsigned char *>( key.c_str() ),
       int( key.size() + 1 ),
       conf.encryption.rounds,             // more rounds
-      aes_key, aes_iv);   // return buffers
+      aes_key, aes_iv );   // return buffers
 
   encryptingContext = EVP_CIPHER_CTX_new();
   EVP_CIPHER_CTX_init( encryptingContext );

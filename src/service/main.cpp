@@ -16,26 +16,21 @@
 #include <vector>
 
 #include <boost/asio/signal_set.hpp>
+#include <boost/json/src.hpp>
 
-int main( int argc, char const * const * argv )
+void loadConfig( int argc, char const * const * argv )
 {
   using clara::Opt;
   auto& conf = const_cast<spt::configdb::model::Configuration&>( spt::configdb::model::Configuration::instance() );
-#if __APPLE__
-  std::string httpPort{ "6006" };
-  int tcpPort{ 2022 };
-#else
-  std::string httpPort{ "6000" };
-  int tcpPort{ 2020 };
-#endif
-  bool ssl = false;
+  std::string file{};
   bool help = false;
 
   auto options = clara::Help(help) |
+      Opt(file, "/tmp/configdb.json")["-f"]["--config-file"]("The JSON configuration file to load.  All other options are ignored.") |
       Opt(conf.logging.console, "true")["-c"]["--console"]("Log to console (default false)") |
-      Opt(httpPort, "6000")["-p"]["--http-port"]("Port on which to listen for http/2 traffic (default 6000)") |
-      Opt(tcpPort, "2020")["-t"]["--tcp-port"]("Port on which to listen for tcp traffic (default 2020)") |
-      Opt(ssl, "true")["-s"]["--with-ssl"]("Enable SSL wrappers for services (default false)") |
+      Opt(conf.services.http, "6000")["-p"]["--http-port"]("Port on which to listen for http/2 traffic (default 6000)") |
+      Opt(conf.services.tcp, "2020")["-t"]["--tcp-port"]("Port on which to listen for tcp traffic (default 2020)") |
+      Opt(conf.ssl.enable, "true")["-s"]["--with-ssl"]("Enable SSL wrappers for services (default false)") |
       Opt(conf.threads, "8")["-n"]["--threads"]("Number of server threads to spawn (default system)") |
       Opt(conf.encryption.secret, "AESEncryptionKey")["-e"]["--encryption-secret"]("Secret to use to encrypt values (default internal)") |
       Opt(conf.enableCache, "true")["-x"]["--enable-cache"]("Enable temporary cache for key values (default false)") |
@@ -55,10 +50,19 @@ int main( int argc, char const * const * argv )
     exit( 0 );
   }
 
-  std::cout << "Starting server with options\n" <<
+  if ( !file.empty() ) spt::configdb::model::Configuration::loadFromFile( file );
+}
+
+int main( int argc, char const * const * argv )
+{
+  loadConfig( argc, argv );
+  auto& conf = spt::configdb::model::Configuration::instance();
+
+  std::cout << "Starting server with options\n" << std::boolalpha <<
     "console: " << conf.logging.console << '\n' <<
-    "http-port: " << httpPort << "\n" <<
-    "tcp-port: " << tcpPort << "\n" <<
+    "ssl: " << conf.ssl.enable << '\n' <<
+    "http-port: " << conf.services.http << "\n" <<
+    "tcp-port: " << conf.services.tcp << "\n" <<
     "threads: " << conf.threads << "\n" <<
     "logLevel: " << conf.logging.level << '\n' <<
     "dir: " << conf.logging.dir << '\n';
@@ -74,8 +78,8 @@ int main( int argc, char const * const * argv )
 
   std::vector<std::thread> v;
   v.reserve( conf.threads + 3 );
-  v.emplace_back( [httpPort, &conf, ssl]{ spt::configdb::http::start( httpPort, conf.threads, ssl ); } );
-  v.emplace_back( [tcpPort, ssl]{ spt::configdb::tcp::start( tcpPort, ssl ); } );
+  v.emplace_back( [&conf]{ spt::configdb::http::start( conf.services.http, conf.threads, conf.ssl.enable ); } );
+  v.emplace_back( [&conf]{ spt::configdb::tcp::start( conf.services.tcp, conf.ssl.enable ); } );
   v.emplace_back( [&cleaner]{ cleaner.run(); } );
 
   boost::asio::signal_set signals( spt::configdb::ContextHolder::instance().ioc, SIGINT, SIGTERM );

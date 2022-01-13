@@ -389,6 +389,8 @@ docker run -d --rm -p 6006:6000 -p 2022:2020 -e "ENABLE_SSL=true" --name config-
 ```
 
 The following environment variables can be used to customise the container:
+* `CONFIG_FILE` - The JSON file (volume mount) with full configuration.  All
+  other variables/options are ignored.
 * `HTTP_PORT` - The port to run the HTTP/2 service on.  Default `6000`.
 * `TCP_PORT` - The port to run the TCP service on.  Default `2020`.
 * `THREADS` - The number of threads to use for the services.  Default `4`.
@@ -423,6 +425,11 @@ sudo make install
 Run the service via the `/opt/spt/bin/configdb` executable.  Command line options
 may be specified to override default options.  When running as a Docker container,
 use environment variables to specify the comman line options.
+* **-f | --config-file** - The path to the JSON configuration file.  All other
+  options are ignored.  This option provides total control over all configurable
+  options including encryption. File must have same structure as the 
+  [struct](src/lib/model/configuration.h).  See [test](test/unit/configuration.cpp)
+  for sample JSON configuration.
 * **Logging** - Options related to logging.
   * **-c | --console** - Echo logs to `stdout`.  Default `false`.  Always specified
     as `true` in the Docker [entrypoint](docker/scripts/entrypoint.sh).

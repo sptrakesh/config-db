@@ -4,6 +4,7 @@
 
 #define CATCH_CONFIG_RUNNER
 #include <catch2/catch.hpp>
+#include <boost/json/src.hpp>
 
 #include "../../src/lib/db/storage.h"
 #include "../../src/common/log/NanoLog.h"

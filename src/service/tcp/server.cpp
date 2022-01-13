@@ -8,6 +8,7 @@
 #include "../common/model/request_generated.h"
 #include "../common/model/response_generated.h"
 #include "../lib/db/storage.h"
+#include "../lib/model/configuration.h"
 
 #include <vector>
 
@@ -297,20 +298,15 @@ namespace spt::configdb::tcp::coroutine
 
   boost::asio::ssl::context createSSLContext()
   {
+    auto& conf = model::Configuration::instance();
     auto ctx = boost::asio::ssl::context( boost::asio::ssl::context::tlsv13_server );
     ctx.set_options(
         boost::asio::ssl::context::default_workarounds |
         boost::asio::ssl::context::single_dh_use );
 
-#ifdef __APPLE__
-    ctx.load_verify_file( "../../../certs/ca.crt" );
-    ctx.use_certificate_file( "../../../certs/server.crt", boost::asio::ssl::context::pem );
-    ctx.use_private_key_file( "../../../certs/server.key", boost::asio::ssl::context::pem );
-#else
-    ctx.load_verify_file( "/opt/spt/certs/ca.crt" );
-    ctx.use_certificate_file( "/opt/spt/certs/server.crt", boost::asio::ssl::context::pem );
-    ctx.use_private_key_file( "/opt/spt/certs/server.key", boost::asio::ssl::context::pem );
-#endif
+    ctx.load_verify_file( conf.ssl.caCertificate );
+    ctx.use_certificate_file( conf.ssl.certificate, boost::asio::ssl::context::pem );
+    ctx.use_private_key_file( conf.ssl.key, boost::asio::ssl::context::pem );
     ctx.set_verify_mode( boost::asio::ssl::verify_peer | boost::asio::ssl::verify_fail_if_no_peer_cert );
 
     return ctx;
