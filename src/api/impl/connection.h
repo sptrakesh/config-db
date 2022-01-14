@@ -61,9 +61,9 @@ namespace spt::configdb::api::impl
         return nullptr;
       }
 
-      auto n = fb.GetSize();
+      uint32_t n = fb.GetSize();
       std::ostream os{ &buffer };
-      os.write( reinterpret_cast<const char*>( &n ), sizeof(flatbuffers::uoffset_t) );
+      os.write( reinterpret_cast<const char*>( &n ), sizeof(n) );
       os.write( reinterpret_cast<const char*>( fb.GetBufferPointer() ), fb.GetSize() );
 
       const auto isize = boost::asio::write( s, buffer );

@@ -13,8 +13,13 @@ using spt::configdb::db::Encrypter;
 
 Encrypter::Encrypter( std::string_view cryptKey ) : key{ cryptKey.data(), cryptKey.size() }
 {
+  auto start = std::chrono::high_resolution_clock::now();
   loadOpenSSL();
   initContext();
+  auto finish = std::chrono::high_resolution_clock::now();
+  LOG_INFO << "Initialising OpenSSL routines took " <<
+    std::chrono::duration_cast<std::chrono::nanoseconds>( finish - start ).count() <<
+    " nanoseconds";
 }
 
 Encrypter::~Encrypter()
@@ -139,7 +144,7 @@ void Encrypter::initContext()
   const EVP_CIPHER *cipher = EVP_get_cipherbyname( scheme );
   if ( ! cipher )
   {
-    LOG_WARN << "Cannot get cipher with name {" << scheme << "}";
+    LOG_WARN << "Cannot get cipher with name {" << scheme << '}';
     printError();
     throw SSLException{};
   }
@@ -177,7 +182,6 @@ void Encrypter::printError()
   while( ( errorCode = ERR_get_error() ) > 0 )
   {
     char *errorMessage = ERR_error_string( errorCode, nullptr );
-    LOG_WARN << "Error code: {" << int(errorCode) << "} message: {"
-      << errorMessage << "}";
+    LOG_WARN << "Error code: {" << int(errorCode) << "} message: {" << errorMessage << "}";
   }
 }

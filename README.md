@@ -385,6 +385,8 @@ It is possible to run the integration tests against the docker container instead
 of the service running locally.
 
 ```shell
+docker run -d --rm -p 6006:6000 -p 2022:2020 --name config-db sptrakesh/config-db
+# or with SSL turned on
 docker run -d --rm -p 6006:6000 -p 2022:2020 -e "ENABLE_SSL=true" --name config-db sptrakesh/config-db
 ```
 
@@ -431,8 +433,9 @@ use environment variables to specify the comman line options.
   [struct](src/lib/model/configuration.h).  See [test](test/unit/configuration.cpp)
   for sample JSON configuration.
 * **Logging** - Options related to logging.
-  * **-c | --console** - Echo logs to `stdout`.  Default `false`.  Always specified
-    as `true` in the Docker [entrypoint](docker/scripts/entrypoint.sh).
+  * **-c | --console** - Flag that controls whether logs are echo'ed to `stdout`.
+    Default is off.  Always specified in the Docker [entrypoint](docker/scripts/entrypoint.sh).
+    No value (`true`, `false`) etc. must be specified.
   * **-l | --log-level** - The log level to set.  Default `info`.  Supported values
     `critical|warn|info|debug`.  Specify via `LOG_LEVEL` environment variable to docker.
   * **-o | --log-dir** - The directory under which log files are written.  Default
@@ -442,7 +445,7 @@ use environment variables to specify the comman line options.
   `6000` (`6006` on Apple).  Specify via `HTTP_PORT` environment variable to docker.
 * **-t | --tcp-port** - The port on which the TCP/IP service listens.  Default
   `2020` (`2022` on Apple).  Specify via `TCP_PORT` environment variable to docker.
-* **-s | --with-ssl** - Enable SSL on the HTTP and TCP services.  See [SSL](#ssl) for details.
+* **-s | --with-ssl** - Flag to enable SSL on the HTTP and TCP services.  See [SSL](#ssl) for details.
 * **-n | --threads** - The number of threads for both TCP/IP and HTTP/2 services.
   Default to number of hardware threads.  The Docker entrypoint defaults to `4`.
   Specify via `THREADS` environment variable to docker.

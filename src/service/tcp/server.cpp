@@ -233,7 +233,7 @@ namespace spt::configdb::tcp::coroutine
     {
       if ( length < 5 ) return length;
 
-      const auto d = reinterpret_cast<const uint8_t*>( data );
+      const auto d = const_cast<uint8_t*>( data );
       uint32_t len;
       memcpy( &len, d, sizeof(len) );
       return std::size_t( len + sizeof(len) );

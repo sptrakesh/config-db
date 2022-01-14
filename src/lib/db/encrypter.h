@@ -15,7 +15,7 @@ namespace spt::configdb::db
   {
     struct SSLException : std::exception
     {
-      const char* what() const noexcept override
+      [[nodiscard]] const char* what() const noexcept override
       {
         return "Error initialising OpenSSL";
       }

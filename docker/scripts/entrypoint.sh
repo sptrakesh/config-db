@@ -33,12 +33,6 @@ Defaults()
     ENABLE_CACHE="true"
     echo "ENABLE_CACHE not set.  Will default to $ENABLE_CACHE"
   fi
-
-  if [ -z "$ENABLE_SSL" ]
-  then
-    ENABLE_SSL="false"
-    echo "ENABLE_SSL not set.  Will default to $ENABLE_SSL"
-  fi
 }
 
 Args()
@@ -49,6 +43,12 @@ Args()
   then
     args=" --encryption-secret $ENCRYPTION_SECRET"
     echo "AES encryption secret specified."
+  fi
+
+  if [ -n "$ENABLE_SSL" ]
+  then
+    echo "ENABLE_SSL specified.  Enabling SSL for services"
+    args="$args --with-ssl"
   fi
 }
 
@@ -65,9 +65,9 @@ Service()
   then
     /opt/spt/bin/configdb --config-file $CONFIG_FILE
   else
-    /opt/spt/bin/configdb --console true --log-dir ${LOGDIR}/ --log-level $LOG_LEVEL \
+    /opt/spt/bin/configdb --console --log-dir ${LOGDIR}/ --log-level $LOG_LEVEL \
       --http-port $HTTP_PORT --tcp-port $TCP_PORT --threads $THREADS \
-      --enable-cache $ENABLE_CACHE --with-ssl $ENABLE_SSL $args
+      --enable-cache $ENABLE_CACHE $args
   fi
 }
 

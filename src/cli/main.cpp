@@ -37,7 +37,7 @@ int main( int argc, char const * const * argv )
   auto options = clara::Help(help) |
       Opt(server, "localhost")["-s"]["--server"]("Server to connect to (default localhost).") |
       Opt(port, "2020")["-p"]["--port"]("TCP port for the server (default 2020)") |
-      Opt(ssl, "true")["-t"]["--with-ssl"]("Use SSL to connect to service (default false)") |
+      Opt(ssl)["-t"]["--with-ssl"]("Use SSL to connect to service (default false)") |
       Opt(file, "file.txt")["-f"]["--file"]("File to bulk import data from") |
       Opt(action, "set")["-a"]["--action"]("Action to perform against the database.") |
       Opt(key, "/key")["-k"]["--key"]("Key or path to apply action to") |

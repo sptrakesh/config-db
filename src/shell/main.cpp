@@ -31,7 +31,7 @@ int main( int argc, char const * const * argv )
   auto options = clara::Help(help) |
       Opt(server, "localhost")["-s"]["--server"]("Server to connect to (default localhost).") |
       Opt(port, "2020")["-p"]["--port"]("TCP port for the server (default 2020)") |
-      Opt(ssl, "true")["-t"]["--with-ssl"]("Use SSL to connect to service (default false)") |
+      Opt(ssl)["-t"]["--with-ssl"]("Use SSL to connect to service (default false)") |
       Opt(logLevel, "info")["-l"]["--log-level"]("Log level to use [debug|info|warn|critical] (default info).") |
       Opt(dir, "/tmp/")["-o"]["--log-dir"]("Log directory (default /tmp/)");
 

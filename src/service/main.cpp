@@ -27,10 +27,10 @@ void loadConfig( int argc, char const * const * argv )
 
   auto options = clara::Help(help) |
       Opt(file, "/tmp/configdb.json")["-f"]["--config-file"]("The JSON configuration file to load.  All other options are ignored.") |
-      Opt(conf.logging.console, "true")["-c"]["--console"]("Log to console (default false)") |
+      Opt(conf.logging.console)["-c"]["--console"]("Log to console (default false)") |
       Opt(conf.services.http, "6000")["-p"]["--http-port"]("Port on which to listen for http/2 traffic (default 6000)") |
       Opt(conf.services.tcp, "2020")["-t"]["--tcp-port"]("Port on which to listen for tcp traffic (default 2020)") |
-      Opt(conf.ssl.enable, "true")["-s"]["--with-ssl"]("Enable SSL wrappers for services (default false)") |
+      Opt(conf.ssl.enable)["-s"]["--with-ssl"]("Enable SSL wrappers for services (default false)") |
       Opt(conf.threads, "8")["-n"]["--threads"]("Number of server threads to spawn (default system)") |
       Opt(conf.encryption.secret, "AESEncryptionKey")["-e"]["--encryption-secret"]("Secret to use to encrypt values (default internal)") |
       Opt(conf.enableCache, "true")["-x"]["--enable-cache"]("Enable temporary cache for key values (default false)") |
@@ -110,9 +110,6 @@ int main( int argc, char const * const * argv )
   run();
   cleaner.stop();
 
-  for ( auto&& t : v )
-  {
-    if ( t.joinable() ) t.join();
-  }
+  for ( auto&& t : v ) if ( t.joinable() ) t.join();
 }
 
