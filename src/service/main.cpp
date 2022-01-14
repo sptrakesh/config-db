@@ -33,7 +33,7 @@ void loadConfig( int argc, char const * const * argv )
       Opt(conf.ssl.enable)["-s"]["--with-ssl"]("Enable SSL wrappers for services (default false)") |
       Opt(conf.threads, "8")["-n"]["--threads"]("Number of server threads to spawn (default system)") |
       Opt(conf.encryption.secret, "AESEncryptionKey")["-e"]["--encryption-secret"]("Secret to use to encrypt values (default internal)") |
-      Opt(conf.enableCache, "true")["-x"]["--enable-cache"]("Enable temporary cache for key values (default false)") |
+      Opt(conf.enableCache)["-x"]["--enable-cache"]("Enable temporary cache for key values (default false)") |
       Opt(conf.logging.level, "info")["-l"]["--log-level"]("Log level to use [debug|info|warn|critical] (default info).") |
       Opt(conf.logging.dir, "logs/")["-o"]["--log-dir"]("Log directory (default logs/)");
 

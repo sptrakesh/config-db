@@ -244,7 +244,7 @@ The server should be running and the TCP port open for the application to connec
 The following command line options are supported by the shell:
 * `-s | --server` The TCP server hostname to connect to.  Default `localhost`.
 * `-p | --port` The TCP port to connect to.  Default `2020` (`2022` on Mac OS X).
-* `-t | --with-ssl` Specify `true` to connect over SSL to the server.
+* `-t | --with-ssl` Flag to connect over SSL to the server.
 * `-l | --log-level` The level for the logger.  Accepted values `debug|info|warn|critical`.  Default `info`.
 * `-o | --log-dir` The directory to write log files to.  The path *must* end with a trailing `/`.  Default `/tmp/`.
 
@@ -305,7 +305,7 @@ The server should be running and the TCP port open for the application to connec
 The following command line options are supported by the CLI application:
 * `-s | --server` The TCP server hostname to connect to.  Default `localhost`.
 * `-p | --port` The TCP port to connect to.  Default `2020` (`2022` on Mac OS X).
-* `-t | --with-ssl` Specify `true` to connect over SSL to the server.
+* `-t | --with-ssl` Flag to connect over SSL to the server.
 * `-l | --log-level` The level for the logger.  Accepted values `debug|info|warn|critical`.  Default `info`.
 * `-o | --log-dir` The directory to write log files to.  The path *must* end with a trailing `/`.  Default `/tmp/`.
 * `-f | --file` The file to bulk import into the database.  If specified, other commands are ignored.
@@ -452,13 +452,13 @@ use environment variables to specify the comman line options.
 * **-e | --encryption-secret** - The secret to use to encrypt values.  Default
   value is internal to the system.  Specify via `ENCRYPTION_SECRET` environment
   variable to docker.
-* **-x | --enable-cache** - Enables temporary cache for keys read from the database.
-  Default `false`.  Specify via `ENABLE_CACHE` environment variable to docker.
+* **-x | --enable-cache** - Flag to enable temporary cache for keys read from the database.
+  Default `off`.  Specify via `ENABLE_CACHE` environment variable to docker.
 
 Sample command to run the service
 ```shell
 # Locally built service
-/opt/spt/bin/configdb --console true --log-dir /tmp/ --threads 4 --log-level debug
+/opt/spt/bin/configdb --console --log-dir /tmp/ --threads 4 --log-level debug
 # Docker container
 docker run -d --rm -p 6000:6000 -p 2022:2020 \
   -e "ENCRYPTION_SECRET=abc123" -e "LOG_LEVEL=debug" \

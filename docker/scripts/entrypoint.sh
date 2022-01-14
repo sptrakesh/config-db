@@ -27,12 +27,6 @@ Defaults()
     LOG_LEVEL="info"
     echo "LOG_LEVEL not set.  Will default to $LOG_LEVEL"
   fi
-
-  if [ -z "$ENABLE_CACHE" ]
-  then
-    ENABLE_CACHE="true"
-    echo "ENABLE_CACHE not set.  Will default to $ENABLE_CACHE"
-  fi
 }
 
 Args()
@@ -49,6 +43,12 @@ Args()
   then
     echo "ENABLE_SSL specified.  Enabling SSL for services"
     args="$args --with-ssl"
+  fi
+
+  if [ -n "$ENABLE_CACHE" ]
+  then
+    echo "ENABLE_CACHE set.  Will enable temporary cache of keys"
+    args="$args --enable-cache"
   fi
 }
 
@@ -67,7 +67,7 @@ Service()
   else
     /opt/spt/bin/configdb --console --log-dir ${LOGDIR}/ --log-level $LOG_LEVEL \
       --http-port $HTTP_PORT --tcp-port $TCP_PORT --threads $THREADS \
-      --enable-cache $ENABLE_CACHE $args
+      $args
   fi
 }
 
