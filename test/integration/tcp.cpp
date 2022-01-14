@@ -5,7 +5,7 @@
 #include <catch2/catch.hpp>
 
 #include "../../src/api/api.h"
-#include "../../src/common/log/NanoLog.h"
+#include "../../src/log/NanoLog.h"
 #include "../../src/common/model/request_generated.h"
 
 using namespace spt::configdb::api;

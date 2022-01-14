@@ -3,7 +3,6 @@
 //
 
 #include "configuration.h"
-#include "../common/log/NanoLog.h"
 
 #include <filesystem>
 #include <fstream>

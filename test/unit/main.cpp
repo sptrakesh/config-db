@@ -7,7 +7,7 @@
 #include <boost/json/src.hpp>
 
 #include "../../src/lib/db/storage.h"
-#include "../../src/common/log/NanoLog.h"
+#include "../../src/log/NanoLog.h"
 
 int main( int argc, char* argv[] )
 {

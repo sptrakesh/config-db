@@ -73,6 +73,7 @@ IF(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
   set(CMAKE_INSTALL_PREFIX /opt/spt)
 ENDIF(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 
+add_subdirectory(src/log)
 add_subdirectory(src/common)
 add_subdirectory(src/lib)
 add_subdirectory(src/service)

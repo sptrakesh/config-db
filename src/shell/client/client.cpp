@@ -4,7 +4,7 @@
 
 #include "client.h"
 #include "../../api/api.h"
-#include "../common/log/NanoLog.h"
+#include "../log/NanoLog.h"
 
 #include <cctype>
 #include <iostream>

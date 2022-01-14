@@ -419,7 +419,7 @@ cmake
   -DCMAKE_PREFIX_PATH=/usr/local/flatbuffers \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_INSTALL_PREFIX=/usr/local/configdb ..
-make -j12
+make -j8
 sudo make install
 ```
 
@@ -430,7 +430,7 @@ use environment variables to specify the comman line options.
 * **-f | --config-file** - The path to the JSON configuration file.  All other
   options are ignored.  This option provides total control over all configurable
   options including encryption. File must have same structure as the 
-  [struct](src/lib/model/configuration.h).  See [test](test/unit/configuration.cpp)
+  [struct](src/common/model/configuration.h).  See [test](test/unit/configuration.cpp)
   for sample JSON configuration.
 * **Logging** - Options related to logging.
   * **-c | --console** - Flag that controls whether logs are echo'ed to `stdout`.

@@ -3,7 +3,7 @@
 //
 
 #include "clearexpired.h"
-#include "../common/log/NanoLog.h"
+#include "../log/NanoLog.h"
 #include "../lib/db/storage.h"
 
 #include <thread>

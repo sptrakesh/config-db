@@ -4,8 +4,8 @@
 
 #include "client/client.h"
 #include "../common/contextholder.h"
-#include "../common/log/NanoLog.h"
 #include "../common/util/clara.h"
+#include "../log/NanoLog.h"
 
 #include <iostream>
 #include <thread>

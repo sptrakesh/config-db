@@ -13,8 +13,8 @@
 #include <boost/asio/ip/tcp.hpp>
 
 #include "../common/contextholder.h"
-#include "../common/log/NanoLog.h"
 #include "../common/model/request.h"
+#include "../log/NanoLog.h"
 #include "../../src/common/model/response_generated.h"
 
 namespace spt::configdb::api::impl

@@ -6,7 +6,7 @@
 #include <catch2/catch.hpp>
 
 #include "../../src/api/api.h"
-#include "../../src/common/log/NanoLog.h"
+#include "../../src/log/NanoLog.h"
 
 int main( int argc, char* argv[] )
 {

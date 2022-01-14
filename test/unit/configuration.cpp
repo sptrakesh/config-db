@@ -8,7 +8,7 @@
 #include <fstream>
 #include <sstream>
 
-#include "../../src/lib/model/configuration.h"
+#include "../../src/common/model/configuration.h"
 
 namespace spt::configdb::unittest::pconf
 {

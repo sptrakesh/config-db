@@ -4,11 +4,11 @@
 
 #include "server.h"
 #include "../common/contextholder.h"
-#include "../common/log/NanoLog.h"
+#include "../common/model/configuration.h"
 #include "../common/model/request_generated.h"
 #include "../common/model/response_generated.h"
 #include "../lib/db/storage.h"
-#include "../lib/model/configuration.h"
+#include "../log/NanoLog.h"
 
 #include <vector>
 

@@ -6,10 +6,10 @@
 #include "http/server.h"
 #include "tcp/server.h"
 #include "../common/contextholder.h"
-#include "../common/log/NanoLog.h"
+#include "../common/model/configuration.h"
 #include "../common/util/clara.h"
 #include "../lib/db/storage.h"
-#include "../lib/model/configuration.h"
+#include "../log/NanoLog.h"
 
 #include <iostream>
 #include <thread>
