@@ -5,7 +5,6 @@
 #include "api.h"
 #include "impl/connection.h"
 #include "../common/pool/pool.h"
-#include "../log/NanoLog.h"
 
 #include <charconv>
 
@@ -23,16 +22,17 @@ namespace spt::configdb::api::papi
     PoolHolder(const PoolHolder&) = delete;
     PoolHolder& operator=(const PoolHolder&) = delete;
 
-    spt::configdb::pool::Pool<impl::BaseConnection> pool{ spt::configdb::api::impl::create, pool::Configuration{} };
+    auto acquire() { return pool.acquire(); }
 
   private:
     PoolHolder() = default;
+    spt::configdb::pool::Pool<impl::BaseConnection> pool{ spt::configdb::api::impl::create, pool::Configuration{} };
   };
 }
 
 std::optional<std::string> spt::configdb::api::get( std::string_view key )
 {
-  auto popt = papi::PoolHolder::instance().pool.acquire();
+  auto popt = papi::PoolHolder::instance().acquire();
   if ( !popt )
   {
     LOG_CRIT << "Error acquiring connection from pool";
@@ -78,7 +78,7 @@ bool spt::configdb::api::set( std::string_view key, std::string_view value )
 
 bool spt::configdb::api::set( const model::RequestData& data )
 {
-  auto popt = papi::PoolHolder::instance().pool.acquire();
+  auto popt = papi::PoolHolder::instance().acquire();
   if ( !popt )
   {
     LOG_CRIT << "Error acquiring connection from pool";
@@ -105,7 +105,7 @@ bool spt::configdb::api::set( const model::RequestData& data )
 
 bool spt::configdb::api::remove( std::string_view key )
 {
-  auto popt = papi::PoolHolder::instance().pool.acquire();
+  auto popt = papi::PoolHolder::instance().acquire();
   if ( !popt )
   {
     LOG_CRIT << "Error acquiring connection from pool";
@@ -138,7 +138,7 @@ bool spt::configdb::api::move( std::string_view key, std::string_view dest )
 
 bool spt::configdb::api::move( const model::RequestData& data )
 {
-  auto popt = papi::PoolHolder::instance().pool.acquire();
+  auto popt = papi::PoolHolder::instance().acquire();
   if ( !popt )
   {
     LOG_CRIT << "Error acquiring connection from pool";
@@ -165,7 +165,7 @@ bool spt::configdb::api::move( const model::RequestData& data )
 
 auto spt::configdb::api::list( std::string_view path ) -> Nodes
 {
-  auto popt = papi::PoolHolder::instance().pool.acquire();
+  auto popt = papi::PoolHolder::instance().acquire();
   if ( !popt )
   {
     LOG_CRIT << "Error acquiring connection from pool";
@@ -207,7 +207,7 @@ auto spt::configdb::api::list( std::string_view path ) -> Nodes
 
 std::chrono::seconds spt::configdb::api::ttl( std::string_view key )
 {
-  auto popt = papi::PoolHolder::instance().pool.acquire();
+  auto popt = papi::PoolHolder::instance().acquire();
   if ( !popt )
   {
     LOG_CRIT << "Error acquiring connection from pool";
@@ -249,7 +249,7 @@ std::chrono::seconds spt::configdb::api::ttl( std::string_view key )
 
 auto spt::configdb::api::get( const std::vector<std::string_view>& keys ) -> std::vector<KeyValue>
 {
-  auto popt = papi::PoolHolder::instance().pool.acquire();
+  auto popt = papi::PoolHolder::instance().acquire();
   if ( !popt )
   {
     LOG_CRIT << "Error acquiring connection from pool";
@@ -307,7 +307,7 @@ bool spt::configdb::api::set( const std::vector<Pair>& kvs )
 
 bool spt::configdb::api::set( const std::vector<model::RequestData>& kvs )
 {
-  auto popt = papi::PoolHolder::instance().pool.acquire();
+  auto popt = papi::PoolHolder::instance().acquire();
   if ( !popt )
   {
     LOG_CRIT << "Error acquiring connection from pool";
@@ -334,7 +334,7 @@ bool spt::configdb::api::set( const std::vector<model::RequestData>& kvs )
 
 bool spt::configdb::api::remove( const std::vector<std::string_view>& keys )
 {
-  auto popt = papi::PoolHolder::instance().pool.acquire();
+  auto popt = papi::PoolHolder::instance().acquire();
   if ( !popt )
   {
     LOG_CRIT << "Error acquiring connection from pool";
@@ -369,7 +369,7 @@ bool spt::configdb::api::move( const std::vector<Pair>& kvs )
 
 bool spt::configdb::api::move( const std::vector<model::RequestData>& kvs )
 {
-  auto popt = papi::PoolHolder::instance().pool.acquire();
+  auto popt = papi::PoolHolder::instance().acquire();
   if ( !popt )
   {
     LOG_CRIT << "Error acquiring connection from pool";
@@ -396,7 +396,7 @@ bool spt::configdb::api::move( const std::vector<model::RequestData>& kvs )
 
 auto spt::configdb::api::list( const std::vector<std::string_view>& paths ) -> std::vector<NodePair>
 {
-  auto popt = papi::PoolHolder::instance().pool.acquire();
+  auto popt = papi::PoolHolder::instance().acquire();
   if ( !popt )
   {
     LOG_CRIT << "Error acquiring connection from pool";
@@ -449,7 +449,7 @@ auto spt::configdb::api::list( const std::vector<std::string_view>& paths ) -> s
 
 auto spt::configdb::api::ttl( const std::vector<std::string_view>& keys ) -> std::vector<TTLPair>
 {
-  auto popt = papi::PoolHolder::instance().pool.acquire();
+  auto popt = papi::PoolHolder::instance().acquire();
   if ( !popt )
   {
     LOG_CRIT << "Error acquiring connection from pool";
@@ -507,7 +507,7 @@ auto spt::configdb::api::ttl( const std::vector<std::string_view>& keys ) -> std
 
 auto spt::configdb::api::import( const std::string& file ) -> ImportResponse
 {
-  auto popt = papi::PoolHolder::instance().pool.acquire();
+  auto popt = papi::PoolHolder::instance().acquire();
   if ( !popt )
   {
     LOG_CRIT << "Error acquiring connection from pool";

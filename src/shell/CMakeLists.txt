@@ -7,7 +7,7 @@ if (APPLE)
   )
 else()
   target_link_libraries(configdb-shell
-    PRIVATE nanolog configdb-common configdb-lib configdb-api Boost::boost flatbuffers crypto ssl readline z
+    PRIVATE nanolog configdb-common configdb-lib configdb-api Boost::boost flatbuffers crypto ssl readline pthread z
   )
 endif()
 

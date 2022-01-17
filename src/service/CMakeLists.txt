@@ -7,7 +7,7 @@ if (APPLE)
   )
 else()
   target_link_libraries(configdb
-    PRIVATE nanolog configdb-common configdb-lib Boost::boost nghttp2_asio nghttp2 rocksdb flatbuffers crypto ssl snappy z
+    PRIVATE nanolog configdb-common configdb-lib Boost::boost nghttp2_asio nghttp2 rocksdb flatbuffers crypto ssl snappy pthread z
   )
 endif()
 
