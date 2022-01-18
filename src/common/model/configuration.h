@@ -20,11 +20,11 @@ namespace spt::configdb::model
       Encryption(const Encryption&) = delete;
       Encryption& operator=(const Encryption&) = delete;
 
-      // Salt to use when initialising the OpenSSL encryption context.  Best to be 32 chars
+      // Salt to use when initialising the OpenSSL encryption context.  Must be 32 chars
       std::string salt{ "jJ1LFPN2kl8P34saLd4rGe/UWncig04" };
-      // Key to use when initialising OpenSSL encryption context.  Best to be 32 chars
+      // Key to use when initialising OpenSSL encryption context.  Must be 32 chars
       std::string key{ "mQtFU2PCvbqFhoM4XnB8yQMDETnSUaW" };
-      // Initialisation vector to use when initialising OpenSSL encryption context.  Best to be 32 chars
+      // Initialisation vector to use when initialising OpenSSL encryption context.  Must be 32 chars
       std::string iv{ "Mr+xbc4TRKDrnCCrzE4t/7+ORrCfs6i" };
       // The secret to use for AES encryption
       std::string secret{ "TpSBvWY35C1sqURL9JCy6sKRtScKvCPTTQUZUE/vrfQ=" };
@@ -117,6 +117,8 @@ namespace spt::configdb::model
 
     static const Configuration& instance();
     static void loadFromFile( const std::string& file );
+    // For testing only
+    static void reset();
 
     ~Configuration() = default;
     Configuration(const Configuration&) = delete;

@@ -106,6 +106,7 @@ SCENARIO( "Configuration test", "config" )
     {
       auto p = std::filesystem::path{ pc::file };
       REQUIRE( std::filesystem::remove( p ) );
+      Configuration::reset();
     }
   }
 }

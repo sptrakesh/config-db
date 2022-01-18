@@ -39,10 +39,14 @@ namespace spt::configdb::db
     void cleanOpenSSL();
     static void printError();
 
-    std::string key;
-
     EVP_CIPHER_CTX* encryptingContext = nullptr;
     EVP_CIPHER_CTX* decryptingContext = nullptr;
+
+    std::string secret;
+    std::string key;
+    std::string iv;
+    std::string salt;
+
     bool refreshEncryptContext = false;
     bool refreshDecryptContext = false;
   };

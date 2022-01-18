@@ -11,7 +11,10 @@
 
 using spt::configdb::db::Encrypter;
 
-Encrypter::Encrypter( std::string_view cryptKey ) : key{ cryptKey.data(), cryptKey.size() }
+Encrypter::Encrypter( std::string_view cryptKey ) : secret{ cryptKey.data(), cryptKey.size() },
+  key{ model::Configuration::instance().encryption.key },
+  iv{ model::Configuration::instance().encryption.iv },
+  salt{ model::Configuration::instance().encryption.salt }
 {
   auto start = std::chrono::high_resolution_clock::now();
   loadOpenSSL();
@@ -134,12 +137,9 @@ void Encrypter::initContext()
   constexpr static const char* scheme = "aes-256-cbc";
   auto& conf = model::Configuration::instance();
 
-  auto aesk = std::string{ conf.encryption.key };
-  auto aesi = std::string{ conf.encryption.iv };
-
-  auto* salt = reinterpret_cast<const unsigned char*>( conf.encryption.salt.data() );
-  auto* aes_key = reinterpret_cast<unsigned char*>( aesk.data() );
-  auto* aes_iv = reinterpret_cast<unsigned char*>( aesi.data() );
+  auto* saltd = reinterpret_cast<const unsigned char*>( salt.data() );
+  auto* aes_key = reinterpret_cast<unsigned char*>( key.data() );
+  auto* aes_iv = reinterpret_cast<unsigned char*>( iv.data() );
 
   const EVP_CIPHER *cipher = EVP_get_cipherbyname( scheme );
   if ( ! cipher )
@@ -152,9 +152,9 @@ void Encrypter::initContext()
   EVP_BytesToKey(
       cipher,  // Cryptographic mode
       EVP_sha512(),         // SHA512
-      salt,               // a fuzzifier
-      reinterpret_cast<const unsigned char *>( key.c_str() ),
-      int( key.size() + 1 ),
+      saltd,               // a fuzzifier
+      reinterpret_cast<const unsigned char *>( secret.c_str() ),
+      int( secret.size() + 1 ),
       conf.encryption.rounds,             // more rounds
       aes_key, aes_iv );   // return buffers
 

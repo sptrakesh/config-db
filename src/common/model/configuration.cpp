@@ -138,3 +138,9 @@ void Configuration::loadFromFile( const std::string& file )
   auto lck = std::unique_lock{ pconf::mutex };
   holder.assign( cfg );
 }
+
+void Configuration::reset()
+{
+  auto lck = std::unique_lock{ pconf::mutex };
+  pconf::Holder::instance().assign( new Configuration );
+}
