@@ -1,10 +1,10 @@
-FROM sptrakesh/rocksdb:gcc as rocksdb
-FROM sptrakesh/flatbuffers:gcc as flatbuffers
-FROM sptrakesh/nghttp2:gcc as base
+FROM sptrakesh/rocksdb as rocksdb
+FROM sptrakesh/flatbuffers as flatbuffers
+FROM sptrakesh/nghttp2 as base
 
 COPY --from=rocksdb /opt/local /opt/local
 COPY --from=flatbuffers /opt/local /opt/local
-RUN apt-get install -y libreadline-dev libsnappy-dev
+RUN apk add --no-cache readline-dev snappy-dev
 
 COPY CMakeLists.txt /opt/spt/config-db/CMakeLists.txt
 COPY src /opt/spt/config-db/src
@@ -15,10 +15,11 @@ RUN rm -rf * \
   && make -j8 \
   && make install
 
-FROM sptrakesh/cppruntime:gcc
+FROM sptrakesh/cppruntime
 
-RUN apt-get install -y libcurl4 libsnappy1v5 libreadline8 \
-  && adduser --shell /bin/sh --home /home/spt spt \
+RUN apk add --no-cache libcurl snappy readline \
+  && addgroup spt \
+  && adduser -DS -g "SPT User" -G spt -s /bin/sh -h /home/spt spt \
   && mkdir -p /opt/spt/logs /opt/spt/data \
   && chown spt:spt /opt/spt/logs /opt/spt/data
 

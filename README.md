@@ -401,9 +401,11 @@ The following environment variables can be used to customise the container:
 * `ENABLE_SSL` - Use to run SSL services.  Default `false`.
 * `ENCRYPTION_SECRET` - Use to specify the secret used to AES encrypt values.  Default is internal to the system.
 
+**Note:** An alpine based image is also available.  It crashes at shutdown, so
+the database may get corrupted.
 
 ## Build
-Standard cmake build procedure.  See [Dockerfile](docker/Dockerfile) for build
+Standard cmake build procedure.  See [Dockerfile](docker/Dockerfile.alpine) for build
 sequence.  Ensure the dependencies are available under the following paths:
 * **MacOSX** - Various dependencies installed under the `/usr/local/<dependency>` path.
   See [dependencies](dependencies.md) for scripts used to install the dependencies.
