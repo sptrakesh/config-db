@@ -6,8 +6,3 @@ install (
   DIRECTORY ${CMAKE_SOURCE_DIR}/src/log
   DESTINATION include
   FILES_MATCHING PATTERN "*.h*")
-
-install (
-  DIRECTORY ${CMAKE_SOURCE_DIR}/src/log
-  DESTINATION include/configdb
-  FILES_MATCHING PATTERN "*.h*")

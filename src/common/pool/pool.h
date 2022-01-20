@@ -4,7 +4,11 @@
 
 #pragma once
 
+#if __has_include("../../log/NanoLog.h")
 #include "../../log/NanoLog.h"
+#else
+#include <log/NanoLog.h>
+#endif
 
 #include <atomic>
 #include <chrono>

@@ -14,7 +14,11 @@
 
 #include "../common/contextholder.h"
 #include "../common/model/request.h"
-#include "../log/NanoLog.h"
+#if __has_include("../../log/NanoLog.h")
+#include "../../log/NanoLog.h"
+#else
+#include <log/NanoLog.h>
+#endif
 #include "../../src/common/model/response_generated.h"
 
 namespace spt::configdb::api::impl
