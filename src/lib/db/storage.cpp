@@ -8,7 +8,6 @@
 #include "../common/model/configuration.h"
 #include "../common/model/tree_generated.h"
 #include "../common/pool/pool.h"
-#include "../log/NanoLog.h"
 
 #include <algorithm>
 #include <charconv>
@@ -34,7 +33,7 @@ namespace spt::configdb::db::internal
   spt::configdb::pool::Configuration poolConfig()
   {
     auto config = spt::configdb::pool::Configuration{};
-    config.initialSize = 5;
+    config.initialSize = model::Configuration::instance().storage.encrypterInitialPoolSize;
     config.maxPoolSize = std::numeric_limits<int>::max();
     config.maxConnections = std::numeric_limits<int>::max();
     config.maxIdleTime = std::chrono::days{ std::numeric_limits<int>::max() };

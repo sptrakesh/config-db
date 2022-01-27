@@ -11,6 +11,7 @@
 #include <tuple>
 #include <vector>
 
+#include "../common/contextholder.h"
 #include "../common/model/request.h"
 
 namespace spt::configdb::api
@@ -22,7 +23,8 @@ namespace spt::configdb::api
    * @param port The TCP port to connect to.
    * @param ssl Specify `true` to use SSL connection to service.
    */
-  void init( std::string_view server, std::string_view port, bool ssl );
+  void init( std::string_view server, std::string_view port, bool ssl,
+      boost::asio::io_context& ioc = ContextHolder::instance().ioc );
 
   /**
    * Retrieve the stored value for the specified `key`.

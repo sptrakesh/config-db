@@ -3,6 +3,7 @@
 //
 
 #include "server.h"
+#include "signal.h"
 #include "../common/contextholder.h"
 #include "../common/model/configuration.h"
 #include "../common/model/request_generated.h"
@@ -115,7 +116,7 @@ namespace spt::configdb::tcp::coroutine
   }
 
   template <typename Socket>
-  boost::asio::awaitable<void> put( Socket& socket, const model::Request* request )
+  boost::asio::awaitable<void> put( Socket& socket, const model::Request* request, const std::vector<uint8_t>& rbuf )
   {
     std::vector<model::RequestData> pairs;
     for ( auto&& kv : *request->data() )
@@ -130,11 +131,18 @@ namespace spt::configdb::tcp::coroutine
     auto vt = model::CreateSuccess( fb, value );
     auto r = model::CreateResponse( fb, model::ResultVariant::Success, vt.Union() );
     fb.Finish( r );
+
+    if ( value && !model::Configuration::instance().peers.empty() )
+    {
+      LOG_DEBUG << "Notifying peers of set for " << int( pairs.size() ) << " keys";
+      SignalMgr::instance().emit( std::make_shared<SignalMgr::Bytes>( rbuf ) );
+    }
+
     co_await write( socket, fb );
   }
 
   template <typename Socket>
-  boost::asio::awaitable<void> remove( Socket& socket, const model::Request* request )
+  boost::asio::awaitable<void> remove( Socket& socket, const model::Request* request, const std::vector<uint8_t>& rbuf  )
   {
     std::vector<std::string_view> keys;
     for ( auto&& kv : *request->data() ) keys.emplace_back( kv->key()->string_view() );
@@ -144,11 +152,18 @@ namespace spt::configdb::tcp::coroutine
     auto vt = model::CreateSuccess( fb, value );
     auto r = model::CreateResponse( fb, model::ResultVariant::Success, vt.Union() );
     fb.Finish( r );
+
+    if ( value && !model::Configuration::instance().peers.empty() )
+    {
+      LOG_DEBUG << "Notifying peers of remove for " << int( keys.size() ) << " keys";
+      SignalMgr::instance().emit( std::make_shared<SignalMgr::Bytes>( rbuf ) );
+    }
+
     co_await write( socket, fb );
   }
 
   template <typename Socket>
-  boost::asio::awaitable<void> move( Socket& socket, const model::Request* request )
+  boost::asio::awaitable<void> move( Socket& socket, const model::Request* request, const std::vector<uint8_t>& rbuf )
   {
     std::vector<model::RequestData> pairs;
     for ( auto&& kv : *request->data() )
@@ -163,6 +178,13 @@ namespace spt::configdb::tcp::coroutine
     auto vt = model::CreateSuccess( fb, value );
     auto r = model::CreateResponse( fb, model::ResultVariant::Success, vt.Union() );
     fb.Finish( r );
+
+    if ( value && !model::Configuration::instance().peers.empty() )
+    {
+      LOG_DEBUG << "Notifying peers of move for " << int( pairs.size() ) << " keys";
+      SignalMgr::instance().emit( std::make_shared<SignalMgr::Bytes>( rbuf ) );
+    }
+
     co_await write( socket, fb );
   }
 
@@ -195,7 +217,7 @@ namespace spt::configdb::tcp::coroutine
   }
 
   template <typename Socket>
-  boost::asio::awaitable<void> process( Socket& socket, const model::Request* request )
+  boost::asio::awaitable<void> process( Socket& socket, const model::Request* request, const std::vector<uint8_t>& rbuf )
   {
     switch ( request->action() )
     {
@@ -206,13 +228,13 @@ namespace spt::configdb::tcp::coroutine
       co_await list( socket, request );
       break;
     case model::Action::Put:
-      co_await put( socket, request );
+      co_await put( socket, request, rbuf );
       break;
     case model::Action::Delete:
-      co_await remove( socket, request );
+      co_await remove( socket, request, rbuf );
       break;
     case model::Action::Move:
-      co_await move( socket, request );
+      co_await move( socket, request, rbuf );
       break;
     case model::Action::TTL:
       co_await ttl( socket, request );
@@ -261,18 +283,18 @@ namespace spt::configdb::tcp::coroutine
       co_return;
     }
 
-    if ( docSize <= bufSize )
-    {
-      auto request = model::GetRequest( data + sizeof(uint32_t) );
-      co_await process( socket, request );
-      co_return;
-    }
-
-    auto read = osize;
     std::vector<uint8_t> rbuf;
     rbuf.reserve( docSize - sizeof(uint32_t) );
     rbuf.insert( rbuf.end(), data + sizeof(uint32_t), data + osize );
 
+    if ( docSize <= bufSize )
+    {
+      auto request = model::GetRequest( data + sizeof(uint32_t) );
+      co_await process( socket, request, rbuf );
+      co_return;
+    }
+
+    auto read = osize;
     LOG_DEBUG << "Read " << int(osize) << " bytes, total size " << int(docSize);
     while ( docSize < maxBytes && read != docSize )
     {
@@ -293,7 +315,7 @@ namespace spt::configdb::tcp::coroutine
     }
 
     auto request = model::GetRequest( rbuf.data() );
-    co_await process( socket, request );
+    co_await process( socket, request, rbuf );
   }
 
   boost::asio::ssl::context createSSLContext()
@@ -380,13 +402,8 @@ namespace spt::configdb::tcp::coroutine
 
 int spt::configdb::tcp::start( int port, bool ssl )
 {
-  namespace net = boost::asio;
   boost::asio::co_spawn( ContextHolder::instance().ioc, coroutine::listener( port, ssl ), boost::asio::detached );
   LOG_INFO << "TCP service started on port " << port;
-
-  ContextHolder::instance().ioc.run();
-  LOG_INFO << "TCP service stopped";
-
   return 0;
 }
 

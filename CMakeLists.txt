@@ -27,6 +27,7 @@ set(OPENSSL_USE_STATIC_LIBS TRUE)
 
 if (APPLE)
   find_package(OpenSSL REQUIRED)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fcoroutines-ts")
 endif(APPLE)
 
 find_package(Boost)

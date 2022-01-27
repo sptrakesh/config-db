@@ -6,6 +6,7 @@
 
 #include <string>
 #include <thread>
+#include <vector>
 
 namespace spt::configdb::model
 {
@@ -89,10 +90,27 @@ namespace spt::configdb::model
 #ifdef __APPLE__
       std::string http{ "6006" };
       int tcp{ 2022 };
+      int notify{ 2122 };
 #else
       std::string http{ "6000" };
       int tcp{ 2020 };
+      int notify{ 2120 };
 #endif
+    };
+
+    // A peer in cluster of instances to listen to for notifications
+    struct Peer
+    {
+      Peer() = default;
+      Peer( std::string_view host, int port ) : host{ host }, port{ port } {}
+      ~Peer() = default;
+      Peer(Peer&&) = default;
+      Peer& operator=(Peer&&) = default;
+      Peer(const Peer&) = delete;
+      Peer& operator=(const Peer&) = delete;
+
+      std::string host;
+      int port{ 0 };
     };
 
     struct Storage
@@ -113,6 +131,12 @@ namespace spt::configdb::model
 #endif
       // Block size passed to rocksdb::ColumnFamilyOptions::OptimizeForPointLookup
       uint64_t blockCacheSizeMb{ 8u };
+
+      // Expired key thread frequency in seconds
+      uint32_t cleanExpiredKeysInterval{ 1u };
+
+      // Initial size of pool of encrypters
+      uint32_t encrypterInitialPoolSize{ 5u };
     };
 
     static const Configuration& instance();
@@ -129,6 +153,7 @@ namespace spt::configdb::model
     SSL ssl{};
     Services services{};
     Storage storage{};
+    std::vector<Peer> peers;
     uint32_t threads = std::thread::hardware_concurrency();
     bool enableCache{ false };
 

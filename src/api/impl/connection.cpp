@@ -17,20 +17,40 @@ using spt::configdb::api::impl::SSLConnection;
 
 namespace spt::configdb::api::pconnection
 {
-  std::mutex mutex{};
-  std::string server{};
-  std::string port{};
-  bool ssl{ false };
+  struct ApiSettings
+  {
+    static const ApiSettings& instance()
+    {
+      static ApiSettings s;
+      return s;
+    }
+
+    std::mutex mutex{};
+    std::string server{};
+    std::string port{};
+    boost::asio::io_context* ioc{ nullptr };
+    bool ssl{ false };
+
+    ~ApiSettings() = default;
+    ApiSettings(const ApiSettings&) = delete;
+    ApiSettings& operator=(const ApiSettings&) = delete;
+
+  private:
+    ApiSettings() = default;
+  };
 }
 
-void spt::configdb::api::init( std::string_view server, std::string_view port, bool ssl )
+void spt::configdb::api::init( std::string_view server, std::string_view port, bool ssl,
+    boost::asio::io_context& ioc )
 {
-  auto lock = std::unique_lock<std::mutex>( pconnection::mutex );
-  if ( pconnection::server.empty() )
+  auto& s = const_cast<pconnection::ApiSettings&>( pconnection::ApiSettings::instance() );
+  auto lock = std::unique_lock<std::mutex>( s.mutex );
+  if ( s.server.empty() )
   {
-    pconnection::server.append( server.data(), server.size() );
-    pconnection::port.append( port.data(), port.size() );
-    pconnection::ssl = ssl;
+    s.server.append( server.data(), server.size() );
+    s.port.append( port.data(), port.size() );
+    s.ioc = &ioc;
+    s.ssl = ssl;
   }
   else
   {
@@ -40,14 +60,16 @@ void spt::configdb::api::init( std::string_view server, std::string_view port, b
 
 auto spt::configdb::api::impl::create() -> std::unique_ptr<BaseConnection>
 {
-  if ( pconnection::ssl )
+  auto& s = pconnection::ApiSettings::instance();
+  if ( s.ssl )
   {
-    return std::make_unique<SSLConnection>( pconnection::server, pconnection::port );
+    return std::make_unique<SSLConnection>( s.server, s.port );
   }
-  return std::make_unique<Connection>( pconnection::server, pconnection::port );
+  return std::make_unique<Connection>( s.server, s.port );
 }
 
-Connection::Connection( std::string_view server, std::string_view port )
+Connection::Connection( std::string_view server, std::string_view port ) :
+  s{ *pconnection::ApiSettings::instance().ioc }, resolver{ *pconnection::ApiSettings::instance().ioc }
 {
   boost::asio::connect( s, resolver.resolve( server, port ) );
 }
@@ -62,7 +84,8 @@ Connection::~Connection()
   }
 }
 
-SSLConnection::SSLConnection( std::string_view server, std::string_view port ) : BaseConnection()
+SSLConnection::SSLConnection( std::string_view server, std::string_view port ) : BaseConnection(),
+  s{ *pconnection::ApiSettings::instance().ioc, ctx }, resolver{ *pconnection::ApiSettings::instance().ioc }
 {
   s.set_verify_mode( boost::asio::ssl::verify_none );
   auto endpoints = resolver.resolve( server, port );
@@ -301,8 +324,9 @@ void Connection::socket()
   if ( s.is_open() ) return;
 
   LOG_DEBUG << "Re-opening closed connection.";
+  auto& settings = pconnection::ApiSettings::instance();
   boost::system::error_code ec;
-  boost::asio::connect( s, resolver.resolve( pconnection::server, pconnection::port ), ec );
+  boost::asio::connect( s, resolver.resolve( settings.server, settings.port ), ec );
   if ( ec )
   {
     LOG_WARN << "Error opening socket connection. " << ec.message();
@@ -318,8 +342,9 @@ void SSLConnection::socket()
   if ( s.next_layer().is_open() ) return;
 
   LOG_DEBUG << "Re-opening closed connection.";
+  auto& settings = pconnection::ApiSettings::instance();
   boost::system::error_code ec;
-  boost::asio::connect( s.next_layer(), resolver.resolve( pconnection::server, pconnection::port ), ec );
+  boost::asio::connect( s.next_layer(), resolver.resolve( settings.server, settings.port ), ec );
   if ( ec )
   {
     LOG_WARN << "Error opening socket connection. " << ec.message();

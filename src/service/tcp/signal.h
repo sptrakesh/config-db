@@ -14,7 +14,6 @@ namespace spt::configdb::tcp
   {
     using Bytes = std::vector<uint8_t>;
     using BytesPtr = std::shared_ptr<Bytes>;
-    //using Signal = boost::signals2::signal<void(BytesPtr)>;
 
     static SignalMgr& instance()
     {
@@ -25,26 +24,18 @@ namespace spt::configdb::tcp
     void emit( BytesPtr bytes )
     {
       signal.fire( bytes );
-      //signal( bytes );
     }
 
-    /*
-    boost::signals2::connection connect( const Signal::slot_type& subscriber )
-    {
-      return signal.connect( subscriber );
-    }
-     */
-
-    template <auto mem_ptr, typename T>
+    template <auto MemberFunction, typename T>
     void connect( T& t )
     {
-      signal.connect<mem_ptr, T>( t );
+      signal.connect<MemberFunction, T>( t );
     }
 
-    template <auto mem_ptr, typename T>
+    template <auto MemberFunction, typename T>
     void disconnect( T& t )
     {
-      signal.disconnect<mem_ptr, T>( t );
+      signal.disconnect<MemberFunction, T>( t );
     }
 
     ~SignalMgr()
@@ -58,7 +49,6 @@ namespace spt::configdb::tcp
   private:
     SignalMgr() {}
 
-    //Signal signal;
     using NanoPolicy = Nano::TS_Policy_Safe<>;
     Nano::Signal<void(BytesPtr), NanoPolicy> signal;
   };

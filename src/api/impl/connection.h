@@ -12,10 +12,20 @@
 #include <boost/asio/streambuf.hpp>
 #include <boost/asio/ip/tcp.hpp>
 
+#if __has_include("../common/contextholder.h")
 #include "../common/contextholder.h"
 #include "../common/model/request.h"
+#elif __has_include("../../src/common/contextholder.h")
+#include "../../src/common/contextholder.h"
+#include "../../src/common/model/request.h"
+#else
+#include <configdb/common/contextholder.h>
+#include <configdb/common/model/request.h>
+#endif
 #if __has_include("../../log/NanoLog.h")
 #include "../../log/NanoLog.h"
+#elif __has_include("../../src/log/NanoLog.h")
+#include "../../src/log/NanoLog.h"
 #else
 #include <log/NanoLog.h>
 #endif
@@ -130,8 +140,8 @@ namespace spt::configdb::api::impl
     virtual void socket() override;
     virtual const model::Response* write( const flatbuffers::FlatBufferBuilder& fb, std::string_view context ) override;
 
-    boost::asio::ip::tcp::socket s{ spt::configdb::ContextHolder::instance().ioc };
-    boost::asio::ip::tcp::resolver resolver{ spt::configdb::ContextHolder::instance().ioc };
+    boost::asio::ip::tcp::socket s;
+    boost::asio::ip::tcp::resolver resolver;
   };
 
   struct SSLConnection : BaseConnection
@@ -147,8 +157,8 @@ namespace spt::configdb::api::impl
     static boost::asio::ssl::context createContext();
 
     boost::asio::ssl::context ctx{ createContext() };
-    SecureSocket s{ spt::configdb::ContextHolder::instance().ioc, ctx };
-    boost::asio::ip::tcp::resolver resolver{ spt::configdb::ContextHolder::instance().ioc };
+    SecureSocket s;
+    boost::asio::ip::tcp::resolver resolver;
   };
 
   std::unique_ptr<BaseConnection> create();

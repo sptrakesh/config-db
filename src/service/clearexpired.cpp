@@ -3,6 +3,7 @@
 //
 
 #include "clearexpired.h"
+#include "../common/model/configuration.h"
 #include "../log/NanoLog.h"
 #include "../lib/db/storage.h"
 
@@ -13,7 +14,7 @@ using spt::configdb::service::ClearExpired;
 void ClearExpired::run()
 {
   LOG_INFO << "Expired key clearer thread starting";
-  const auto sleep = std::chrono::seconds{ 1 };
+  const auto sleep = std::chrono::seconds{ model::Configuration::instance().storage.cleanExpiredKeysInterval };
 
   while ( !flag.load() )
   {

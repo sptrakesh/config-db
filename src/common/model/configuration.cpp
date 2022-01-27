@@ -72,67 +72,111 @@ void Configuration::loadFromFile( const std::string& file )
   if ( v ) cfg->enableCache = v->as_bool();
 
   v = obj.if_contains( "encryption" );
-  auto enc = v->as_object();
+  if ( v )
+  {
+    auto enc = v->as_object();
 
-  v = enc.if_contains( "salt" );
-  if ( v ) cfg->encryption.salt = v->as_string();
+    v = enc.if_contains( "salt" );
+    if ( v ) cfg->encryption.salt = v->as_string();
 
-  v = enc.if_contains( "key" );
-  if ( v ) cfg->encryption.key = v->as_string();
+    v = enc.if_contains( "key" );
+    if ( v ) cfg->encryption.key = v->as_string();
 
-  v = enc.if_contains( "iv" );
-  if ( v ) cfg->encryption.iv = v->as_string();
+    v = enc.if_contains( "iv" );
+    if ( v ) cfg->encryption.iv = v->as_string();
 
-  v = enc.if_contains( "secret" );
-  if ( v ) cfg->encryption.secret = v->as_string();
+    v = enc.if_contains( "secret" );
+    if ( v ) cfg->encryption.secret = v->as_string();
 
-  v = enc.if_contains( "rounds" );
-  if ( v ) cfg->encryption.rounds = v->as_int64();
+    v = enc.if_contains( "rounds" );
+    if ( v ) cfg->encryption.rounds = v->as_int64();
+  }
 
   v = obj.if_contains( "logging" );
-  auto log = v->as_object();
+  if ( v )
+  {
+    auto log = v->as_object();
 
-  v = log.if_contains( "level" );
-  if ( v ) cfg->logging.level = v->as_string();
+    v = log.if_contains( "level" );
+    if ( v ) cfg->logging.level = v->as_string();
 
-  v = log.if_contains( "dir" );
-  if ( v ) cfg->logging.dir = v->as_string();
+    v = log.if_contains( "dir" );
+    if ( v ) cfg->logging.dir = v->as_string();
 
-  v = log.if_contains( "console" );
-  if ( v ) cfg->logging.console = v->as_bool();
+    v = log.if_contains( "console" );
+    if ( v ) cfg->logging.console = v->as_bool();
+  }
 
   v = obj.if_contains( "ssl" );
-  auto ssl = v->as_object();
+  if ( v )
+  {
+    auto ssl = v->as_object();
 
-  v = ssl.if_contains( "caCertificate" );
-  if ( v ) cfg->ssl.caCertificate = v->as_string();
+    v = ssl.if_contains( "caCertificate" );
+    if ( v ) cfg->ssl.caCertificate = v->as_string();
 
-  v = ssl.if_contains( "serverCertificate" );
-  if ( v ) cfg->ssl.certificate = v->as_string();
+    v = ssl.if_contains( "serverCertificate" );
+    if ( v ) cfg->ssl.certificate = v->as_string();
 
-  v = ssl.if_contains( "serverKey" );
-  if ( v ) cfg->ssl.key = v->as_string();
+    v = ssl.if_contains( "serverKey" );
+    if ( v ) cfg->ssl.key = v->as_string();
 
-  v = ssl.if_contains( "enable" );
-  if ( v ) cfg->ssl.enable = v->as_bool();
+    v = ssl.if_contains( "enable" );
+    if ( v ) cfg->ssl.enable = v->as_bool();
+  }
 
   v = obj.if_contains( "services" );
-  auto svcs = v->as_object();
+  if ( v )
+  {
+    auto svcs = v->as_object();
 
-  v = svcs.if_contains( "http" );
-  if ( v ) cfg->services.http = v->as_string();
+    v = svcs.if_contains( "http" );
+    if ( v ) cfg->services.http = v->as_string();
 
-  v = svcs.if_contains( "tcp" );
-  if ( v ) cfg->services.tcp = v->as_int64();
+    v = svcs.if_contains( "tcp" );
+    if ( v ) cfg->services.tcp = v->as_int64();
+
+    v = svcs.if_contains( "notify" );
+    if ( v ) cfg->services.notify = v->as_int64();
+  }
 
   v = obj.if_contains( "storage" );
-  auto storage = v->as_object();
+  if ( v )
+  {
+    auto storage = v->as_object();
 
-  v = storage.if_contains( "dbpath" );
-  if ( v ) cfg->storage.dbpath = v->as_string();
+    v = storage.if_contains( "dbpath" );
+    if ( v ) cfg->storage.dbpath = v->as_string();
 
-  v = storage.if_contains( "blockCacheSizeMb" );
-  if ( v ) cfg->storage.blockCacheSizeMb = v->as_int64();
+    v = storage.if_contains( "blockCacheSizeMb" );
+    if ( v ) cfg->storage.blockCacheSizeMb = v->as_int64();
+
+    v = storage.if_contains( "cleanExpiredKeysInterval" );
+    if ( v ) cfg->storage.cleanExpiredKeysInterval = v->as_int64();
+
+    v = storage.if_contains( "encrypterInitialPoolSize" );
+    if ( v ) cfg->storage.encrypterInitialPoolSize = v->as_int64();
+  }
+
+  v = obj.if_contains( "peers" );
+  if ( v )
+  {
+    auto peers = v->as_array();
+    cfg->peers.reserve( peers.size() );
+    for ( auto&& e : peers )
+    {
+      auto o = e.as_object();
+      auto peer = Peer{};
+
+      auto h = o.if_contains( "host" );
+      if ( h ) peer.host = h->as_string();
+
+      h = o.if_contains( "port" );
+      if ( h ) peer.port = h->as_int64();
+
+      if ( !peer.host.empty() && peer.port > 0 ) cfg->peers.push_back( std::move( peer ) );
+    }
+  }
 
   auto& holder = pconf::Holder::instance();
   auto lck = std::unique_lock{ pconf::mutex };
