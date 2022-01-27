@@ -385,15 +385,15 @@ It is possible to run the integration tests against the docker container instead
 of the service running locally.
 
 ```shell
-docker run -d --rm -p 6006:6000 -p 2022:2020 --name config-db sptrakesh/config-db
+docker run -d --rm -p 6026:6020 -p 2022:2020 --name config-db sptrakesh/config-db
 # or with SSL turned on
-docker run -d --rm -p 6006:6000 -p 2022:2020 -e "ENABLE_SSL=true" --name config-db sptrakesh/config-db
+docker run -d --rm -p 6026:6020 -p 2022:2020 -e "ENABLE_SSL=true" --name config-db sptrakesh/config-db
 ```
 
 The following environment variables can be used to customise the container:
 * `CONFIG_FILE` - The JSON file (volume mount) with full configuration.  All
   other variables/options are ignored.
-* `HTTP_PORT` - The port to run the HTTP/2 service on.  Default `6000`.
+* `HTTP_PORT` - The port to run the HTTP/2 service on.  Default `6020`.
 * `TCP_PORT` - The port to run the TCP service on.  Default `2020`.
 * `THREADS` - The number of threads to use for the services.  Default `4`.
 * `LOG_LEVEL` - The level to use for logging.  One of `debug|info|warn|critical`.  Default `info`.
@@ -444,28 +444,58 @@ use environment variables to specify the comman line options.
     `logs/` relative path. On docker this is set to `/opt/spt/logs`. Files
     are rotated daily.  External scripts (`cron` etc. are needed to remove old files).
 * **-p | --http-port** - The port on which the HTTP/2 service listens.  Default
-  `6000` (`6006` on Apple).  Specify via `HTTP_PORT` environment variable to docker.
+  `6020` (`6026` on Apple).  Specify via `HTTP_PORT` environment variable to docker.
 * **-t | --tcp-port** - The port on which the TCP/IP service listens.  Default
   `2020` (`2022` on Apple).  Specify via `TCP_PORT` environment variable to docker.
-* **-s | --with-ssl** - Flag to enable SSL on the HTTP and TCP services.  See [SSL](#ssl) for details.
+* **-b | --notify-port** - The port on which notifications are published.  Default
+  `2120` (`2122` on Apple).  Specify via `NOTIFY_PORT` environment variable to docker.
+* **-s | --with-ssl** - Flag to enable SSL on the HTTP/2 and TCP services.  See [SSL](#ssl) for details.
 * **-n | --threads** - The number of threads for both TCP/IP and HTTP/2 services.
-  Default to number of hardware threads.  The Docker entrypoint defaults to `4`.
-  Specify via `THREADS` environment variable to docker.
+  Default to number of hardware threads. Specify via `THREADS` environment variable to docker.
 * **-e | --encryption-secret** - The secret to use to encrypt values.  Default
   value is internal to the system.  Specify via `ENCRYPTION_SECRET` environment
   variable to docker.
 * **-x | --enable-cache** - Flag to enable temporary cache for keys read from the database.
   Default `off`.  Specify via `ENABLE_CACHE` environment variable to docker.
+* **-z | --peers** - A comma separated list of peer instances to listen for notifications.
+  Specify via the `PEERS` environment variable to docker. Eg. `localhost:2123,localhost:2124`
 
 Sample command to run the service
 ```shell
 # Locally built service
 /opt/spt/bin/configdb --console --log-dir /tmp/ --threads 4 --log-level debug
 # Docker container
-docker run -d --rm -p 6000:6000 -p 2022:2020 \
+docker run -d --rm -p 6020:6020 -p 2022:2020 \
   -e "ENCRYPTION_SECRET=abc123" -e "LOG_LEVEL=debug" \
   --name config-db config-db
 ```
+
+
+### Notifications
+A notification system is available when services are run in a cluster.  There
+is no cluster management/coordination at present.  *Peer* instances are
+assumed run independently (multi-master setup).  A simple notification system
+has been implemented, that will attempt to keep the independent nodes in sync.
+Notifications are primarily useful when using a cluster of instances that are
+also used as a L1/L2 cache on top of application databases.  Notifications are
+sent asynchronously and hence will only achieve eventual consistency in the best
+case.
+
+When operating in multi-master mode, it is important to configure each instance
+with the appropriate list of *peers*.  See [integration test](test/integration/multimaster.cpp)
+for sample set up and test suite.
+
+Each instance will publish updates (`Put`, `Delete`, and `Move`) via the notification
+service.  Corresponding *listener* instances will listen to notifications from
+the *peers*.
+
+Notifications are strictly *one-way*.  Notification service only writes
+messages to the socket, and the listener instances only read messages from the
+socket.  Errors encountered while applying updates on another node do not have
+any effect on the publishing node.
+
+Notification service sends periodic *ping* messages to keep the socket connections
+alive.
 
 
 ### SSL
@@ -490,8 +520,7 @@ bit keys, it takes about `1.3s`.
 
 
 ## Acknowledgements
-This software has been developed mainly using work other people/projects have contributed.
-The following are the components used to build this software:
+The following components are used to build this software:
 * **[RocksDB](http://rocksdb.org/)** - The database used to persist configuration.
 * **[OpenSSL](https://www.openssl.org/)** - For AES encryption of the values 
   stored in the database.
@@ -500,6 +529,10 @@ The following are the components used to build this software:
 * **[nghttp2](https://www.nghttp2.org/)** - for the HTTP/2 server implementation.
 * **[flatbuffers](https://google.github.io/flatbuffers)** - The data interchange
   format for client-server TCP/IP interactions.
+* **[nano-signal-slot](https://github.com/NoAvailableAlias/nano-signal-slot)** - 
+  Thread safe signal-slot library.
+* **[concurrentqueue](https://github.com/cameron314/concurrentqueue)** - Lock
+  free concurrent queue implementation for notifications.
 * **[NanoLog](https://github.com/Iyengar111/NanoLog)** - Logging framework used
   for the server.  I modified the implementation for daily rolling log files.
 * **[Clara](https://github.com/catchorg/Clara)** - Command line options parser.

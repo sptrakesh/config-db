@@ -33,9 +33,9 @@ namespace spt::configdb::itest::mmaster
       if ( ec ) LOG_CRIT << "Error terminating processes group. " << ec.message();
 
       for ( auto&& c : children ) c.wait();
-      //auto path = std::filesystem::path{ "/tmp/configdb" };
-      //std::filesystem::remove_all( path, ec );
-      //if ( ec ) LOG_CRIT << "Error deleting directory tree. " << ec.message();
+      auto path = std::filesystem::path{ "/tmp/configdb" };
+      std::filesystem::remove_all( path, ec );
+      if ( ec ) LOG_CRIT << "Error deleting directory tree. " << ec.message();
     }
 
   private:
@@ -199,8 +199,8 @@ SCENARIO( "Multi-master cluster test", "multi-master" )
 
     WHEN( "Creating a key on first server" )
     {
-      std::cout << "Sleeping 30s to ensure cluster connections" << std::endl;
-      std::this_thread::sleep_for( std::chrono::seconds{ 30 } );
+      std::cout << "Sleeping 20s to ensure cluster connections" << std::endl;
+      std::this_thread::sleep_for( std::chrono::seconds{ 20 } );
       auto c = Connection{ "localhost"sv, "2023"sv };
       auto response = c.set( RequestData{ key, value } );
       REQUIRE( response );

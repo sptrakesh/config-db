@@ -3,7 +3,7 @@
 //
 
 #include "client/client.h"
-#include "../common/contextholder.h"
+#include "../api/api.h"
 #include "../common/util/clara.h"
 #include "../log/NanoLog.h"
 
@@ -73,6 +73,7 @@ int main( int argc, char const * const * argv )
 
   try
   {
+    spt::configdb::api::init( server, port, ssl );
     if ( file.empty() )
     {
       if ( action.empty() )

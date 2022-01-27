@@ -3,7 +3,7 @@
 //
 
 #include "server.h"
-#include "signal.h"
+#include "signal/signal.h"
 #include "../common/contextholder.h"
 #include "../common/model/configuration.h"
 #include "../common/util/concurrentqueue.h"
@@ -32,7 +32,7 @@ namespace spt::configdb::tcp::pnotifier
       std::ostringstream ss;
       ss << "Connecting listener " << this;
       LOG_DEBUG << ss.str();
-      SignalMgr::instance().connect<&Listener::notify>( *this );
+      signal::SignalMgr::instance().connect<&Listener::notify>( *this );
     }
 
     ~Listener()
@@ -40,10 +40,10 @@ namespace spt::configdb::tcp::pnotifier
       std::ostringstream ss;
       ss << "Disconnecting listener " << this;
       LOG_DEBUG << ss.str();
-      SignalMgr::instance().disconnect<&Listener::notify>( *this );
+      signal::SignalMgr::instance().disconnect<&Listener::notify>( *this );
     }
 
-    void notify( SignalMgr::BytesPtr b )
+    void notify( signal::SignalMgr::BytesPtr b )
     {
       std::ostringstream ss;
       ss << "Received notification of size " << b->size() << ' ' << this;
@@ -51,7 +51,7 @@ namespace spt::configdb::tcp::pnotifier
       queue.enqueue( b );
     }
 
-    moodycamel::ConcurrentQueue<SignalMgr::BytesPtr> queue;
+    moodycamel::ConcurrentQueue<signal::SignalMgr::BytesPtr> queue;
     std::string ping{ "ping" };
     using Time = std::chrono::time_point<std::chrono::system_clock>;
     Time time = std::chrono::system_clock::now();
@@ -66,7 +66,7 @@ namespace spt::configdb::tcp::pnotifier
       return boost::algorithm::starts_with( ec.message(), msg );
     };
 
-    SignalMgr::BytesPtr bytes;
+    signal::SignalMgr::BytesPtr bytes;
     if ( !listener.queue.try_dequeue( bytes ) )
     {
       auto now = std::chrono::system_clock::now();

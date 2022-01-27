@@ -8,7 +8,7 @@
 #include <vector>
 #include "nano/nano_signal_slot.hpp"
 
-namespace spt::configdb::tcp
+namespace spt::configdb::signal
 {
   struct SignalMgr
   {

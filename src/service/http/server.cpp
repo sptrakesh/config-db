@@ -3,14 +3,17 @@
 //
 
 #include "server.h"
+#include "signal/signal.h"
 #include "../common/contextholder.h"
 #include "../common/model/configuration.h"
+#include "../common/model/request_generated.h"
 #include "../lib/db/storage.h"
 #include "../log/NanoLog.h"
 
 #include <charconv>
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/json.hpp>
+#include <flatbuffers/flatbuffers.h>
 #include <nghttp2/asio_http2_server.h>
 
 using namespace std::string_literals;
@@ -18,6 +21,39 @@ using namespace std::string_view_literals;
 
 namespace spt::configdb::http::endpoints
 {
+  flatbuffers::FlatBufferBuilder builder( const model::RequestData& req )
+  {
+    flatbuffers::FlatBufferBuilder fb;
+    auto opts = model::CreateOptions( fb, req.options.ifNotExists, req.options.expirationInSeconds );
+    auto vec = std::vector<flatbuffers::Offset<model::KeyValue>>{
+        model::CreateKeyValue( fb, fb.CreateString( req.key ), fb.CreateString( req.value ), opts ) };
+    auto request = model::CreateRequest( fb, model::Action::Put, fb.CreateVector( vec ) );
+    fb.Finish( request );
+
+    return fb;
+  }
+
+  flatbuffers::FlatBufferBuilder builder( std::string_view key )
+  {
+    flatbuffers::FlatBufferBuilder fb;
+    auto vec = std::vector<flatbuffers::Offset<model::KeyValue>>{
+        model::CreateKeyValue( fb, fb.CreateString( key ) ) };
+    auto request = model::CreateRequest( fb, model::Action::Delete, fb.CreateVector( vec ) );
+    fb.Finish( request );
+
+    return fb;
+  }
+
+  void emit( const flatbuffers::FlatBufferBuilder& fb )
+  {
+    auto p = fb.GetBufferPointer();
+    auto buf = std::make_shared<signal::SignalMgr::Bytes>();
+    buf->reserve( fb.GetSize() );
+    buf->insert( buf->end(), p, p + fb.GetSize() );
+    auto vec = signal::SignalMgr::Bytes{ p, p + fb.GetSize() };
+    signal::SignalMgr::instance().emit( buf );
+  }
+
   void write( int code, std::string json,
       const nghttp2::asio_http2::server::response& res )
   {
@@ -101,9 +137,14 @@ namespace spt::configdb::http::endpoints
         } else opts.expirationInSeconds = ttl;
       }
 
-      auto result = db::set( model::RequestData{ key, *body, opts } );
-      if ( result )
+      const auto rd = model::RequestData{ key, *body, opts };
+      if ( const auto result = db::set( rd ); result )
       {
+        if ( !model::Configuration::instance().peers.empty() )
+        {
+          auto fb = builder( rd );
+          emit( fb );
+        }
         return write( 200, R"({"code": 200, "cause": "Ok"})"s, res );
       }
 
@@ -116,16 +157,19 @@ namespace spt::configdb::http::endpoints
       const nghttp2::asio_http2::server::response &res )
   {
     const auto key = boost::algorithm::replace_first_copy( req.uri().path, "/key"sv, ""sv );
-    auto result = db::remove( key );
-    if ( result )
+
+    if ( const auto result = db::remove( key ); result )
     {
-      write( 200, R"({"code": 200, "cause": "Ok"})", res );
+      if ( !model::Configuration::instance().peers.empty() )
+      {
+        auto fb = builder( key );
+        emit( fb );
+      }
+      return write( 200, R"({"code": 200, "cause": "Ok"})", res );
     }
-    else
-    {
-      LOG_WARN << "Key " << key << " not found";
-      write( 404, R"({"code": 404, "cause": "Not found"})"s, res );
-    }
+
+    LOG_WARN << "Key " << key << " not found";
+    write( 404, R"({"code": 404, "cause": "Not found"})"s, res );
   }
 
   void list( const nghttp2::asio_http2::server::request &req,

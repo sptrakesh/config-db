@@ -3,7 +3,7 @@
 //
 
 #include "server.h"
-#include "signal.h"
+#include "signal/signal.h"
 #include "../common/contextholder.h"
 #include "../common/model/configuration.h"
 #include "../common/model/request_generated.h"
@@ -135,7 +135,7 @@ namespace spt::configdb::tcp::coroutine
     if ( value && !model::Configuration::instance().peers.empty() )
     {
       LOG_DEBUG << "Notifying peers of set for " << int( pairs.size() ) << " keys";
-      SignalMgr::instance().emit( std::make_shared<SignalMgr::Bytes>( rbuf ) );
+      signal::SignalMgr::instance().emit( std::make_shared<signal::SignalMgr::Bytes>( rbuf ) );
     }
 
     co_await write( socket, fb );
@@ -156,7 +156,7 @@ namespace spt::configdb::tcp::coroutine
     if ( value && !model::Configuration::instance().peers.empty() )
     {
       LOG_DEBUG << "Notifying peers of remove for " << int( keys.size() ) << " keys";
-      SignalMgr::instance().emit( std::make_shared<SignalMgr::Bytes>( rbuf ) );
+      signal::SignalMgr::instance().emit( std::make_shared<signal::SignalMgr::Bytes>( rbuf ) );
     }
 
     co_await write( socket, fb );
@@ -182,7 +182,7 @@ namespace spt::configdb::tcp::coroutine
     if ( value && !model::Configuration::instance().peers.empty() )
     {
       LOG_DEBUG << "Notifying peers of move for " << int( pairs.size() ) << " keys";
-      SignalMgr::instance().emit( std::make_shared<SignalMgr::Bytes>( rbuf ) );
+      signal::SignalMgr::instance().emit( std::make_shared<signal::SignalMgr::Bytes>( rbuf ) );
     }
 
     co_await write( socket, fb );

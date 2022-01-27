@@ -6,7 +6,7 @@ Defaults()
 {
   if [ -z "$HTTP_PORT" ]
   then
-    HTTP_PORT=6000
+    HTTP_PORT=6020
     echo "PORT not set.  Will default to $HTTP_PORT"
   fi
 
@@ -16,9 +16,15 @@ Defaults()
     echo "PORT not set.  Will default to $TCP_PORT"
   fi
 
+  if [ -z "$NOTIFY_PORT" ]
+  then
+    NOTIFY_PORT=2120
+    echo "PORT not set.  Will default to $NOTIFY_PORT"
+  fi
+
   if [ -z "$THREADS" ]
   then
-    THREADS=4
+    THREADS=`nproc --all`
     echo "THREADS not set.  Will default to $THREADS"
   fi
 
@@ -50,6 +56,12 @@ Args()
     echo "ENABLE_CACHE set.  Will enable temporary cache of keys"
     args="$args --enable-cache"
   fi
+
+  if [ -n "$PEERS" ]
+  then
+    echo "PEERS set.  Will enable notification to and from peers"
+    args="$args --peers $PEERS"
+  fi
 }
 
 Service()
@@ -66,8 +78,8 @@ Service()
     /opt/spt/bin/configdb --config-file $CONFIG_FILE
   else
     /opt/spt/bin/configdb --console --log-dir ${LOGDIR}/ --log-level $LOG_LEVEL \
-      --http-port $HTTP_PORT --tcp-port $TCP_PORT --threads $THREADS \
-      $args
+      --http-port $HTTP_PORT --tcp-port $TCP_PORT --notify-port $NOTIFY_PORT \
+      --threads $THREADS $args
   fi
 }
 

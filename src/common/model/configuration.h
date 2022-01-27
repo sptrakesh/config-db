@@ -88,11 +88,13 @@ namespace spt::configdb::model
       Services& operator=(const Services&) = delete;
 
 #ifdef __APPLE__
-      std::string http{ "6006" };
+      // Specify 0 to disable http
+      std::string http{ "6026" };
       int tcp{ 2022 };
       int notify{ 2122 };
 #else
-      std::string http{ "6000" };
+      // Specify 0 to disable http
+      std::string http{ "6020" };
       int tcp{ 2020 };
       int notify{ 2120 };
 #endif

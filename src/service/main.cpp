@@ -32,7 +32,7 @@ void loadConfig( int argc, char const * const * argv )
       Opt(file, "/tmp/configdb.json")["-f"]["--config-file"]("The JSON configuration file to load.  All other options are ignored.") |
       Opt(peers, "confdb1:2020,confdb2:2020")["-z"]["--peers"]("Comma separated list of peers to listen to for notifications.") |
       Opt(conf.logging.console)["-c"]["--console"]("Log to console (default false)") |
-      Opt(conf.services.http, "6000")["-p"]["--http-port"]("Port on which to listen for http/2 traffic (default 6000)") |
+      Opt(conf.services.http, "6000")["-p"]["--http-port"]("Port on which to listen for http/2 traffic.  Specify 0 to disable (default 6020)") |
       Opt(conf.services.tcp, "2020")["-t"]["--tcp-port"]("Port on which to listen for tcp traffic (default 2020)") |
       Opt(conf.services.notify, "2120")["-b"]["--notify-port"]("Port on which to publish notifications (default 2120)") |
       Opt(conf.ssl.enable)["-s"]["--with-ssl"]("Enable SSL wrappers for services (default false)") |
@@ -78,6 +78,7 @@ void loadConfig( int argc, char const * const * argv )
 
 int main( int argc, char const * const * argv )
 {
+  using namespace std::string_literals;
   loadConfig( argc, argv );
   auto& conf = spt::configdb::model::Configuration::instance();
 
@@ -102,7 +103,10 @@ int main( int argc, char const * const * argv )
 
   std::vector<std::thread> v;
   v.reserve( conf.threads + 2 );
-  v.emplace_back( [&conf]{ spt::configdb::http::start( conf.services.http, conf.threads, conf.ssl.enable ); } );
+  if ( conf.services.http != "0"s )
+  {
+    v.emplace_back( [&conf]{ spt::configdb::http::start( conf.services.http, conf.threads, conf.ssl.enable ); } );
+  }
   v.emplace_back( [&cleaner]{ cleaner.run(); } );
 
   if ( !conf.peers.empty() )

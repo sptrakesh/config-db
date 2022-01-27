@@ -1,15 +1,15 @@
 #!/bin/sh
 
-url='http://localhost:6006/key/test/key'
+url='http://localhost:6026/key/test/key'
 if [ "$1" = "docker" ]
 then
-  url='http://localhost:6000/key/test/key'
+  url='http://localhost:6020/key/test/key'
 fi
 
-lurl='http://localhost:6006/list/test'
+lurl='http://localhost:6026/list/test'
 if [ "$1" = "docker" ]
 then
-  lurl='http://localhost:6000/list/test'
+  lurl='http://localhost:6020/list/test'
 fi
 
 Put()
