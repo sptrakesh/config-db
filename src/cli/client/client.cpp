@@ -207,28 +207,28 @@ void spt::configdb::client::import( std::string_view server, std::string_view po
   if ( ssl ) connection = std::make_unique<api::impl::SSLConnection>( server, port );
   else connection = std::make_unique<api::impl::Connection>( server, port );
 
-  const auto& [response, size, count] = connection->import( file );
+  const auto& [response, count, total] = connection->import( file );
   if ( !response )
   {
-    LOG_WARN << "Error importing (" << int(size) << '/' << count << ") keys from file " << file;
-    std::cout << "Error importing (" << size << '/' << count << ") keys from file " << file << '\n';
+    LOG_WARN << "Error importing (" << int(count) << '/' << total << ") keys from file " << file;
+    std::cout << "Error importing (" << count << '/' << total << ") keys from file " << file << '\n';
     return;
   }
 
   if ( response->value_type() != model::ResultVariant::Success )
   {
-    LOG_WARN << "Error importing (" << int(size) << '/' << count << ") keys from file " << file;
-    std::cout << "Error importing (" << size << '/' << count << ") keys from file " << file << '\n';
+    LOG_WARN << "Error importing (" << int(count) << '/' << total << ") keys from file " << file;
+    std::cout << "Error importing (" << count << '/' << total << ") keys from file " << file << '\n';
     return;
   }
 
   if ( const auto resp = response->value_as<model::Success>(); resp->value() )
   {
-    LOG_WARN << "Imported (" << int(size) << '/' << count << ") keys from file " << file;
-    std::cout << "Imported (" << size << '/' << count << ") keys from file " << file << '\n';
+    LOG_WARN << "Imported (" << int(count) << '/' << total << ") keys from file " << file;
+    std::cout << "Imported (" << count << '/' << total << ") keys from file " << file << '\n';
     return;
   }
 
-  LOG_WARN << "Error importing (" << int(size) << '/' << count << ") keys from file " << file;
-  std::cout << "Error importing (" << size << '/' << count << ") keys from file " << file << '\n';
+  LOG_WARN << "Error importing (" << int(count) << '/' << total << ") keys from file " << file;
+  std::cout << "Error importing (" << count << '/' << total << ") keys from file " << file << '\n';
 }

@@ -17,6 +17,7 @@
 * [Docker](#docker)
 * [Build](#build)
 * [Run](#run)
+  * [Notifications](#notifications)
   * [SSL](#ssl)
 * [Acknowledgements](#acknowledgements)
 
@@ -413,10 +414,8 @@ sequence.  Ensure the dependencies are available under the following paths:
 
 ```shell
 git clone git@github.com:sptrakesh/config-db.git
-cd config-db
-mkdir build && cd build
-cmake 
-  -DCMAKE_PREFIX_PATH=/usr/local/boost \
+mkdir config-db/build && cd config-db/build
+cmake -DCMAKE_PREFIX_PATH=/usr/local/boost \
   -DCMAKE_PREFIX_PATH=/usr/local/rocksdb \
   -DCMAKE_PREFIX_PATH=/usr/local/flatbuffers \
   -DCMAKE_BUILD_TYPE=Release \
@@ -428,12 +427,13 @@ sudo make install
 ## Run
 Run the service via the `/opt/spt/bin/configdb` executable.  Command line options
 may be specified to override default options.  When running as a Docker container,
-use environment variables to specify the comman line options.
+use environment variables to specify the command line options.
 * **-f | --config-file** - The path to the JSON configuration file.  All other
   options are ignored.  This option provides total control over all configurable
   options including encryption. File must have same structure as the 
   [struct](src/common/model/configuration.h).  See [test](test/unit/configuration.cpp)
-  for sample JSON configuration.
+  for sample JSON configuration.  For Docker specify the `CONFIG_FILE` 
+  environment variable.
 * **Logging** - Options related to logging.
   * **-c | --console** - Flag that controls whether logs are echo'ed to `stdout`.
     Default is off.  Always specified in the Docker [entrypoint](docker/scripts/entrypoint.sh).
@@ -466,7 +466,7 @@ Sample command to run the service
 /opt/spt/bin/configdb --console --log-dir /tmp/ --threads 4 --log-level debug
 # Docker container
 docker run -d --rm -p 6020:6020 -p 2022:2020 \
-  -e "ENCRYPTION_SECRET=abc123" -e "LOG_LEVEL=debug" \
+  -e "ENCRYPTION_SECRET=svn91sc+rlZXlIXz1ZrGP4m3OgznyW5DrWONGjYw4bc=" -e "LOG_LEVEL=debug" \
   --name config-db config-db
 ```
 
@@ -474,8 +474,8 @@ docker run -d --rm -p 6020:6020 -p 2022:2020 \
 ### Notifications
 A notification system is available when services are run in a cluster.  There
 is no cluster management/coordination at present.  *Peer* instances are
-assumed run independently (multi-master setup).  A simple notification system
-has been implemented, that will attempt to keep the independent nodes in sync.
+assumed to run independently (multi-master setup).  A simple notification system
+has been implemented which will attempt to keep the independent nodes in sync.
 Notifications are primarily useful when using a cluster of instances that are
 also used as a L1/L2 cache on top of application databases.  Notifications are
 sent asynchronously and hence will only achieve eventual consistency in the best

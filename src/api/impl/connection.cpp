@@ -274,7 +274,7 @@ auto BaseConnection::ttl( const std::vector<std::string_view>& keys ) -> const m
 
 auto BaseConnection::import( const std::string& file ) -> ImportResponse
 {
-  auto f = std::fstream{ file };
+  auto f = std::fstream{ file, std::ios_base::in };
   if ( ! f.is_open() )
   {
     LOG_WARN << "Error opening file " << file;
@@ -282,18 +282,16 @@ auto BaseConnection::import( const std::string& file ) -> ImportResponse
   }
 
   uint32_t count = 0;
-  auto lines = std::vector<std::string>{};
-  lines.reserve( 64 );
+  uint32_t total = 0;
 
   auto kvs = std::vector<model::RequestData>{};
-  kvs.reserve( lines.size() );
+  kvs.reserve( 64 );
 
   std::string line;
   while ( std::getline( f, line ) )
   {
-    ++count;
-    lines.push_back( line );
-    auto lv = std::string_view{ lines.back() };
+    ++total;
+    auto lv = std::string_view{ line };
 
     auto idx = lv.find( ' ', 0 );
     if ( idx == std::string_view::npos )
@@ -310,13 +308,14 @@ auto BaseConnection::import( const std::string& file ) -> ImportResponse
       vidx = lv.find( ' ', end + 1 );
     }
 
+    ++count;
     LOG_INFO << "Creating key: " << lv.substr( 0, idx ) << "; value: " << lv.substr( end + 1 );
     kvs.emplace_back( lv.substr( 0, idx ), lv.substr( end + 1 ) );
   }
 
   f.close();
 
-  return { set( kvs ), lines.size(), count };
+  return { set( kvs ), count, total };
 }
 
 void Connection::socket()

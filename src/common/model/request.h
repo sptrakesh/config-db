@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include <string>
 #include <string_view>
 
 namespace spt::configdb::model
@@ -40,8 +41,8 @@ namespace spt::configdb::model
     RequestData& operator=(const RequestData&) = default;
 
     Options options{};
-    std::string_view key;
+    std::string key;
     // For move operation specify the destination key
-    std::string_view value;
+    std::string value;
   };
 }

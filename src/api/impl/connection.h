@@ -58,7 +58,8 @@ namespace spt::configdb::api::impl
     const model::Response* ttl( const std::vector<std::string_view>& keys );
 
     // File import
-    using ImportResponse = std::tuple<const model::Response*, std::size_t, uint32_t>;
+    // The first number is the number of lines imported and the second is the total number of lines in the file
+    using ImportResponse = std::tuple<const model::Response*, uint32_t, uint32_t>;
     ImportResponse import( const std::string& file );
 
     bool valid() const { return status; }
