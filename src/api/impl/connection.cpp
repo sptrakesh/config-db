@@ -6,8 +6,10 @@
 #include "connection.h"
 #include "../common/model/request_generated.h"
 
+#include <filesystem>
 #include <fstream>
 #include <mutex>
+#include <vector>
 #include <boost/asio/connect.hpp>
 #include <boost/asio/write.hpp>
 
@@ -114,9 +116,30 @@ boost::asio::ssl::context SSLConnection::createContext()
   auto ctx = boost::asio::ssl::context( boost::asio::ssl::context::tlsv13_client );
 
 #ifdef __APPLE__
-  ctx.load_verify_file( "../../../certs/ca.crt" );
-  ctx.use_certificate_file( "../../../certs/client.crt", boost::asio::ssl::context::pem );
-  ctx.use_private_key_file( "../../../certs/client.key", boost::asio::ssl::context::pem );
+  auto searchPaths = std::vector<std::string>{ "../../../certs",
+      "/usr/local/spt/certs", "/opt/spt/certs",
+      "/usr/local/config-db", "/usr/local/configdb",
+      "/opt/config-db", "/opt/configdb" };
+  for ( auto&& path : searchPaths )
+  {
+    auto file = std::string{};
+    file.reserve( 64 );
+    file.append( path ).append( "/ca.crt" );
+    auto p = std::filesystem::path{ file };
+    if ( std::filesystem::exists( p ) )
+    {
+      LOG_INFO << "Loading certificates from " << path;
+      ctx.load_verify_file( file );
+
+      file.clear();
+      file.append( path ).append( "/client.crt" );
+      ctx.use_certificate_file( file, boost::asio::ssl::context::pem );
+
+      file.clear();
+      file.append( path ).append( "/client.key" );
+      ctx.use_private_key_file( file, boost::asio::ssl::context::pem );
+    }
+  }
 #else
   ctx.load_verify_file( "/opt/spt/certs/ca.crt" );
   ctx.use_certificate_file( "/opt/spt/certs/client.crt", boost::asio::ssl::context::pem );

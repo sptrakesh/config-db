@@ -449,7 +449,8 @@ use environment variables to specify the command line options.
   `2020` (`2022` on Apple).  Specify via `TCP_PORT` environment variable to docker.
 * **-b | --notify-port** - The port on which notifications are published.  Default
   `2120` (`2122` on Apple).  Specify via `NOTIFY_PORT` environment variable to docker.
-* **-s | --with-ssl** - Flag to enable SSL on the HTTP/2 and TCP services.  See [SSL](#ssl) for details.
+* **-s | --with-ssl** - Flag to enable SSL on the HTTP/2 and TCP services.  
+  See [SSL](#ssl) for details.  Specify via `ENABLE_SSL` environment variable to docker.
 * **-n | --threads** - The number of threads for both TCP/IP and HTTP/2 services.
   Default to number of hardware threads. Specify via `THREADS` environment variable to docker.
 * **-e | --encryption-secret** - The secret to use to encrypt values.  Default

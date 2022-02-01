@@ -70,6 +70,7 @@ int main( int argc, char const * const * argv )
   std::vector<std::thread> v;
   v.reserve( 1 );
   v.emplace_back( []{ spt::configdb::ContextHolder::instance().ioc.run(); } );
+  int response = EXIT_SUCCESS;
 
   try
   {
@@ -112,15 +113,15 @@ int main( int argc, char const * const * argv )
         exit( 1 );
       }
 
-      if ( action == "get"s ) spt::configdb::client::get( server, port, key, ssl );
-      else if ( action == "list"s ) spt::configdb::client::list( server, port, key, ssl );
-      else if ( action == "set"s ) spt::configdb::client::set( server, port, key, value, ssl );
-      else if ( action == "move"s ) spt::configdb::client::move( server, port, key, value, ssl );
-      else if ( action == "delete"s ) spt::configdb::client::remove( server, port, key, ssl );
+      if ( action == "get"s ) response = spt::configdb::client::get( server, port, key, ssl );
+      else if ( action == "list"s ) response = spt::configdb::client::list( server, port, key, ssl );
+      else if ( action == "set"s ) response = spt::configdb::client::set( server, port, key, value, ssl );
+      else if ( action == "move"s ) response = spt::configdb::client::move( server, port, key, value, ssl );
+      else if ( action == "delete"s ) response = spt::configdb::client::remove( server, port, key, ssl );
     }
     else
     {
-      spt::configdb::client::import( server, port, file, ssl );
+      response = spt::configdb::client::import( server, port, file, ssl );
     }
   }
   catch ( const std::exception& ex )
@@ -135,5 +136,5 @@ int main( int argc, char const * const * argv )
     if ( t.joinable() ) t.join();
   }
 
-  return EXIT_SUCCESS;
+  return response;
 }

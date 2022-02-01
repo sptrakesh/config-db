@@ -207,6 +207,9 @@ int spt::configdb::client::run( std::string_view server, std::string_view port, 
   // Disable tab completion
   rl_bind_key( '\t', rl_insert );
 
+  std::string previous;
+  previous.reserve( 128 );
+
   char* buf;
   while ( ( buf = readline("configdb> " ) ) != nullptr )
   {
@@ -217,7 +220,7 @@ int spt::configdb::client::run( std::string_view server, std::string_view port, 
       continue;
     }
 
-    add_history( buf );
+    if ( previous != std::string{ buf } ) add_history( buf );
 
     auto line = std::string_view{ buf, len };
     line = pclient::trim( line );
@@ -263,6 +266,8 @@ int spt::configdb::client::run( std::string_view server, std::string_view port, 
       }
     }
 
+    previous.clear();
+    previous.append( buf, len );
     std::free( buf );
   }
 

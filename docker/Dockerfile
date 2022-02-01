@@ -8,6 +8,7 @@ RUN apt-get install -y libreadline-dev libsnappy-dev
 
 COPY CMakeLists.txt /opt/spt/config-db/CMakeLists.txt
 COPY src /opt/spt/config-db/src
+COPY certs /opt/spt/config-db/certs
 
 WORKDIR /opt/spt/config-db/build
 RUN rm -rf * \

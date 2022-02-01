@@ -21,8 +21,8 @@ Encrypter::Encrypter( std::string_view cryptKey ) : secret{ cryptKey.data(), cry
   initContext();
   auto finish = std::chrono::high_resolution_clock::now();
   LOG_INFO << "Initialising OpenSSL routines took " <<
-    std::chrono::duration_cast<std::chrono::nanoseconds>( finish - start ).count() <<
-    " nanoseconds";
+    std::chrono::duration_cast<std::chrono::milliseconds>( finish - start ).count() <<
+    " milliseconds";
 }
 
 Encrypter::~Encrypter()

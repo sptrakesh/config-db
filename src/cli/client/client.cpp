@@ -7,7 +7,7 @@
 
 #include <iostream>
 
-void spt::configdb::client::get( std::string_view server,
+int spt::configdb::client::get( std::string_view server,
     std::string_view port, std::string_view key, bool ssl )
 {
   std::unique_ptr<api::impl::BaseConnection> connection;
@@ -19,14 +19,14 @@ void spt::configdb::client::get( std::string_view server,
   {
     LOG_WARN << "Error retrieving key " << key;
     std::cout << "Error retrieving key " << key << '\n';
-    return;
+    return 1;
   }
 
   if ( response->value_type() != model::ResultVariant::KeyValueResults )
   {
     LOG_WARN << "Error retrieving key " << key;
     std::cout << "Error retrieving key " << key << '\n';
-    return;
+    return 2;
   }
 
   auto resp = response->value_as<model::KeyValueResults>();
@@ -34,21 +34,22 @@ void spt::configdb::client::get( std::string_view server,
   {
     LOG_WARN << "Error retrieving key " << key;
     std::cout << "Error retrieving key " << key << '\n';
-    return;
+    return 3;
   }
 
   if ( resp->value()->Get( 0 )->value_type() != model::ValueVariant::Value )
   {
     LOG_WARN << "Error retrieving key " << key;
     std::cout << "Error retrieving key " << key << '\n';
-    return;
+    return 4;
   }
   auto value = resp->value()->Get( 0 )->value_as<model::Value>();
   LOG_INFO << "Retrieved value for key " << key;
   std::cout << value->value()->string_view() << '\n';
+  return 0;
 }
 
-void spt::configdb::client::list( std::string_view server,
+int spt::configdb::client::list( std::string_view server,
     std::string_view port, std::string_view path, bool ssl )
 {
   std::unique_ptr<api::impl::BaseConnection> connection;
@@ -60,13 +61,13 @@ void spt::configdb::client::list( std::string_view server,
   {
     LOG_WARN << "Error list path " << path;
     std::cout << "Error listing path " << path << '\n';
-    return;
+    return 1;
   }
 
   if ( response->value_type() != model::ResultVariant::KeyValueResults )
   {
     std::cout << "Error retrieving path " << path << '\n';
-    return;
+    return 2;
   }
 
   auto resp = response->value_as<model::KeyValueResults>();
@@ -74,14 +75,14 @@ void spt::configdb::client::list( std::string_view server,
   {
     LOG_WARN << "Error listing path " << path;
     std::cout << "Error listing path " << path << '\n';
-    return;
+    return 3;
   }
 
   if ( resp->value()->Get( 0 )->value_type() != model::ValueVariant::Children )
   {
     LOG_WARN << "Error listing path " << path;
     std::cout << "Error listing path " << path << '\n';
-    return;
+    return 4;
   }
 
   auto value = resp->value()->Get( 0 )->value_as<model::Children>();
@@ -89,7 +90,7 @@ void spt::configdb::client::list( std::string_view server,
   {
     LOG_WARN << "Error listing path " << path;
     std::cout << "Error listing path " << path << '\n';
-    return;
+    return 5;
   }
 
   LOG_INFO << "Retrieved children for path " << path;
@@ -97,9 +98,11 @@ void spt::configdb::client::list( std::string_view server,
   {
     std::cout << v->string_view() << '\n';
   }
+
+  return 0;
 }
 
-void spt::configdb::client::set( std::string_view server,
+int spt::configdb::client::set( std::string_view server,
     std::string_view port, std::string_view key, std::string_view value, bool ssl )
 {
   std::unique_ptr<api::impl::BaseConnection> connection;
@@ -111,14 +114,14 @@ void spt::configdb::client::set( std::string_view server,
   {
     LOG_WARN << "Error setting key " << key;
     std::cout << "Error setting key " << key << '\n';
-    return;
+    return 1;
   }
 
   if ( response->value_type() != model::ResultVariant::Success )
   {
     LOG_WARN << "Error setting key " << key;
     std::cout << "Error setting key " << key << '\n';
-    return;
+    return 2;
   }
 
   auto resp = response->value_as<model::Success>();
@@ -126,14 +129,15 @@ void spt::configdb::client::set( std::string_view server,
   {
     LOG_INFO << "Set value for key " << key;
     std::cout << "Set value for key " << key << '\n';
-    return;
+    return 0;
   }
 
   LOG_WARN << "Error setting key " << key;
   std::cout << "Error setting key " << key << '\n';
+  return 3;
 }
 
-void spt::configdb::client::move( std::string_view server,
+int spt::configdb::client::move( std::string_view server,
     std::string_view port, std::string_view key, std::string_view dest, bool ssl )
 {
   std::unique_ptr<api::impl::BaseConnection> connection;
@@ -145,14 +149,14 @@ void spt::configdb::client::move( std::string_view server,
   {
     LOG_WARN << "Error moving key " << key << " to " << dest;
     std::cout << "Error moving key " << key << " to " << dest << '\n';
-    return;
+    return 1;
   }
 
   if ( response->value_type() != model::ResultVariant::Success )
   {
     LOG_WARN << "Error moving key " << key << " to " << dest;
     std::cout << "Error moving key " << key << " to " << dest << '\n';
-    return;
+    return 2;
   }
 
   auto resp = response->value_as<model::Success>();
@@ -160,14 +164,15 @@ void spt::configdb::client::move( std::string_view server,
   {
     LOG_INFO << "Moved key " << key << " to " << dest;
     std::cout << "Moved key " << key << " to " << dest << '\n';
-    return;
+    return 0;
   }
 
   LOG_WARN << "Error moving key " << key << " to " << dest;
   std::cout << "Error moving key " << key << " to " << dest << '\n';
+  return 3;
 }
 
-void spt::configdb::client::remove( std::string_view server,
+int spt::configdb::client::remove( std::string_view server,
     std::string_view port, std::string_view key, bool ssl )
 {
   std::unique_ptr<api::impl::BaseConnection> connection;
@@ -179,14 +184,14 @@ void spt::configdb::client::remove( std::string_view server,
   {
     LOG_WARN << "Error removing key " << key;
     std::cout << "Error removing key " << key << '\n';
-    return;
+    return 1;
   }
 
   if ( response->value_type() != model::ResultVariant::Success )
   {
     LOG_WARN << "Error removing key " << key;
     std::cout << "Error removing key " << key << '\n';
-    return;
+    return 2;
   }
 
   auto resp = response->value_as<model::Success>();
@@ -194,14 +199,14 @@ void spt::configdb::client::remove( std::string_view server,
   {
     LOG_WARN << "Error removing key " << key;
     std::cout << "Error removing key " << key << '\n';
+    return 3;
   }
-  else
-  {
-    std::cout << "Removed key " << key << '\n';
-  }
+
+  std::cout << "Removed key " << key << '\n';
+  return 0;
 }
 
-void spt::configdb::client::import( std::string_view server, std::string_view port, const std::string& file, bool ssl )
+int spt::configdb::client::import( std::string_view server, std::string_view port, const std::string& file, bool ssl )
 {
   std::unique_ptr<api::impl::BaseConnection> connection;
   if ( ssl ) connection = std::make_unique<api::impl::SSLConnection>( server, port );
@@ -212,23 +217,24 @@ void spt::configdb::client::import( std::string_view server, std::string_view po
   {
     LOG_WARN << "Error importing (" << int(count) << '/' << total << ") keys from file " << file;
     std::cout << "Error importing (" << count << '/' << total << ") keys from file " << file << '\n';
-    return;
+    return 1;
   }
 
   if ( response->value_type() != model::ResultVariant::Success )
   {
     LOG_WARN << "Error importing (" << int(count) << '/' << total << ") keys from file " << file;
     std::cout << "Error importing (" << count << '/' << total << ") keys from file " << file << '\n';
-    return;
+    return 2;
   }
 
   if ( const auto resp = response->value_as<model::Success>(); resp->value() )
   {
     LOG_WARN << "Imported (" << int(count) << '/' << total << ") keys from file " << file;
     std::cout << "Imported (" << count << '/' << total << ") keys from file " << file << '\n';
-    return;
+    return 0;
   }
 
   LOG_WARN << "Error importing (" << int(count) << '/' << total << ") keys from file " << file;
   std::cout << "Error importing (" << count << '/' << total << ") keys from file " << file << '\n';
+  return 3;
 }
