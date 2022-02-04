@@ -396,11 +396,15 @@ The following environment variables can be used to customise the container:
   other variables/options are ignored.
 * `HTTP_PORT` - The port to run the HTTP/2 service on.  Default `6020`.
 * `TCP_PORT` - The port to run the TCP service on.  Default `2020`.
+* `NOTIFY_PORT` - The port to run the notification service on.  Default `2120`
 * `THREADS` - The number of threads to use for the services.  Default `4`.
 * `LOG_LEVEL` - The level to use for logging.  One of `debug|info|warn|critical`.  Default `info`.
 * `ENABLE_CACHE` - Use to turn off temporary value caching.  Default `true`.
 * `ENABLE_SSL` - Use to run SSL services.  Default `false`.
 * `ENCRYPTION_SECRET` - Use to specify the secret used to AES encrypt values.  Default is internal to the system.
+* `PEERS` - Use to enable notifications on the `NOTIFY_PORT`.  Listeners will be
+  started to listen for notifications from the `PEERS`.  Will also enable publishing
+  notifications from this instance.
 
 **Note:** An alpine based image is also available.  It crashes at shutdown, so
 the database may get corrupted.

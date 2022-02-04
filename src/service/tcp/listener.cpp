@@ -9,7 +9,6 @@
 #include "../lib/db/storage.h"
 #include "../log/NanoLog.h"
 
-#include <memory>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio/connect.hpp>
 #include <boost/asio/co_spawn.hpp>
@@ -42,7 +41,7 @@ namespace spt::configdb::tcp::plistener
   }
 
   using Socket = boost::asio::ip::tcp::socket;
-  using SecureSocket = boost::asio::ssl::stream<boost::asio::ip::tcp::socket>;
+  using SecureSocket = boost::asio::ssl::stream<Socket>;
 
   template <typename SocketType>
   struct Listener
@@ -57,6 +56,12 @@ namespace spt::configdb::tcp::plistener
     {
       close( socket );
     }
+
+    Listener(Listener&&) = default;
+    Listener& operator=(Listener&&) = default;
+
+    Listener(const Listener&) = delete;
+    Listener& operator=(const Listener&) = delete;
 
     boost::asio::awaitable<void> run()
     {
@@ -267,43 +272,41 @@ namespace spt::configdb::tcp::plistener
     std::string port;
   };
 
-  std::unique_ptr<Listener<Socket>> listener( std::string_view host, std::string_view port )
+  template <typename SocketType>
+  boost::asio::awaitable<void> run( Listener<SocketType> s )
   {
-    Socket s{ ContextHolder::instance().ioc };
-    return std::make_unique<Listener<boost::asio::ip::tcp::socket>>( std::move( s ), host, port );
+    co_await s.run();
   }
 
-  std::unique_ptr<Listener<SecureSocket>> listenerWithSSL(
+  Listener<Socket> listener( std::string_view host, std::string_view port )
+  {
+    Socket s{ ContextHolder::instance().ioc };
+    return Listener<Socket>{ std::move( s ), host, port };
+  }
+
+  Listener<SecureSocket> listenerWithSSL(
       std::string_view host, std::string_view port, boost::asio::ssl::context& ctx )
   {
     SecureSocket s{ ContextHolder::instance().ioc, ctx };
-    return std::make_unique<Listener<SecureSocket>>( std::move( s ), host, port );
-  }
-
-  boost::asio::awaitable<void> listen( std::string host, std::string port, bool ssl )
-  {
-    auto executor = co_await boost::asio::this_coro::executor;
-
-    if ( ssl )
-    {
-      boost::asio::ssl::context ctx = createContext();
-      auto ptr = listenerWithSSL( host, port, ctx );
-      boost::asio::co_spawn( executor, ptr->run(), boost::asio::detached );
-    }
-    else
-    {
-      auto ptr = listener( host, port );
-      boost::asio::co_spawn( executor, ptr->run(), boost::asio::detached );
-    }
+    return Listener<SecureSocket>{ std::move( s ), host, port };
   }
 }
 
 int spt::configdb::tcp::listen( std::string_view host, std::string_view port, bool ssl )
 {
-  boost::asio::co_spawn( ContextHolder::instance().ioc,
-      plistener::listen( std::string{ host }, std::string{ port }, ssl ),
-      boost::asio::detached );
-  LOG_INFO << "TCP notification listener client started on port " << port;
+  if ( ssl )
+  {
+    boost::asio::ssl::context ctx = plistener::createContext();
+    boost::asio::co_spawn( ContextHolder::instance().ioc,
+        plistener::run( plistener::listenerWithSSL( host, port, ctx ) ), boost::asio::detached );
+    LOG_INFO << "TCP SSL notification listener client started on port " << port;
+  }
+  else
+  {
+    boost::asio::co_spawn( ContextHolder::instance().ioc,
+        plistener::run( plistener::listener( host, port ) ), boost::asio::detached );
+    LOG_INFO << "TCP notification listener client started on port " << port;
+  }
   return 0;
 }
 
