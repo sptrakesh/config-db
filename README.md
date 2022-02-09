@@ -14,6 +14,7 @@
   * [Shell](#shell)
   * [CLI](#cli)
     * [Bulk Import](#bulk-import)
+  * [Seed](#seed)
 * [Docker](#docker)
 * [Build](#build)
 * [Run](#run)
@@ -374,6 +375,21 @@ Set 5 keys
 ```
 
 </details>
+
+### Seed
+A `seed-configdb` utility is provided to *seed* the database.  This can be used
+to pre-populate the database before the service is started.
+
+**Note:** This will fail if the service is already running (database locked
+by running process).
+
+The following command line options are supported by the seed application:
+* `-c | --conf` Optional JSON configuration file that controls the database storage location.
+* `-f | --file` The data file to import.  The input file must contain lines 
+  where each line represents a *key-value* pair.  The text before the first 
+  space character is interpreted as the *key*, and the rest of the line as the *value*.
+* `-l | --log-level` The level for the logger.  Accepted values `debug|info|warn|critical`.  Default `info`.
+* `-o | --log-dir` The directory to write log files to.  The path *must* end with a trailing `/`.  Default `/tmp/`.
 
 
 ## Docker

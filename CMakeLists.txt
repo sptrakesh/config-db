@@ -79,6 +79,7 @@ add_subdirectory(src/common)
 add_subdirectory(src/lib)
 add_subdirectory(src/service)
 add_subdirectory(src/api)
+add_subdirectory(src/seed)
 add_subdirectory(src/shell)
 add_subdirectory(src/cli)
 
