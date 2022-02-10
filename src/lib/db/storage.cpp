@@ -674,7 +674,7 @@ namespace spt::configdb::db::internal
         vec.reserve( response->children()->size() + 1 );
         for ( auto&& item : *response->children() ) vec.push_back( item->string_view() );
 
-        if ( std::find( std::begin( vec ), std::end( vec ), child ) == std::end( vec ) )
+        if ( !std::binary_search( std::begin( vec ), std::end( vec ), child ) )
         {
           vec.push_back( child );
           std::sort( std::begin( vec ), std::end( vec ) );
