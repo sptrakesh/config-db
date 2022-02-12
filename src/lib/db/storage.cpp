@@ -13,6 +13,7 @@
 #include <charconv>
 #include <limits>
 #include <memory>
+#include <set>
 
 #include <rocksdb/cache.h>
 #include <rocksdb/db.h>
@@ -670,15 +671,10 @@ namespace spt::configdb::db::internal
       auto response = model::GetNode( d );
       if ( response )
       {
-        auto vec = std::vector<std::string_view>{};
-        vec.reserve( response->children()->size() + 1 );
-        for ( auto&& item : *response->children() ) vec.push_back( item->string_view() );
+        auto set = std::set<std::string_view, std::less<>>{};
+        for ( auto&& item : *response->children() ) set.insert( item->string_view() );
 
-        if ( !std::binary_search( std::begin( vec ), std::end( vec ), child ) )
-        {
-          vec.push_back( child );
-          std::sort( std::begin( vec ), std::end( vec ) );
-        }
+        if ( !set.contains( child ) ) set.insert( child );
         else
         {
           LOG_DEBUG << "Path " << path << " already contains child " << child;
@@ -687,8 +683,8 @@ namespace spt::configdb::db::internal
 
         auto fb = flatbuffers::FlatBufferBuilder{ 128 };
         auto children = std::vector<flatbuffers::Offset<flatbuffers::String>>{};
-        children.reserve( vec.size() );
-        for ( auto&& c : vec ) children.push_back( fb.CreateString( c ) );
+        children.reserve( set.size() );
+        for ( auto&& c : set ) children.push_back( fb.CreateString( c ) );
 
         auto nc = fb.CreateVector( children );
         auto n = model::CreateNode( fb, nc );
@@ -697,11 +693,11 @@ namespace spt::configdb::db::internal
         if ( const auto s = txn->Put( handles[2], Slice{ path }, Slice{ reinterpret_cast<const char *>( fb.GetBufferPointer() ), fb.GetSize() } );
             s.ok() )
         {
-          LOG_DEBUG << "Saved path " << path << " with " << int(vec.size()) << " components";
+          LOG_DEBUG << "Saved path " << path << " with " << int(set.size()) << " components";
         }
         else
         {
-          LOG_WARN << "Error saving path: " << path << " with " << int(vec.size()) <<
+          LOG_WARN << "Error saving path: " << path << " with " << int(set.size()) <<
             " components. " << s.ToString();
           return false;
         }

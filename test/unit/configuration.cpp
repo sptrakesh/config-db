@@ -7,6 +7,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+//#include <set>
 #include <sstream>
 #include <vector>
 
@@ -118,6 +119,111 @@ SCENARIO( "Configuration test", "config" )
 /*
 SCENARIO( "Serialisation test" )
 {
+  GIVEN( "A set of strings" )
+  {
+    std::set<std::string, std::less<>> names;
+    for ( auto i = 0; i < 10000; ++i )
+    {
+      std::string name;
+      name.reserve( 12 );
+      name.append( "name" ).append( std::to_string( i ) );
+      names.insert( name );
+    }
+
+    WHEN( "Comparing flatbuffers to boost serialization" )
+    {
+      const auto tofbuf = [&names]
+      {
+        auto st = std::chrono::high_resolution_clock::now();
+        auto fb = flatbuffers::FlatBufferBuilder{ 128 };
+        auto children = std::vector<flatbuffers::Offset<flatbuffers::String>>{};
+        children.reserve( names.size() );
+        for ( auto&& n : names ) children.push_back( fb.CreateString( n ) );
+
+        auto nc = fb.CreateVector( children );
+        auto n = spt::configdb::model::CreateNode( fb, nc );
+        fb.Finish( n );
+
+        std::string buf{ reinterpret_cast<const char*>( fb.GetBufferPointer() ), fb.GetSize() };
+        std::ostringstream ss;
+        ss << buf;
+        ss.str();
+
+        auto et = std::chrono::high_resolution_clock::now();
+        auto delta = std::chrono::duration_cast<std::chrono::nanoseconds>( et - st );
+        return std::tuple{ ss.str(), delta.count() };
+      };
+
+      const auto fromfbuf = [&names]( std::string_view str )
+      {
+        auto st = std::chrono::high_resolution_clock::now();
+
+        const auto d = reinterpret_cast<const uint8_t*>( str.data() );
+        auto response = spt::configdb::model::GetNode( d );
+
+        auto vec = std::vector<std::string>{};
+        vec.reserve( response->children()->size() + 1 );
+        for ( auto&& item : *response->children() ) vec.push_back( item->str() );
+        REQUIRE( vec.size() == names.size() );
+        auto et = std::chrono::high_resolution_clock::now();
+        auto delta = std::chrono::duration_cast<std::chrono::nanoseconds>( et - st );
+        return delta.count();
+      };
+
+      const auto tocppser = [&names]()
+      {
+        auto st = std::chrono::high_resolution_clock::now();
+        auto buf = buffer{};
+        store( buf, names );
+        auto str = std::string{ reinterpret_cast<const char*>( buf.data() ), buf.size() };
+
+        auto et = std::chrono::high_resolution_clock::now();
+        auto delta = std::chrono::duration_cast<std::chrono::nanoseconds>( et - st );
+        return std::tuple{ str, delta.count() };
+      };
+
+      const auto fromcppser = [&names]( std::string_view str )
+      {
+        auto st = std::chrono::high_resolution_clock::now();
+        auto par = parser{};
+        par.init( reinterpret_cast<const uint8_t*>( str.data() ), str.size() );
+        std::set<std::string> n;
+        parse( par, n );
+        REQUIRE( n.size() == names.size() );
+        auto et = std::chrono::high_resolution_clock::now();
+        auto delta = std::chrono::duration_cast<std::chrono::nanoseconds>( et - st );
+        return delta.count();
+      };
+
+      std::vector<uint64_t> tofbufs;
+      tofbufs.reserve( 100 );
+      std::vector<uint64_t> fromfbufs;
+      fromfbufs.reserve( 100 );
+      std::vector<uint64_t> tocppsers;
+      tocppsers.reserve( 100 );
+      std::vector<uint64_t> fromcppsers;
+      fromcppsers.reserve( 100 );
+
+      for ( auto i = 0; i < 100; ++i )
+      {
+        const auto [str,tfbuft] = tofbuf();
+        tofbufs.push_back( tfbuft );
+        const auto ffbuft = fromfbuf( str );
+        fromfbufs.push_back( ffbuft );
+
+        const auto [bstr,tcppser] = tocppser();
+        tocppsers.push_back( tcppser );
+        const auto fcppser = fromcppser( bstr );
+        fromcppsers.push_back( fcppser );
+      }
+
+      std::cout << "Average time to produce Flatbuffer from set " << std::reduce( tofbufs.begin(), tofbufs.end() ) / tofbufs.size() << std::endl;
+      std::cout << "Average time to consume set from Flatbuffer " << std::reduce( fromfbufs.begin(), fromfbufs.end() ) / fromfbufs.size() << std::endl;
+      std::cout << "Average time to produce cppser serialisation from set " << std::reduce( fromcppsers.begin(), fromcppsers.end() ) / fromcppsers.size() << std::endl;
+      std::cout << "Average time to consume set from cppser serialisation " << std::reduce( tocppsers.begin(), tocppsers.end() ) / tocppsers.size() << std::endl;
+    }
+  }
+
   GIVEN( "A vector of strings" )
   {
     std::vector<std::string> names;
@@ -187,7 +293,6 @@ SCENARIO( "Serialisation test" )
         auto par = parser{};
         par.init( reinterpret_cast<const uint8_t*>( str.data() ), str.size() );
         std::vector<std::string> n;
-        n.reserve( names.size() );
         parse( par, n );
         REQUIRE( n.size() == names.size() );
         auto et = std::chrono::high_resolution_clock::now();
@@ -217,10 +322,10 @@ SCENARIO( "Serialisation test" )
         fromcppsers.push_back( fcppser );
       }
 
-      std::cout << "Average time to produce Flatbuffer " << std::reduce( tofbufs.begin(), tofbufs.end() ) / tofbufs.size() << std::endl;
-      std::cout << "Average time to consume Flatbuffer " << std::reduce( fromfbufs.begin(), fromfbufs.end() ) / fromfbufs.size() << std::endl;
-      std::cout << "Average time to produce cppser serialisation " << std::reduce( fromcppsers.begin(), fromcppsers.end() ) / fromcppsers.size() << std::endl;
-      std::cout << "Average time to consume cppser serialisation " << std::reduce( tocppsers.begin(), tocppsers.end() ) / tocppsers.size() << std::endl;
+      std::cout << "Average time to produce Flatbuffer from vector " << std::reduce( tofbufs.begin(), tofbufs.end() ) / tofbufs.size() << std::endl;
+      std::cout << "Average time to consume vector from Flatbuffer " << std::reduce( fromfbufs.begin(), fromfbufs.end() ) / fromfbufs.size() << std::endl;
+      std::cout << "Average time to produce cppser serialisation from vetor " << std::reduce( fromcppsers.begin(), fromcppsers.end() ) / fromcppsers.size() << std::endl;
+      std::cout << "Average time to consume vector from cppser serialisation " << std::reduce( tocppsers.begin(), tocppsers.end() ) / tocppsers.size() << std::endl;
     }
   }
 }
