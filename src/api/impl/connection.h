@@ -12,22 +12,24 @@
 #include <boost/asio/streambuf.hpp>
 #include <boost/asio/ip/tcp.hpp>
 
-#if __has_include("../common/contextholder.h")
-#include "../common/contextholder.h"
-#include "../common/model/request.h"
-#elif __has_include("../../src/common/contextholder.h")
-#include "../../src/common/contextholder.h"
-#include "../../src/common/model/request.h"
-#else
-#include <configdb/common/contextholder.h>
-#include <configdb/common/model/request.h>
-#endif
-#if __has_include("../../log/NanoLog.h")
-#include "../../log/NanoLog.h"
-#elif __has_include("../../src/log/NanoLog.h")
-#include "../../src/log/NanoLog.h"
-#else
-#include <log/NanoLog.h>
+#if defined __has_include
+  #if __has_include("../common/contextholder.h")
+    #include "../common/contextholder.h"
+    #include "../common/model/request.h"
+  #elif __has_include("../../src/common/contextholder.h")
+    #include "../../src/common/contextholder.h"
+    #include "../../src/common/model/request.h"
+  #else
+    #include <configdb/common/contextholder.h>
+    #include <configdb/common/model/request.h>
+  #endif
+  #if __has_include("../../log/NanoLog.h")
+    #include "../../log/NanoLog.h"
+  #elif __has_include("../../src/log/NanoLog.h")
+    #include "../../src/log/NanoLog.h"
+  #else
+    #include <log/NanoLog.h>
+  #endif
 #endif
 #include "../../src/common/model/response_generated.h"
 
@@ -88,7 +90,7 @@ namespace spt::configdb::api::impl
       buffer.commit( osize );
       std::size_t read = osize;
 
-      if ( read < 5 )
+      if ( read < 5 ) // flawfinder: ignore
       {
         LOG_WARN << "Invalid short response for " << context;
         return nullptr;
@@ -97,10 +99,20 @@ namespace spt::configdb::api::impl
       const auto d = reinterpret_cast<const uint8_t*>( buffer.data().data() );
       uint32_t len;
       memcpy( &len, d, sizeof(len) );
-      LOG_DEBUG << "Read " << int(read) << " bytes, total size " << int(len);
+      LOG_DEBUG << "Read " << int(read) << " bytes, total size " << int(len); // flawfinder: ignore
+
+#ifndef MAX_MESSAGE_SIZE
+#define MAX_MESSAGE_SIZE (4*1024*1024)
+#endif
+
+      if ( const auto maxLength = uint32_t(MAX_MESSAGE_SIZE); len > maxLength )
+      {
+        LOG_WARN << "Message size " << int(len) << " exceeds maximum defined " << int(MAX_MESSAGE_SIZE) << ". Truncating read..."; // flawfinder: ignore
+        len = maxLength;
+      }
 
       auto i = 0;
-      while ( read < ( len + sizeof(len) ) )
+      while ( read < ( len + sizeof(len) ) ) // flawfinder: ignore
       {
         LOG_DEBUG << "Iteration " << ++i;
         osize = s.read_some( buffer.prepare( 256 ) );
@@ -108,7 +120,7 @@ namespace spt::configdb::api::impl
         read += osize;
       }
 
-      LOG_DEBUG << "Read " << int(read) << " bytes, total size " << int(len);
+      LOG_DEBUG << "Read " << int(read) << " bytes, total size " << int(len); // flawfinder: ignore
       const auto d1 = reinterpret_cast<const uint8_t*>( buffer.data().data() );
       auto verifier = flatbuffers::Verifier(  d1 + sizeof(len), len );
       auto ok = model::VerifyResponseBuffer( verifier );

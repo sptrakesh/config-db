@@ -7,6 +7,7 @@
 #include "../log/NanoLog.h"
 
 #include <cctype>
+#include <cstring>
 #include <iostream>
 #include <string_view>
 
@@ -213,7 +214,11 @@ int spt::configdb::client::run( std::string_view server, std::string_view port, 
   char* buf;
   while ( ( buf = readline("configdb> " ) ) != nullptr )
   {
-    auto len = strlen( buf );
+#ifdef __STDC_LIB_EXT1__
+    auto len = strnlen_s( buf, 64*1024 );
+#else
+    auto len = strlen( buf ); // flawfinder: ignore
+#endif
     if ( len == 0 )
     {
       std::free( buf );

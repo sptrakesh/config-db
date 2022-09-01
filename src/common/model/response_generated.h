@@ -60,7 +60,7 @@ inline const ValueVariant (&EnumValuesValueVariant())[4] {
 }
 
 inline const char * const *EnumNamesValueVariant() {
-  static const char * const names[5] = {
+  static const char * const names[5] = { // flawfinder: ignore
     "NONE",
     "Value",
     "Children",
@@ -113,7 +113,7 @@ inline const ResultVariant (&EnumValuesResultVariant())[3] {
 }
 
 inline const char * const *EnumNamesResultVariant() {
-  static const char * const names[4] = {
+  static const char * const names[4] = { // flawfinder: ignore
     "NONE",
     "KeyValueResults",
     "Success",

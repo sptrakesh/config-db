@@ -12,11 +12,11 @@ file( GLOB_RECURSE test_SRCS *.cpp *.h )
 add_executable(unitTest ${test_SRCS} )
 if (APPLE)
   target_link_libraries(unitTest
-    PRIVATE nanolog configdb-common configdb-lib Catch2::Catch2 Boost::boost rocksdb ${OPENSSL_LIBRARIES} z
+    PRIVATE nanolog configdb-common configdb-lib Catch2::Catch2 Boost::boost rocksdb gflags ${OPENSSL_LIBRARIES} z
   )
 else()
   target_link_libraries(unitTest
-    PRIVATE nanolog configdb-common configdb-lib Catch2::Catch2 Boost::boost rocksdb crypto ssl z
+    PRIVATE nanolog configdb-common configdb-lib Catch2::Catch2 Boost::boost rocksdb gflags crypto ssl z
   )
 endif()
 

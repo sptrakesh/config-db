@@ -49,7 +49,7 @@ inline const Action (&EnumValuesAction())[6] {
 }
 
 inline const char * const *EnumNamesAction() {
-  static const char * const names[7] = {
+  static const char * const names[7] = { // flawfinder: ignore
     "Get",
     "Put",
     "Delete",

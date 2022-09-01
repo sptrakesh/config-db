@@ -79,7 +79,7 @@ namespace spt::configdb::tcp::plistener
 
       while ( !ch.ioc.stopped() )
       {
-        co_await read();
+        co_await read(); // flawfinder: ignore
         if ( !isOpen( socket ) ) co_await waitTillConnected();
       }
     }
@@ -177,11 +177,11 @@ namespace spt::configdb::tcp::plistener
       }
     }
 
-    boost::asio::awaitable<void> read()
+    boost::asio::awaitable<void> read() // flawfinder: ignore
     {
       static constexpr int bufSize = 128;
       static constexpr auto maxBytes = 8 * 1024 * 1024;
-      uint8_t data[bufSize];
+      uint8_t data[bufSize]; // flawfinder: ignore
 
       const auto documentSize = [&data]( std::size_t length )
       {
@@ -224,7 +224,7 @@ namespace spt::configdb::tcp::plistener
       rbuf.reserve( docSize - sizeof(uint32_t) );
       rbuf.insert( rbuf.end(), data + sizeof(uint32_t), data + osize );
 
-      while ( docSize < maxBytes && read != docSize )
+      while ( docSize < maxBytes && read != docSize ) // flawfinder: ignore
       {
         osize = co_await socket.async_read_some( boost::asio::buffer( data ),
             boost::asio::redirect_error( boost::asio::use_awaitable, ec ) );
