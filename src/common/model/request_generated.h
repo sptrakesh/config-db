@@ -6,6 +6,13 @@
 
 #include "flatbuffers/flatbuffers.h"
 
+// Ensure the included flatbuffers.h is the same version as when this file was
+// generated, otherwise it may not be compatible.
+static_assert(FLATBUFFERS_VERSION_MAJOR == 22 &&
+              FLATBUFFERS_VERSION_MINOR == 10 &&
+              FLATBUFFERS_VERSION_REVISION == 26,
+             "Non-compatible flatbuffers version included");
+
 namespace spt {
 namespace configdb {
 namespace model {
@@ -49,7 +56,7 @@ inline const Action (&EnumValuesAction())[6] {
 }
 
 inline const char * const *EnumNamesAction() {
-  static const char * const names[7] = { // flawfinder: ignore
+  static const char * const names[7] = {
     "Get",
     "Put",
     "Delete",
@@ -93,8 +100,8 @@ struct Options FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyField<uint8_t>(verifier, VT_IF_NOT_EXISTS) &&
-           VerifyField<uint32_t>(verifier, VT_EXPIRATION_IN_SECONDS) &&
+           VerifyField<uint8_t>(verifier, VT_IF_NOT_EXISTS, 1) &&
+           VerifyField<uint32_t>(verifier, VT_EXPIRATION_IN_SECONDS, 4) &&
            verifier.EndTable();
   }
 };
@@ -135,13 +142,13 @@ struct Options::Traits {
   static auto constexpr Create = CreateOptions;
   static constexpr auto name = "Options";
   static constexpr auto fully_qualified_name = "spt.configdb.model.Options";
-  static constexpr std::array<const char *, 2> field_names = {
+  static constexpr size_t fields_number = 2;
+  static constexpr std::array<const char *, fields_number> field_names = {
     "if_not_exists",
     "expiration_in_seconds"
   };
   template<size_t Index>
   using FieldType = decltype(std::declval<type>().get_field<Index>());
-  static constexpr size_t fields_number = 2;
 };
 
 struct KeyValue FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
@@ -224,14 +231,14 @@ struct KeyValue::Traits {
   static auto constexpr Create = CreateKeyValue;
   static constexpr auto name = "KeyValue";
   static constexpr auto fully_qualified_name = "spt.configdb.model.KeyValue";
-  static constexpr std::array<const char *, 3> field_names = {
+  static constexpr size_t fields_number = 3;
+  static constexpr std::array<const char *, fields_number> field_names = {
     "key",
     "value",
     "options"
   };
   template<size_t Index>
   using FieldType = decltype(std::declval<type>().get_field<Index>());
-  static constexpr size_t fields_number = 3;
 };
 
 inline flatbuffers::Offset<KeyValue> CreateKeyValueDirect(
@@ -272,7 +279,7 @@ struct Request FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyField<int8_t>(verifier, VT_ACTION) &&
+           VerifyField<int8_t>(verifier, VT_ACTION, 1) &&
            VerifyOffset(verifier, VT_DATA) &&
            verifier.VerifyVector(data()) &&
            verifier.VerifyVectorOfTables(data()) &&
@@ -316,13 +323,13 @@ struct Request::Traits {
   static auto constexpr Create = CreateRequest;
   static constexpr auto name = "Request";
   static constexpr auto fully_qualified_name = "spt.configdb.model.Request";
-  static constexpr std::array<const char *, 2> field_names = {
+  static constexpr size_t fields_number = 2;
+  static constexpr std::array<const char *, fields_number> field_names = {
     "action",
     "data"
   };
   template<size_t Index>
   using FieldType = decltype(std::declval<type>().get_field<Index>());
-  static constexpr size_t fields_number = 2;
 };
 
 inline flatbuffers::Offset<Request> CreateRequestDirect(

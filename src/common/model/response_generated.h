@@ -6,6 +6,13 @@
 
 #include "flatbuffers/flatbuffers.h"
 
+// Ensure the included flatbuffers.h is the same version as when this file was
+// generated, otherwise it may not be compatible.
+static_assert(FLATBUFFERS_VERSION_MAJOR == 22 &&
+              FLATBUFFERS_VERSION_MINOR == 10 &&
+              FLATBUFFERS_VERSION_REVISION == 26,
+             "Non-compatible flatbuffers version included");
+
 namespace spt {
 namespace configdb {
 namespace model {
@@ -60,7 +67,7 @@ inline const ValueVariant (&EnumValuesValueVariant())[4] {
 }
 
 inline const char * const *EnumNamesValueVariant() {
-  static const char * const names[5] = { // flawfinder: ignore
+  static const char * const names[5] = {
     "NONE",
     "Value",
     "Children",
@@ -93,7 +100,7 @@ template<> struct ValueVariantTraits<spt::configdb::model::Success> {
 };
 
 bool VerifyValueVariant(flatbuffers::Verifier &verifier, const void *obj, ValueVariant type);
-bool VerifyValueVariantVector(flatbuffers::Verifier &verifier, const flatbuffers::Vector<flatbuffers::Offset<void>> *values, const flatbuffers::Vector<uint8_t> *types);
+bool VerifyValueVariantVector(flatbuffers::Verifier &verifier, const flatbuffers::Vector<flatbuffers::Offset<void>> *values, const flatbuffers::Vector<ValueVariant> *types);
 
 enum class ResultVariant : uint8_t {
   NONE = 0,
@@ -113,7 +120,7 @@ inline const ResultVariant (&EnumValuesResultVariant())[3] {
 }
 
 inline const char * const *EnumNamesResultVariant() {
-  static const char * const names[4] = { // flawfinder: ignore
+  static const char * const names[4] = {
     "NONE",
     "KeyValueResults",
     "Success",
@@ -141,7 +148,7 @@ template<> struct ResultVariantTraits<spt::configdb::model::Success> {
 };
 
 bool VerifyResultVariant(flatbuffers::Verifier &verifier, const void *obj, ResultVariant type);
-bool VerifyResultVariantVector(flatbuffers::Verifier &verifier, const flatbuffers::Vector<flatbuffers::Offset<void>> *values, const flatbuffers::Vector<uint8_t> *types);
+bool VerifyResultVariantVector(flatbuffers::Verifier &verifier, const flatbuffers::Vector<flatbuffers::Offset<void>> *values, const flatbuffers::Vector<ResultVariant> *types);
 
 struct Value FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   typedef ValueBuilder Builder;
@@ -199,12 +206,12 @@ struct Value::Traits {
   static auto constexpr Create = CreateValue;
   static constexpr auto name = "Value";
   static constexpr auto fully_qualified_name = "spt.configdb.model.Value";
-  static constexpr std::array<const char *, 1> field_names = {
+  static constexpr size_t fields_number = 1;
+  static constexpr std::array<const char *, fields_number> field_names = {
     "value"
   };
   template<size_t Index>
   using FieldType = decltype(std::declval<type>().get_field<Index>());
-  static constexpr size_t fields_number = 1;
 };
 
 inline flatbuffers::Offset<Value> CreateValueDirect(
@@ -273,12 +280,12 @@ struct Children::Traits {
   static auto constexpr Create = CreateChildren;
   static constexpr auto name = "Children";
   static constexpr auto fully_qualified_name = "spt.configdb.model.Children";
-  static constexpr std::array<const char *, 1> field_names = {
+  static constexpr size_t fields_number = 1;
+  static constexpr std::array<const char *, fields_number> field_names = {
     "value"
   };
   template<size_t Index>
   using FieldType = decltype(std::declval<type>().get_field<Index>());
-  static constexpr size_t fields_number = 1;
 };
 
 inline flatbuffers::Offset<Children> CreateChildrenDirect(
@@ -309,7 +316,7 @@ struct Success FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyField<uint8_t>(verifier, VT_VALUE) &&
+           VerifyField<uint8_t>(verifier, VT_VALUE, 1) &&
            verifier.EndTable();
   }
 };
@@ -345,12 +352,12 @@ struct Success::Traits {
   static auto constexpr Create = CreateSuccess;
   static constexpr auto name = "Success";
   static constexpr auto fully_qualified_name = "spt.configdb.model.Success";
-  static constexpr std::array<const char *, 1> field_names = {
+  static constexpr size_t fields_number = 1;
+  static constexpr std::array<const char *, fields_number> field_names = {
     "value"
   };
   template<size_t Index>
   using FieldType = decltype(std::declval<type>().get_field<Index>());
-  static constexpr size_t fields_number = 1;
 };
 
 struct KeyValueResult FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
@@ -394,7 +401,7 @@ struct KeyValueResult FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_KEY) &&
            verifier.VerifyString(key()) &&
-           VerifyField<uint8_t>(verifier, VT_VALUE_TYPE) &&
+           VerifyField<uint8_t>(verifier, VT_VALUE_TYPE, 1) &&
            VerifyOffset(verifier, VT_VALUE) &&
            VerifyValueVariant(verifier, value(), value_type()) &&
            verifier.EndTable();
@@ -454,14 +461,14 @@ struct KeyValueResult::Traits {
   static auto constexpr Create = CreateKeyValueResult;
   static constexpr auto name = "KeyValueResult";
   static constexpr auto fully_qualified_name = "spt.configdb.model.KeyValueResult";
-  static constexpr std::array<const char *, 3> field_names = {
+  static constexpr size_t fields_number = 3;
+  static constexpr std::array<const char *, fields_number> field_names = {
     "key",
     "value_type",
     "value"
   };
   template<size_t Index>
   using FieldType = decltype(std::declval<type>().get_field<Index>());
-  static constexpr size_t fields_number = 3;
 };
 
 inline flatbuffers::Offset<KeyValueResult> CreateKeyValueResultDirect(
@@ -534,12 +541,12 @@ struct KeyValueResults::Traits {
   static auto constexpr Create = CreateKeyValueResults;
   static constexpr auto name = "KeyValueResults";
   static constexpr auto fully_qualified_name = "spt.configdb.model.KeyValueResults";
-  static constexpr std::array<const char *, 1> field_names = {
+  static constexpr size_t fields_number = 1;
+  static constexpr std::array<const char *, fields_number> field_names = {
     "value"
   };
   template<size_t Index>
   using FieldType = decltype(std::declval<type>().get_field<Index>());
-  static constexpr size_t fields_number = 1;
 };
 
 inline flatbuffers::Offset<KeyValueResults> CreateKeyValueResultsDirect(
@@ -582,7 +589,7 @@ struct Response FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
-           VerifyField<uint8_t>(verifier, VT_VALUE_TYPE) &&
+           VerifyField<uint8_t>(verifier, VT_VALUE_TYPE, 1) &&
            VerifyOffset(verifier, VT_VALUE) &&
            VerifyResultVariant(verifier, value(), value_type()) &&
            verifier.EndTable();
@@ -633,13 +640,13 @@ struct Response::Traits {
   static auto constexpr Create = CreateResponse;
   static constexpr auto name = "Response";
   static constexpr auto fully_qualified_name = "spt.configdb.model.Response";
-  static constexpr std::array<const char *, 2> field_names = {
+  static constexpr size_t fields_number = 2;
+  static constexpr std::array<const char *, fields_number> field_names = {
     "value_type",
     "value"
   };
   template<size_t Index>
   using FieldType = decltype(std::declval<type>().get_field<Index>());
-  static constexpr size_t fields_number = 2;
 };
 
 inline bool VerifyValueVariant(flatbuffers::Verifier &verifier, const void *obj, ValueVariant type) {
@@ -663,7 +670,7 @@ inline bool VerifyValueVariant(flatbuffers::Verifier &verifier, const void *obj,
   }
 }
 
-inline bool VerifyValueVariantVector(flatbuffers::Verifier &verifier, const flatbuffers::Vector<flatbuffers::Offset<void>> *values, const flatbuffers::Vector<uint8_t> *types) {
+inline bool VerifyValueVariantVector(flatbuffers::Verifier &verifier, const flatbuffers::Vector<flatbuffers::Offset<void>> *values, const flatbuffers::Vector<ValueVariant> *types) {
   if (!values || !types) return !values && !types;
   if (values->size() != types->size()) return false;
   for (flatbuffers::uoffset_t i = 0; i < values->size(); ++i) {
@@ -692,7 +699,7 @@ inline bool VerifyResultVariant(flatbuffers::Verifier &verifier, const void *obj
   }
 }
 
-inline bool VerifyResultVariantVector(flatbuffers::Verifier &verifier, const flatbuffers::Vector<flatbuffers::Offset<void>> *values, const flatbuffers::Vector<uint8_t> *types) {
+inline bool VerifyResultVariantVector(flatbuffers::Verifier &verifier, const flatbuffers::Vector<flatbuffers::Offset<void>> *values, const flatbuffers::Vector<ResultVariant> *types) {
   if (!values || !types) return !values && !types;
   if (values->size() != types->size()) return false;
   for (flatbuffers::uoffset_t i = 0; i < values->size(); ++i) {
