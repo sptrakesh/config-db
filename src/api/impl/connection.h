@@ -11,6 +11,7 @@
 #include <boost/asio/ssl.hpp>
 #include <boost/asio/streambuf.hpp>
 #include <boost/asio/ip/tcp.hpp>
+#include <boost/numeric/conversion/cast.hpp>
 
 #if defined __has_include
   #if __has_include("../common/contextholder.h")
@@ -99,7 +100,7 @@ namespace spt::configdb::api::impl
       const auto d = reinterpret_cast<const uint8_t*>( buffer.data().data() );
       uint32_t len;
       memcpy( &len, d, sizeof(len) );
-      LOG_DEBUG << "Read " << int(read) << " bytes, total size " << int(len); // flawfinder: ignore
+      LOG_DEBUG << "Read " << boost::numeric_cast<int32_t>(read) << " bytes, total size " << boost::numeric_cast<int32_t>(len); //flawfinder: ignore
 
 #ifndef MAX_MESSAGE_SIZE
 #define MAX_MESSAGE_SIZE (4*1024*1024)
@@ -107,7 +108,7 @@ namespace spt::configdb::api::impl
 
       if ( const auto maxLength = uint32_t(MAX_MESSAGE_SIZE); len > maxLength )
       {
-        LOG_WARN << "Message size " << int(len) << " exceeds maximum defined " << int(MAX_MESSAGE_SIZE) << ". Truncating read..."; // flawfinder: ignore
+        LOG_WARN << "Message size " << boost::numeric_cast<int32_t>(len) << " exceeds maximum defined " << boost::numeric_cast<int32_t>(MAX_MESSAGE_SIZE) << ". Truncating read...";
         len = maxLength;
       }
 
@@ -120,7 +121,7 @@ namespace spt::configdb::api::impl
         read += osize;
       }
 
-      LOG_DEBUG << "Read " << int(read) << " bytes, total size " << int(len); // flawfinder: ignore
+      LOG_DEBUG << "Read " << boost::numeric_cast<int32_t>(read) << " bytes, total size " << boost::numeric_cast<int32_t>(len); //flawfinder: ignore
       const auto d1 = reinterpret_cast<const uint8_t*>( buffer.data().data() );
       auto verifier = flatbuffers::Verifier(  d1 + sizeof(len), len );
       auto ok = model::VerifyResponseBuffer( verifier );

@@ -21,11 +21,27 @@
 #include <boost/asio/use_awaitable.hpp>
 #include <boost/asio/write.hpp>
 #include <boost/asio/ip/tcp.hpp>
+#include <boost/numeric/conversion/cast.hpp>
 
 using SecureSocket = boost::asio::ssl::stream<boost::asio::ip::tcp::socket>;
 
 namespace spt::configdb::tcp::coroutine
 {
+  template <typename Socket>
+  boost::asio::awaitable<void> write( Socket& socket, const std::vector<uint8_t>& buf )
+  {
+    auto size = boost::numeric_cast<uint32_t>( buf.size() );
+    std::vector<boost::asio::const_buffer> buffers;
+    buffers.reserve( 2 );
+    buffers.emplace_back( &size, sizeof(size) );
+    buffers.emplace_back( buf.data(), buf.size() );
+    boost::system::error_code ec;
+    co_await boost::asio::async_write( socket, buffers,
+        boost::asio::redirect_error( boost::asio::use_awaitable, ec ) );
+    if ( ec ) LOG_WARN << "Error writing to socket. " << ec.message();
+    else LOG_DEBUG << "Finished writing buffer of size " << int(size) << " + " << int(sizeof(size)) << " bytes";
+  }
+
   template <typename Socket>
   boost::asio::awaitable<void> write( Socket& socket, const flatbuffers::FlatBufferBuilder& fb )
   {
@@ -247,8 +263,8 @@ namespace spt::configdb::tcp::coroutine
   {
     using namespace std::string_view_literals;
 
-    static constexpr int bufSize = 128;
-    static constexpr auto maxBytes = 8 * 1024 * 1024;
+    static constexpr std::size_t bufSize = 128;
+    static constexpr std::size_t maxBytes = 8 * 1024 * 1024;
     uint8_t data[bufSize];
 
     const auto documentSize = [&data]( std::size_t length )
@@ -289,7 +305,16 @@ namespace spt::configdb::tcp::coroutine
 
     if ( docSize <= bufSize )
     {
-      auto request = model::GetRequest( data + sizeof(uint32_t) );
+      auto verifier = flatbuffers::Verifier( rbuf.data(), rbuf.size() );
+      auto ok = model::VerifyRequestBuffer( verifier );
+      if ( !ok )
+      {
+        LOG_WARN << "Invalid request buffer";
+        co_await write( socket, rbuf );
+        co_return;
+      }
+
+      auto request = model::GetRequest( rbuf.data() );
       co_await process( socket, request, rbuf );
       co_return;
     }
@@ -308,9 +333,7 @@ namespace spt::configdb::tcp::coroutine
     if ( !ok )
     {
       LOG_WARN << "Invalid request buffer";
-      co_await boost::asio::async_write( socket, boost::asio::buffer( rbuf.data(), rbuf.size() ),
-          boost::asio::redirect_error( boost::asio::use_awaitable, ec ) );
-      if ( ec && !brokenPipe( ec ) ) LOG_WARN << "Error writing to socket. " << ec.message();
+      co_await write( socket, rbuf );
       co_return;
     }
 
