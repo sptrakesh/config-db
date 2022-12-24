@@ -434,14 +434,15 @@ sequence.  Ensure the dependencies are available under the following paths:
 
 ```shell
 git clone git@github.com:sptrakesh/config-db.git
-mkdir config-db/build && cd config-db/build
+cd config-db
 cmake -DCMAKE_PREFIX_PATH=/usr/local/boost \
   -DCMAKE_PREFIX_PATH=/usr/local/rocksdb \
   -DCMAKE_PREFIX_PATH=/usr/local/flatbuffers \
   -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_INSTALL_PREFIX=/usr/local/configdb ..
-make -j8
-sudo make install
+  -DCMAKE_INSTALL_PREFIX=/usr/local/configdb \
+  -S . -B build
+cmake --build build -j12
+(cd build; sudo make install)
 ```
 
 ## Run
