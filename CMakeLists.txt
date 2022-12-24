@@ -59,6 +59,7 @@ if (APPLE)
     /usr/local/flatbuffers/lib
     /usr/local/nghttp2/lib
     /usr/local/rocksdb/lib
+    /opt/local/lib
   )
   set(CMAKE_MACOSX_RPATH 1)
 elseif (UNIX)
