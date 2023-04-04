@@ -1,4 +1,4 @@
-from behave import given, then
+from behave import then
 from behave.api.async_step import async_run_until_complete
 from behave.runner import Context
 from hamcrest import assert_that, equal_to
@@ -6,19 +6,16 @@ from hamcrest import assert_that, equal_to
 from client import Client as _Client
 
 
-@given("ConfigDb service running on {host} on port {port:d}")
-def step_impl(context: Context, host: str, port: int):
-    context.host = host
-    context.port = port
-
-
-@then("Client can be used as an auto-closing resource")
+@then("Client can be used to perform CRUD operations")
 @async_run_until_complete
 async def step_impl(context: Context):
     assert_that(hasattr(context, "host"), "Host not set")
     assert_that(hasattr(context, "port"), "Port not set")
 
-    async with _Client(host=context.host, port=context.port) as client:
+    async with _Client(host=context.host, port=context.port,
+                       ssl_verify_file="/usr/local/spt/certs/ca.crt",
+                       ssl_certificate_file="/usr/local/spt/certs/client.crt",
+                       ssl_key_file="/usr/local/spt/certs/client.key") as client:
         _key = "key"
         res = await client.set(_key, "value")
         assert_that(res, equal_to(True), "Setting key did not return true")
