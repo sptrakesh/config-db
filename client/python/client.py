@@ -1,5 +1,5 @@
 from asyncio import open_connection
-from ssl import SSLContext, PROTOCOL_TLS_CLIENT, TLSVersion
+from ssl import SSLContext, PROTOCOL_TLS_CLIENT, OP_NO_TLSv1, OP_NO_TLSv1_1, OP_NO_TLSv1_2
 from sys import byteorder
 from typing import Optional, Tuple, List
 
@@ -29,7 +29,9 @@ class Client:
             context.load_verify_locations(self._verify_file)
             context.load_cert_chain(self._certificate_file, self._key_file)
             context.check_hostname = False
-            context.minimum_version = TLSVersion.TLSv1_2
+            context.options |= OP_NO_TLSv1
+            context.options |= OP_NO_TLSv1_1
+            context.options |= OP_NO_TLSv1_2
         else:
             context = None
 
@@ -60,22 +62,7 @@ class Client:
         builder.Finish(req)
         buf = builder.Output()
 
-        l = len(buf)
-        lv = l.to_bytes(length=4, byteorder=byteorder)
-
-        ba = b''.join([lv, buf])
-        _log.info(f"Writing {len(ba)} bytes to server.")
-
-        self._writer.write(ba)
-        await self._writer.drain()
-
-        _log.info("Reading response size to 4 byte array")
-        lv = await self._reader.readexactly(4)
-        l = int.from_bytes(lv, byteorder)
-        _log.info(f"Response size: {l}")
-
-        b = await self._reader.readexactly(l)
-        resp: _Response.ResponseT = _Response.ResponseT.InitFromPackedBuf(b)
+        resp = await self._execute(buf)
         if resp.valueType != _ResultVariant.ResultVariant.KeyValueResults:
             _log.warning(f"Error retrieving key: {key}")
             return None
@@ -109,27 +96,8 @@ class Client:
         builder.Finish(req)
         buf = builder.Output()
 
-        l = len(buf)
-        lv = l.to_bytes(length=4, byteorder=byteorder)
-
-        ba = b''.join([lv, buf])
-        _log.info(f"Writing {len(ba)} bytes to server.")
-
-        self._writer.write(ba)
-        await self._writer.drain()
-
-        _log.info("Reading response size to 4 byte array")
-        lv = await self._reader.readexactly(4)
-        l = int.from_bytes(lv, byteorder)
-        _log.info(f"Response size: {l}")
-
-        b = await self._reader.readexactly(l)
-        resp: _Response.ResponseT = _Response.ResponseT.InitFromPackedBuf(b)
-        if resp.valueType != _ResultVariant.ResultVariant.Success:
-            _log.warning(f"Error setting key: {key}")
-            return False
-
-        return resp.value.value
+        resp = await self._execute(buf)
+        return self._read_success(resp=resp, msg=f"Error setting key: {key}")
 
     async def remove(self, key: str) -> bool:
         builder = _Builder(256)
@@ -143,27 +111,8 @@ class Client:
         builder.Finish(req)
         buf = builder.Output()
 
-        l = len(buf)
-        lv = l.to_bytes(length=4, byteorder=byteorder)
-
-        ba = b''.join([lv, buf])
-        _log.info(f"Writing {len(ba)} bytes to server.")
-
-        self._writer.write(ba)
-        await self._writer.drain()
-
-        _log.info("Reading response size to 4 byte array")
-        lv = await self._reader.readexactly(4)
-        l = int.from_bytes(lv, byteorder)
-        _log.info(f"Response size: {l}")
-
-        b = await self._reader.readexactly(l)
-        resp: _Response.ResponseT = _Response.ResponseT.InitFromPackedBuf(b)
-        if resp.valueType != _ResultVariant.ResultVariant.Success:
-            _log.warning(f"Error deleting key: {key}")
-            return False
-
-        return resp.value.value
+        resp = await self._execute(buf)
+        return self._read_success(resp=resp, msg=f"Error deleting key: {key}")
 
     async def move(self, key: str, dest: str, if_not_exists: bool = False) -> bool:
         builder = _Builder(256)
@@ -192,27 +141,8 @@ class Client:
         builder.Finish(req)
         buf = builder.Output()
 
-        l = len(buf)
-        lv = l.to_bytes(length=4, byteorder=byteorder)
-
-        ba = b''.join([lv, buf])
-        _log.info(f"Writing {len(ba)} bytes to server.")
-
-        self._writer.write(ba)
-        await self._writer.drain()
-
-        _log.info("Reading response size to 4 byte array")
-        lv = await self._reader.readexactly(4)
-        l = int.from_bytes(lv, byteorder)
-        _log.info(f"Response size: {l}")
-
-        b = await self._reader.readexactly(l)
-        resp: _Response.ResponseT = _Response.ResponseT.InitFromPackedBuf(b)
-        if resp.valueType != _ResultVariant.ResultVariant.Success:
-            _log.warning(f"Error setting key: {key}")
-            return False
-
-        return resp.value.value
+        resp = await self._execute(buf)
+        return self._read_success(resp=resp, msg=f"Error moving key: {key} to {dest}")
 
     async def list(self, path: str) -> [str]:
         builder = _Builder(256)
@@ -226,22 +156,7 @@ class Client:
         builder.Finish(req)
         buf = builder.Output()
 
-        l = len(buf)
-        lv = l.to_bytes(length=4, byteorder=byteorder)
-
-        ba = b''.join([lv, buf])
-        _log.info(f"Writing {len(ba)} bytes to server.")
-
-        self._writer.write(ba)
-        await self._writer.drain()
-
-        _log.info("Reading response size to 4 byte array")
-        lv = await self._reader.readexactly(4)
-        l = int.from_bytes(lv, byteorder)
-        _log.info(f"Response size: {l}")
-
-        b = await self._reader.readexactly(l)
-        resp: _Response.ResponseT = _Response.ResponseT.InitFromPackedBuf(b)
+        resp = await self._execute(buf)
         if resp.valueType != _ResultVariant.ResultVariant.KeyValueResults:
             _log.warning(f"Error retrieving path: {path}")
             return None
@@ -274,22 +189,7 @@ class Client:
         builder.Finish(req)
         buf = builder.Output()
 
-        l = len(buf)
-        lv = l.to_bytes(length=4, byteorder=byteorder)
-
-        ba = b''.join([lv, buf])
-        _log.info(f"Writing {len(ba)} bytes to server.")
-
-        self._writer.write(ba)
-        await self._writer.drain()
-
-        _log.info("Reading response size to 4 byte array")
-        lv = await self._reader.readexactly(4)
-        l = int.from_bytes(lv, byteorder)
-        _log.info(f"Response size: {l}")
-
-        b = await self._reader.readexactly(l)
-        resp: _Response.ResponseT = _Response.ResponseT.InitFromPackedBuf(b)
+        resp = await self._execute(buf)
         if resp.valueType != _ResultVariant.ResultVariant.KeyValueResults:
             _log.warning(f"Error retrieving TTL for key: {key}")
             return None
@@ -320,22 +220,7 @@ class Client:
         builder.Finish(req)
         buf = builder.Output()
 
-        l = len(buf)
-        lv = l.to_bytes(length=4, byteorder=byteorder)
-
-        ba = b''.join([lv, buf])
-        _log.info(f"Writing {len(ba)} bytes to server.")
-
-        self._writer.write(ba)
-        await self._writer.drain()
-
-        _log.info("Reading response size to 4 byte array")
-        lv = await self._reader.readexactly(4)
-        l = int.from_bytes(lv, byteorder)
-        _log.info(f"Response size: {l}")
-
-        b = await self._reader.readexactly(l)
-        resp: _Response.ResponseT = _Response.ResponseT.InitFromPackedBuf(b)
+        resp = await self._execute(buf)
         if resp.valueType != _ResultVariant.ResultVariant.KeyValueResults:
             _log.warning(f"Error retrieving {len(keys)} keys")
             return []
@@ -369,27 +254,8 @@ class Client:
         builder.Finish(req)
         buf = builder.Output()
 
-        l = len(buf)
-        lv = l.to_bytes(length=4, byteorder=byteorder)
-
-        ba = b''.join([lv, buf])
-        _log.info(f"Writing {len(ba)} bytes to server.")
-
-        self._writer.write(ba)
-        await self._writer.drain()
-
-        _log.info("Reading response size to 4 byte array")
-        lv = await self._reader.readexactly(4)
-        l = int.from_bytes(lv, byteorder)
-        _log.info(f"Response size: {l}")
-
-        b = await self._reader.readexactly(l)
-        resp: _Response.ResponseT = _Response.ResponseT.InitFromPackedBuf(b)
-        if resp.valueType != _ResultVariant.ResultVariant.Success:
-            _log.warning(f"Error setting {len(key_values)} key-values")
-            return False
-
-        return resp.value.value
+        resp = await self._execute(buf)
+        return self._read_success(resp=resp, msg=f"Error setting {len(key_values)} key-values")
 
     async def list_paths(self, paths: List[str]) -> List[Tuple[str, List[str]]]:
         req = _Request.RequestT()
@@ -405,22 +271,7 @@ class Client:
         builder.Finish(req)
         buf = builder.Output()
 
-        l = len(buf)
-        lv = l.to_bytes(length=4, byteorder=byteorder)
-
-        ba = b''.join([lv, buf])
-        _log.info(f"Writing {len(ba)} bytes to server.")
-
-        self._writer.write(ba)
-        await self._writer.drain()
-
-        _log.info("Reading response size to 4 byte array")
-        lv = await self._reader.readexactly(4)
-        l = int.from_bytes(lv, byteorder)
-        _log.info(f"Response size: {l}")
-
-        b = await self._reader.readexactly(l)
-        resp: _Response.ResponseT = _Response.ResponseT.InitFromPackedBuf(b)
+        resp = await self._execute(buf)
         if resp.valueType != _ResultVariant.ResultVariant.KeyValueResults:
             _log.warning(f"Error retrieving {len(paths)} paths")
             return []
@@ -458,27 +309,8 @@ class Client:
         builder.Finish(req)
         buf = builder.Output()
 
-        l = len(buf)
-        lv = l.to_bytes(length=4, byteorder=byteorder)
-
-        ba = b''.join([lv, buf])
-        _log.info(f"Writing {len(ba)} bytes to server.")
-
-        self._writer.write(ba)
-        await self._writer.drain()
-
-        _log.info("Reading response size to 4 byte array")
-        lv = await self._reader.readexactly(4)
-        l = int.from_bytes(lv, byteorder)
-        _log.info(f"Response size: {l}")
-
-        b = await self._reader.readexactly(l)
-        resp: _Response.ResponseT = _Response.ResponseT.InitFromPackedBuf(b)
-        if resp.valueType != _ResultVariant.ResultVariant.Success:
-            _log.warning(f"Error deleting {len(keys)} keys")
-            return False
-
-        return resp.value.value
+        resp = await self._execute(buf)
+        return self._read_success(resp=resp, msg=f"Error deleting {len(keys)} keys")
 
     async def move_keys(self, pairs: List[Tuple[str, str]]) -> bool:
         req = _Request.RequestT()
@@ -496,9 +328,16 @@ class Client:
         builder.Finish(req)
         buf = builder.Output()
 
-        l = len(buf)
-        lv = l.to_bytes(length=4, byteorder=byteorder)
+        resp = await self._execute(buf)
+        return self._read_success(resp=resp, msg=f"Error moving {len(pairs)} keys")
 
+    async def close(self):
+        self._writer.close()
+        await self._writer.wait_closed()
+        _log.info(f"Disconnected from {self._host}:{self._port}")
+
+    async def _execute(self, buf: bytes) -> _Response.ResponseT:
+        lv = len(buf).to_bytes(length=4, byteorder=byteorder)
         ba = b''.join([lv, buf])
         _log.info(f"Writing {len(ba)} bytes to server.")
 
@@ -511,14 +350,11 @@ class Client:
         _log.info(f"Response size: {l}")
 
         b = await self._reader.readexactly(l)
-        resp: _Response.ResponseT = _Response.ResponseT.InitFromPackedBuf(b)
+        return _Response.ResponseT.InitFromPackedBuf(b)
+
+    def _read_success(self, resp: _Response.ResponseT, msg: str) -> bool:
         if resp.valueType != _ResultVariant.ResultVariant.Success:
-            _log.warning(f"Error moving {len(pairs)} keys")
+            _log.warning(msg)
             return False
 
         return resp.value.value
-
-    async def close(self):
-        self._writer.close()
-        await self._writer.wait_closed()
-        _log.info(f"Disconnected from {self._host}:{self._port}")

@@ -10,7 +10,7 @@ from logger import log
 async def before_feature(context: Context, feature: Feature):
     log.info(f"Setting up feature {feature.name}")
 
-    if feature.name == "Resource":
+    if feature.name == "Resource" or feature.name == "Secure":
         return
 
     context.client = await _Client(host="localhost", port=2022)
