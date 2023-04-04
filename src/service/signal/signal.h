@@ -47,7 +47,7 @@ namespace spt::configdb::signal
     SignalMgr& operator=(const SignalMgr&) = delete;
 
   private:
-    SignalMgr() {}
+    SignalMgr() = default;
 
     using NanoPolicy = Nano::TS_Policy_Safe<>;
     Nano::Signal<void(BytesPtr), NanoPolicy> signal;
