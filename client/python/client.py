@@ -23,7 +23,6 @@ class Client:
         self._key_file = ssl_key_file
 
     async def _async_init(self):
-        # https://gist.github.com/zapstar/a7035795483753f7b71a542559afa83f
         if self._verify_file:
             context = SSLContext(PROTOCOL_TLS_CLIENT)
             context.load_verify_locations(self._verify_file)

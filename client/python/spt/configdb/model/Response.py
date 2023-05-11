@@ -41,18 +41,30 @@ class Response(object):
             return obj
         return None
 
-def ResponseStart(builder): builder.StartObject(2)
+def ResponseStart(builder):
+    builder.StartObject(2)
+
 def Start(builder):
-    return ResponseStart(builder)
-def ResponseAddValueType(builder, valueType): builder.PrependUint8Slot(0, valueType, 0)
-def AddValueType(builder, valueType):
-    return ResponseAddValueType(builder, valueType)
-def ResponseAddValue(builder, value): builder.PrependUOffsetTRelativeSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(value), 0)
-def AddValue(builder, value):
-    return ResponseAddValue(builder, value)
-def ResponseEnd(builder): return builder.EndObject()
+    ResponseStart(builder)
+
+def ResponseAddValueType(builder, valueType):
+    builder.PrependUint8Slot(0, valueType, 0)
+
+def AddValueType(builder: flatbuffers.Builder, valueType: int):
+    ResponseAddValueType(builder, valueType)
+
+def ResponseAddValue(builder, value):
+    builder.PrependUOffsetTRelativeSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(value), 0)
+
+def AddValue(builder: flatbuffers.Builder, value: int):
+    ResponseAddValue(builder, value)
+
+def ResponseEnd(builder):
+    return builder.EndObject()
+
 def End(builder):
     return ResponseEnd(builder)
+
 import spt.configdb.model.KeyValueResults
 import spt.configdb.model.ResultVariant
 import spt.configdb.model.Success

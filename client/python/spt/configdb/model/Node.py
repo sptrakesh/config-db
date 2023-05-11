@@ -44,18 +44,30 @@ class Node(object):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(4))
         return o == 0
 
-def NodeStart(builder): builder.StartObject(1)
+def NodeStart(builder):
+    builder.StartObject(1)
+
 def Start(builder):
-    return NodeStart(builder)
-def NodeAddChildren(builder, children): builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(children), 0)
-def AddChildren(builder, children):
-    return NodeAddChildren(builder, children)
-def NodeStartChildrenVector(builder, numElems): return builder.StartVector(4, numElems, 4)
-def StartChildrenVector(builder, numElems):
+    NodeStart(builder)
+
+def NodeAddChildren(builder, children):
+    builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(children), 0)
+
+def AddChildren(builder: flatbuffers.Builder, children: int):
+    NodeAddChildren(builder, children)
+
+def NodeStartChildrenVector(builder, numElems):
+    return builder.StartVector(4, numElems, 4)
+
+def StartChildrenVector(builder, numElems: int) -> int:
     return NodeStartChildrenVector(builder, numElems)
-def NodeEnd(builder): return builder.EndObject()
+
+def NodeEnd(builder):
+    return builder.EndObject()
+
 def End(builder):
     return NodeEnd(builder)
+
 try:
     from typing import List
 except:

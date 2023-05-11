@@ -43,27 +43,42 @@ class KeyValue(object):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(8))
         if o != 0:
             x = self._tab.Indirect(o + self._tab.Pos)
-            from spt.configdb.model.Options import Options
+            from .spt.configdb.model.Options import Options
             obj = Options()
             obj.Init(self._tab.Bytes, x)
             return obj
         return None
 
-def KeyValueStart(builder): builder.StartObject(3)
+def KeyValueStart(builder):
+    builder.StartObject(3)
+
 def Start(builder):
-    return KeyValueStart(builder)
-def KeyValueAddKey(builder, key): builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(key), 0)
-def AddKey(builder, key):
-    return KeyValueAddKey(builder, key)
-def KeyValueAddValue(builder, value): builder.PrependUOffsetTRelativeSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(value), 0)
-def AddValue(builder, value):
-    return KeyValueAddValue(builder, value)
-def KeyValueAddOptions(builder, options): builder.PrependUOffsetTRelativeSlot(2, flatbuffers.number_types.UOffsetTFlags.py_type(options), 0)
-def AddOptions(builder, options):
-    return KeyValueAddOptions(builder, options)
-def KeyValueEnd(builder): return builder.EndObject()
+    KeyValueStart(builder)
+
+def KeyValueAddKey(builder, key):
+    builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(key), 0)
+
+def AddKey(builder: flatbuffers.Builder, key: int):
+    KeyValueAddKey(builder, key)
+
+def KeyValueAddValue(builder, value):
+    builder.PrependUOffsetTRelativeSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(value), 0)
+
+def AddValue(builder: flatbuffers.Builder, value: int):
+    KeyValueAddValue(builder, value)
+
+def KeyValueAddOptions(builder, options):
+    builder.PrependUOffsetTRelativeSlot(2, flatbuffers.number_types.UOffsetTFlags.py_type(options), 0)
+
+def AddOptions(builder: flatbuffers.Builder, options: int):
+    KeyValueAddOptions(builder, options)
+
+def KeyValueEnd(builder):
+    return builder.EndObject()
+
 def End(builder):
     return KeyValueEnd(builder)
+
 import spt.configdb.model.Options
 try:
     from typing import Optional

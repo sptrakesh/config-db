@@ -49,18 +49,30 @@ class KeyValueResults(object):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(4))
         return o == 0
 
-def KeyValueResultsStart(builder): builder.StartObject(1)
+def KeyValueResultsStart(builder):
+    builder.StartObject(1)
+
 def Start(builder):
-    return KeyValueResultsStart(builder)
-def KeyValueResultsAddValue(builder, value): builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(value), 0)
-def AddValue(builder, value):
-    return KeyValueResultsAddValue(builder, value)
-def KeyValueResultsStartValueVector(builder, numElems): return builder.StartVector(4, numElems, 4)
-def StartValueVector(builder, numElems):
+    KeyValueResultsStart(builder)
+
+def KeyValueResultsAddValue(builder, value):
+    builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(value), 0)
+
+def AddValue(builder: flatbuffers.Builder, value: int):
+    KeyValueResultsAddValue(builder, value)
+
+def KeyValueResultsStartValueVector(builder, numElems):
+    return builder.StartVector(4, numElems, 4)
+
+def StartValueVector(builder, numElems: int) -> int:
     return KeyValueResultsStartValueVector(builder, numElems)
-def KeyValueResultsEnd(builder): return builder.EndObject()
+
+def KeyValueResultsEnd(builder):
+    return builder.EndObject()
+
 def End(builder):
     return KeyValueResultsEnd(builder)
+
 import spt.configdb.model.KeyValueResult
 try:
     from typing import List

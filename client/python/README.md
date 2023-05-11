@@ -2,6 +2,10 @@
 A simple [client](client.py) for the TCP/IP service.  Uses [models](spt/configdb/model) generated from the flatbuffers
 schemas.
 
+```shell
+(cd <path to>/config-db/src/common/model/; <path to>/flatc --python --reflect-types --reflect-names --gen-object-api -o ../../../client/python request.fbs response.fbs tree.fbs)
+```
+
 See the integration test suite (e.g. [crud](features/steps/crud.py)) for sample use of the client.
 
 ## Resource
@@ -29,4 +33,13 @@ async with Client(host="localhost", port=2020,
     res = await client.set(_key, "value")
     res = await client.get(_key)
     log.info(f"Read stored value: {res}")
+```
+
+```shell
+$ openssl version             
+LibreSSL 3.3.6
+$ python3 -c "import ssl; print(ssl.OPENSSL_VERSION)"
+LibreSSL 2.8.3
+$ /opt/homebrew/bin/python3 -c "import ssl; print(ssl.OPENSSL_VERSION)"
+OpenSSL 1.1.1t  7 Feb 2023
 ```
