@@ -44,18 +44,30 @@ class Children(object):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(4))
         return o == 0
 
-def ChildrenStart(builder): builder.StartObject(1)
+def ChildrenStart(builder):
+    builder.StartObject(1)
+
 def Start(builder):
-    return ChildrenStart(builder)
-def ChildrenAddValue(builder, value): builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(value), 0)
-def AddValue(builder, value):
-    return ChildrenAddValue(builder, value)
-def ChildrenStartValueVector(builder, numElems): return builder.StartVector(4, numElems, 4)
-def StartValueVector(builder, numElems):
+    ChildrenStart(builder)
+
+def ChildrenAddValue(builder, value):
+    builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(value), 0)
+
+def AddValue(builder: flatbuffers.Builder, value: int):
+    ChildrenAddValue(builder, value)
+
+def ChildrenStartValueVector(builder, numElems):
+    return builder.StartVector(4, numElems, 4)
+
+def StartValueVector(builder, numElems: int) -> int:
     return ChildrenStartValueVector(builder, numElems)
-def ChildrenEnd(builder): return builder.EndObject()
+
+def ChildrenEnd(builder):
+    return builder.EndObject()
+
 def End(builder):
     return ChildrenEnd(builder)
+
 try:
     from typing import List
 except:

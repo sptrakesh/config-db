@@ -31,15 +31,24 @@ class Success(object):
             return bool(self._tab.Get(flatbuffers.number_types.BoolFlags, o + self._tab.Pos))
         return False
 
-def SuccessStart(builder): builder.StartObject(1)
+def SuccessStart(builder):
+    builder.StartObject(1)
+
 def Start(builder):
-    return SuccessStart(builder)
-def SuccessAddValue(builder, value): builder.PrependBoolSlot(0, value, 0)
-def AddValue(builder, value):
-    return SuccessAddValue(builder, value)
-def SuccessEnd(builder): return builder.EndObject()
+    SuccessStart(builder)
+
+def SuccessAddValue(builder, value):
+    builder.PrependBoolSlot(0, value, 0)
+
+def AddValue(builder: flatbuffers.Builder, value: bool):
+    SuccessAddValue(builder, value)
+
+def SuccessEnd(builder):
+    return builder.EndObject()
+
 def End(builder):
     return SuccessEnd(builder)
+
 
 class SuccessT(object):
 

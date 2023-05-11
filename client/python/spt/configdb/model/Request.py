@@ -38,7 +38,7 @@ class Request(object):
             x = self._tab.Vector(o)
             x += flatbuffers.number_types.UOffsetTFlags.py_type(j) * 4
             x = self._tab.Indirect(x)
-            from spt.configdb.model.KeyValue import KeyValue
+            from .spt.configdb.model.KeyValue import KeyValue
             obj = KeyValue()
             obj.Init(self._tab.Bytes, x)
             return obj
@@ -56,21 +56,36 @@ class Request(object):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(6))
         return o == 0
 
-def RequestStart(builder): builder.StartObject(2)
+def RequestStart(builder):
+    builder.StartObject(2)
+
 def Start(builder):
-    return RequestStart(builder)
-def RequestAddAction(builder, action): builder.PrependInt8Slot(0, action, 0)
-def AddAction(builder, action):
-    return RequestAddAction(builder, action)
-def RequestAddData(builder, data): builder.PrependUOffsetTRelativeSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(data), 0)
-def AddData(builder, data):
-    return RequestAddData(builder, data)
-def RequestStartDataVector(builder, numElems): return builder.StartVector(4, numElems, 4)
-def StartDataVector(builder, numElems):
+    RequestStart(builder)
+
+def RequestAddAction(builder, action):
+    builder.PrependInt8Slot(0, action, 0)
+
+def AddAction(builder: flatbuffers.Builder, action: int):
+    RequestAddAction(builder, action)
+
+def RequestAddData(builder, data):
+    builder.PrependUOffsetTRelativeSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(data), 0)
+
+def AddData(builder: flatbuffers.Builder, data: int):
+    RequestAddData(builder, data)
+
+def RequestStartDataVector(builder, numElems):
+    return builder.StartVector(4, numElems, 4)
+
+def StartDataVector(builder, numElems: int) -> int:
     return RequestStartDataVector(builder, numElems)
-def RequestEnd(builder): return builder.EndObject()
+
+def RequestEnd(builder):
+    return builder.EndObject()
+
 def End(builder):
     return RequestEnd(builder)
+
 import spt.configdb.model.KeyValue
 try:
     from typing import List

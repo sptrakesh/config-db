@@ -8,9 +8,9 @@
 
 // Ensure the included flatbuffers.h is the same version as when this file was
 // generated, otherwise it may not be compatible.
-static_assert(FLATBUFFERS_VERSION_MAJOR == 22 &&
-              FLATBUFFERS_VERSION_MINOR == 12 &&
-              FLATBUFFERS_VERSION_REVISION == 6,
+static_assert(FLATBUFFERS_VERSION_MAJOR == 23 &&
+              FLATBUFFERS_VERSION_MINOR == 5 &&
+              FLATBUFFERS_VERSION_REVISION == 9,
              "Non-compatible flatbuffers version included");
 
 namespace spt {
@@ -35,17 +35,17 @@ struct KeyValueResultsBuilder;
 struct Response;
 struct ResponseBuilder;
 
-inline const flatbuffers::TypeTable *ValueTypeTable();
+inline const ::flatbuffers::TypeTable *ValueTypeTable();
 
-inline const flatbuffers::TypeTable *ChildrenTypeTable();
+inline const ::flatbuffers::TypeTable *ChildrenTypeTable();
 
-inline const flatbuffers::TypeTable *SuccessTypeTable();
+inline const ::flatbuffers::TypeTable *SuccessTypeTable();
 
-inline const flatbuffers::TypeTable *KeyValueResultTypeTable();
+inline const ::flatbuffers::TypeTable *KeyValueResultTypeTable();
 
-inline const flatbuffers::TypeTable *KeyValueResultsTypeTable();
+inline const ::flatbuffers::TypeTable *KeyValueResultsTypeTable();
 
-inline const flatbuffers::TypeTable *ResponseTypeTable();
+inline const ::flatbuffers::TypeTable *ResponseTypeTable();
 
 enum class ValueVariant : uint8_t {
   NONE = 0,
@@ -78,7 +78,7 @@ inline const char * const *EnumNamesValueVariant() {
 }
 
 inline const char *EnumNameValueVariant(ValueVariant e) {
-  if (flatbuffers::IsOutRange(e, ValueVariant::NONE, ValueVariant::Success)) return "";
+  if (::flatbuffers::IsOutRange(e, ValueVariant::NONE, ValueVariant::Success)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesValueVariant()[index];
 }
@@ -99,8 +99,8 @@ template<> struct ValueVariantTraits<spt::configdb::model::Success> {
   static const ValueVariant enum_value = ValueVariant::Success;
 };
 
-bool VerifyValueVariant(flatbuffers::Verifier &verifier, const void *obj, ValueVariant type);
-bool VerifyValueVariantVector(flatbuffers::Verifier &verifier, const flatbuffers::Vector<flatbuffers::Offset<void>> *values, const flatbuffers::Vector<ValueVariant> *types);
+bool VerifyValueVariant(::flatbuffers::Verifier &verifier, const void *obj, ValueVariant type);
+bool VerifyValueVariantVector(::flatbuffers::Verifier &verifier, const ::flatbuffers::Vector<::flatbuffers::Offset<void>> *values, const ::flatbuffers::Vector<ValueVariant> *types);
 
 enum class ResultVariant : uint8_t {
   NONE = 0,
@@ -130,7 +130,7 @@ inline const char * const *EnumNamesResultVariant() {
 }
 
 inline const char *EnumNameResultVariant(ResultVariant e) {
-  if (flatbuffers::IsOutRange(e, ResultVariant::NONE, ResultVariant::Success)) return "";
+  if (::flatbuffers::IsOutRange(e, ResultVariant::NONE, ResultVariant::Success)) return "";
   const size_t index = static_cast<size_t>(e);
   return EnumNamesResultVariant()[index];
 }
@@ -147,27 +147,27 @@ template<> struct ResultVariantTraits<spt::configdb::model::Success> {
   static const ResultVariant enum_value = ResultVariant::Success;
 };
 
-bool VerifyResultVariant(flatbuffers::Verifier &verifier, const void *obj, ResultVariant type);
-bool VerifyResultVariantVector(flatbuffers::Verifier &verifier, const flatbuffers::Vector<flatbuffers::Offset<void>> *values, const flatbuffers::Vector<ResultVariant> *types);
+bool VerifyResultVariant(::flatbuffers::Verifier &verifier, const void *obj, ResultVariant type);
+bool VerifyResultVariantVector(::flatbuffers::Verifier &verifier, const ::flatbuffers::Vector<::flatbuffers::Offset<void>> *values, const ::flatbuffers::Vector<ResultVariant> *types);
 
-struct Value FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+struct Value FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef ValueBuilder Builder;
   struct Traits;
-  static const flatbuffers::TypeTable *MiniReflectTypeTable() {
+  static const ::flatbuffers::TypeTable *MiniReflectTypeTable() {
     return ValueTypeTable();
   }
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_VALUE = 4
   };
-  const flatbuffers::String *value() const {
-    return GetPointer<const flatbuffers::String *>(VT_VALUE);
+  const ::flatbuffers::String *value() const {
+    return GetPointer<const ::flatbuffers::String *>(VT_VALUE);
   }
   template<size_t Index>
   auto get_field() const {
          if constexpr (Index == 0) return value();
     else static_assert(Index != Index, "Invalid Field Index");
   }
-  bool Verify(flatbuffers::Verifier &verifier) const {
+  bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_VALUE) &&
            verifier.VerifyString(value()) &&
@@ -177,25 +177,25 @@ struct Value FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 
 struct ValueBuilder {
   typedef Value Table;
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
-  void add_value(flatbuffers::Offset<flatbuffers::String> value) {
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_value(::flatbuffers::Offset<::flatbuffers::String> value) {
     fbb_.AddOffset(Value::VT_VALUE, value);
   }
-  explicit ValueBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  explicit ValueBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  flatbuffers::Offset<Value> Finish() {
+  ::flatbuffers::Offset<Value> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = flatbuffers::Offset<Value>(end);
+    auto o = ::flatbuffers::Offset<Value>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<Value> CreateValue(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<flatbuffers::String> value = 0) {
+inline ::flatbuffers::Offset<Value> CreateValue(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    ::flatbuffers::Offset<::flatbuffers::String> value = 0) {
   ValueBuilder builder_(_fbb);
   builder_.add_value(value);
   return builder_.Finish();
@@ -214,8 +214,8 @@ struct Value::Traits {
   using FieldType = decltype(std::declval<type>().get_field<Index>());
 };
 
-inline flatbuffers::Offset<Value> CreateValueDirect(
-    flatbuffers::FlatBufferBuilder &_fbb,
+inline ::flatbuffers::Offset<Value> CreateValueDirect(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
     const char *value = nullptr) {
   auto value__ = value ? _fbb.CreateString(value) : 0;
   return spt::configdb::model::CreateValue(
@@ -223,24 +223,24 @@ inline flatbuffers::Offset<Value> CreateValueDirect(
       value__);
 }
 
-struct Children FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+struct Children FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef ChildrenBuilder Builder;
   struct Traits;
-  static const flatbuffers::TypeTable *MiniReflectTypeTable() {
+  static const ::flatbuffers::TypeTable *MiniReflectTypeTable() {
     return ChildrenTypeTable();
   }
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_VALUE = 4
   };
-  const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *value() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *>(VT_VALUE);
+  const ::flatbuffers::Vector<::flatbuffers::Offset<::flatbuffers::String>> *value() const {
+    return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<::flatbuffers::String>> *>(VT_VALUE);
   }
   template<size_t Index>
   auto get_field() const {
          if constexpr (Index == 0) return value();
     else static_assert(Index != Index, "Invalid Field Index");
   }
-  bool Verify(flatbuffers::Verifier &verifier) const {
+  bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_VALUE) &&
            verifier.VerifyVector(value()) &&
@@ -251,25 +251,25 @@ struct Children FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 
 struct ChildrenBuilder {
   typedef Children Table;
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
-  void add_value(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> value) {
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_value(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<::flatbuffers::String>>> value) {
     fbb_.AddOffset(Children::VT_VALUE, value);
   }
-  explicit ChildrenBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  explicit ChildrenBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  flatbuffers::Offset<Children> Finish() {
+  ::flatbuffers::Offset<Children> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = flatbuffers::Offset<Children>(end);
+    auto o = ::flatbuffers::Offset<Children>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<Children> CreateChildren(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> value = 0) {
+inline ::flatbuffers::Offset<Children> CreateChildren(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<::flatbuffers::String>>> value = 0) {
   ChildrenBuilder builder_(_fbb);
   builder_.add_value(value);
   return builder_.Finish();
@@ -288,19 +288,19 @@ struct Children::Traits {
   using FieldType = decltype(std::declval<type>().get_field<Index>());
 };
 
-inline flatbuffers::Offset<Children> CreateChildrenDirect(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    const std::vector<flatbuffers::Offset<flatbuffers::String>> *value = nullptr) {
-  auto value__ = value ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*value) : 0;
+inline ::flatbuffers::Offset<Children> CreateChildrenDirect(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    const std::vector<::flatbuffers::Offset<::flatbuffers::String>> *value = nullptr) {
+  auto value__ = value ? _fbb.CreateVector<::flatbuffers::Offset<::flatbuffers::String>>(*value) : 0;
   return spt::configdb::model::CreateChildren(
       _fbb,
       value__);
 }
 
-struct Success FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+struct Success FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef SuccessBuilder Builder;
   struct Traits;
-  static const flatbuffers::TypeTable *MiniReflectTypeTable() {
+  static const ::flatbuffers::TypeTable *MiniReflectTypeTable() {
     return SuccessTypeTable();
   }
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
@@ -314,7 +314,7 @@ struct Success FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
          if constexpr (Index == 0) return value();
     else static_assert(Index != Index, "Invalid Field Index");
   }
-  bool Verify(flatbuffers::Verifier &verifier) const {
+  bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<uint8_t>(verifier, VT_VALUE, 1) &&
            verifier.EndTable();
@@ -323,24 +323,24 @@ struct Success FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 
 struct SuccessBuilder {
   typedef Success Table;
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
   void add_value(bool value) {
     fbb_.AddElement<uint8_t>(Success::VT_VALUE, static_cast<uint8_t>(value), 0);
   }
-  explicit SuccessBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  explicit SuccessBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  flatbuffers::Offset<Success> Finish() {
+  ::flatbuffers::Offset<Success> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = flatbuffers::Offset<Success>(end);
+    auto o = ::flatbuffers::Offset<Success>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<Success> CreateSuccess(
-    flatbuffers::FlatBufferBuilder &_fbb,
+inline ::flatbuffers::Offset<Success> CreateSuccess(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
     bool value = false) {
   SuccessBuilder builder_(_fbb);
   builder_.add_value(value);
@@ -360,10 +360,10 @@ struct Success::Traits {
   using FieldType = decltype(std::declval<type>().get_field<Index>());
 };
 
-struct KeyValueResult FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+struct KeyValueResult FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef KeyValueResultBuilder Builder;
   struct Traits;
-  static const flatbuffers::TypeTable *MiniReflectTypeTable() {
+  static const ::flatbuffers::TypeTable *MiniReflectTypeTable() {
     return KeyValueResultTypeTable();
   }
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
@@ -371,8 +371,8 @@ struct KeyValueResult FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_VALUE_TYPE = 6,
     VT_VALUE = 8
   };
-  const flatbuffers::String *key() const {
-    return GetPointer<const flatbuffers::String *>(VT_KEY);
+  const ::flatbuffers::String *key() const {
+    return GetPointer<const ::flatbuffers::String *>(VT_KEY);
   }
   spt::configdb::model::ValueVariant value_type() const {
     return static_cast<spt::configdb::model::ValueVariant>(GetField<uint8_t>(VT_VALUE_TYPE, 0));
@@ -397,7 +397,7 @@ struct KeyValueResult FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     else if constexpr (Index == 2) return value();
     else static_assert(Index != Index, "Invalid Field Index");
   }
-  bool Verify(flatbuffers::Verifier &verifier) const {
+  bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_KEY) &&
            verifier.VerifyString(key()) &&
@@ -422,33 +422,33 @@ template<> inline const spt::configdb::model::Success *KeyValueResult::value_as<
 
 struct KeyValueResultBuilder {
   typedef KeyValueResult Table;
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
-  void add_key(flatbuffers::Offset<flatbuffers::String> key) {
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_key(::flatbuffers::Offset<::flatbuffers::String> key) {
     fbb_.AddOffset(KeyValueResult::VT_KEY, key);
   }
   void add_value_type(spt::configdb::model::ValueVariant value_type) {
     fbb_.AddElement<uint8_t>(KeyValueResult::VT_VALUE_TYPE, static_cast<uint8_t>(value_type), 0);
   }
-  void add_value(flatbuffers::Offset<void> value) {
+  void add_value(::flatbuffers::Offset<void> value) {
     fbb_.AddOffset(KeyValueResult::VT_VALUE, value);
   }
-  explicit KeyValueResultBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  explicit KeyValueResultBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  flatbuffers::Offset<KeyValueResult> Finish() {
+  ::flatbuffers::Offset<KeyValueResult> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = flatbuffers::Offset<KeyValueResult>(end);
+    auto o = ::flatbuffers::Offset<KeyValueResult>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<KeyValueResult> CreateKeyValueResult(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<flatbuffers::String> key = 0,
+inline ::flatbuffers::Offset<KeyValueResult> CreateKeyValueResult(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    ::flatbuffers::Offset<::flatbuffers::String> key = 0,
     spt::configdb::model::ValueVariant value_type = spt::configdb::model::ValueVariant::NONE,
-    flatbuffers::Offset<void> value = 0) {
+    ::flatbuffers::Offset<void> value = 0) {
   KeyValueResultBuilder builder_(_fbb);
   builder_.add_value(value);
   builder_.add_key(key);
@@ -471,11 +471,11 @@ struct KeyValueResult::Traits {
   using FieldType = decltype(std::declval<type>().get_field<Index>());
 };
 
-inline flatbuffers::Offset<KeyValueResult> CreateKeyValueResultDirect(
-    flatbuffers::FlatBufferBuilder &_fbb,
+inline ::flatbuffers::Offset<KeyValueResult> CreateKeyValueResultDirect(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
     const char *key = nullptr,
     spt::configdb::model::ValueVariant value_type = spt::configdb::model::ValueVariant::NONE,
-    flatbuffers::Offset<void> value = 0) {
+    ::flatbuffers::Offset<void> value = 0) {
   auto key__ = key ? _fbb.CreateString(key) : 0;
   return spt::configdb::model::CreateKeyValueResult(
       _fbb,
@@ -484,24 +484,24 @@ inline flatbuffers::Offset<KeyValueResult> CreateKeyValueResultDirect(
       value);
 }
 
-struct KeyValueResults FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+struct KeyValueResults FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef KeyValueResultsBuilder Builder;
   struct Traits;
-  static const flatbuffers::TypeTable *MiniReflectTypeTable() {
+  static const ::flatbuffers::TypeTable *MiniReflectTypeTable() {
     return KeyValueResultsTypeTable();
   }
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_VALUE = 4
   };
-  const flatbuffers::Vector<flatbuffers::Offset<spt::configdb::model::KeyValueResult>> *value() const {
-    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<spt::configdb::model::KeyValueResult>> *>(VT_VALUE);
+  const ::flatbuffers::Vector<::flatbuffers::Offset<spt::configdb::model::KeyValueResult>> *value() const {
+    return GetPointer<const ::flatbuffers::Vector<::flatbuffers::Offset<spt::configdb::model::KeyValueResult>> *>(VT_VALUE);
   }
   template<size_t Index>
   auto get_field() const {
          if constexpr (Index == 0) return value();
     else static_assert(Index != Index, "Invalid Field Index");
   }
-  bool Verify(flatbuffers::Verifier &verifier) const {
+  bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_VALUE) &&
            verifier.VerifyVector(value()) &&
@@ -512,25 +512,25 @@ struct KeyValueResults FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
 
 struct KeyValueResultsBuilder {
   typedef KeyValueResults Table;
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
-  void add_value(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<spt::configdb::model::KeyValueResult>>> value) {
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
+  void add_value(::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<spt::configdb::model::KeyValueResult>>> value) {
     fbb_.AddOffset(KeyValueResults::VT_VALUE, value);
   }
-  explicit KeyValueResultsBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  explicit KeyValueResultsBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  flatbuffers::Offset<KeyValueResults> Finish() {
+  ::flatbuffers::Offset<KeyValueResults> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = flatbuffers::Offset<KeyValueResults>(end);
+    auto o = ::flatbuffers::Offset<KeyValueResults>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<KeyValueResults> CreateKeyValueResults(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<spt::configdb::model::KeyValueResult>>> value = 0) {
+inline ::flatbuffers::Offset<KeyValueResults> CreateKeyValueResults(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    ::flatbuffers::Offset<::flatbuffers::Vector<::flatbuffers::Offset<spt::configdb::model::KeyValueResult>>> value = 0) {
   KeyValueResultsBuilder builder_(_fbb);
   builder_.add_value(value);
   return builder_.Finish();
@@ -549,19 +549,19 @@ struct KeyValueResults::Traits {
   using FieldType = decltype(std::declval<type>().get_field<Index>());
 };
 
-inline flatbuffers::Offset<KeyValueResults> CreateKeyValueResultsDirect(
-    flatbuffers::FlatBufferBuilder &_fbb,
-    const std::vector<flatbuffers::Offset<spt::configdb::model::KeyValueResult>> *value = nullptr) {
-  auto value__ = value ? _fbb.CreateVector<flatbuffers::Offset<spt::configdb::model::KeyValueResult>>(*value) : 0;
+inline ::flatbuffers::Offset<KeyValueResults> CreateKeyValueResultsDirect(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
+    const std::vector<::flatbuffers::Offset<spt::configdb::model::KeyValueResult>> *value = nullptr) {
+  auto value__ = value ? _fbb.CreateVector<::flatbuffers::Offset<spt::configdb::model::KeyValueResult>>(*value) : 0;
   return spt::configdb::model::CreateKeyValueResults(
       _fbb,
       value__);
 }
 
-struct Response FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
+struct Response FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   typedef ResponseBuilder Builder;
   struct Traits;
-  static const flatbuffers::TypeTable *MiniReflectTypeTable() {
+  static const ::flatbuffers::TypeTable *MiniReflectTypeTable() {
     return ResponseTypeTable();
   }
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
@@ -587,7 +587,7 @@ struct Response FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     else if constexpr (Index == 1) return value();
     else static_assert(Index != Index, "Invalid Field Index");
   }
-  bool Verify(flatbuffers::Verifier &verifier) const {
+  bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<uint8_t>(verifier, VT_VALUE_TYPE, 1) &&
            VerifyOffset(verifier, VT_VALUE) &&
@@ -606,29 +606,29 @@ template<> inline const spt::configdb::model::Success *Response::value_as<spt::c
 
 struct ResponseBuilder {
   typedef Response Table;
-  flatbuffers::FlatBufferBuilder &fbb_;
-  flatbuffers::uoffset_t start_;
+  ::flatbuffers::FlatBufferBuilder &fbb_;
+  ::flatbuffers::uoffset_t start_;
   void add_value_type(spt::configdb::model::ResultVariant value_type) {
     fbb_.AddElement<uint8_t>(Response::VT_VALUE_TYPE, static_cast<uint8_t>(value_type), 0);
   }
-  void add_value(flatbuffers::Offset<void> value) {
+  void add_value(::flatbuffers::Offset<void> value) {
     fbb_.AddOffset(Response::VT_VALUE, value);
   }
-  explicit ResponseBuilder(flatbuffers::FlatBufferBuilder &_fbb)
+  explicit ResponseBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
   }
-  flatbuffers::Offset<Response> Finish() {
+  ::flatbuffers::Offset<Response> Finish() {
     const auto end = fbb_.EndTable(start_);
-    auto o = flatbuffers::Offset<Response>(end);
+    auto o = ::flatbuffers::Offset<Response>(end);
     return o;
   }
 };
 
-inline flatbuffers::Offset<Response> CreateResponse(
-    flatbuffers::FlatBufferBuilder &_fbb,
+inline ::flatbuffers::Offset<Response> CreateResponse(
+    ::flatbuffers::FlatBufferBuilder &_fbb,
     spt::configdb::model::ResultVariant value_type = spt::configdb::model::ResultVariant::NONE,
-    flatbuffers::Offset<void> value = 0) {
+    ::flatbuffers::Offset<void> value = 0) {
   ResponseBuilder builder_(_fbb);
   builder_.add_value(value);
   builder_.add_value_type(value_type);
@@ -649,7 +649,7 @@ struct Response::Traits {
   using FieldType = decltype(std::declval<type>().get_field<Index>());
 };
 
-inline bool VerifyValueVariant(flatbuffers::Verifier &verifier, const void *obj, ValueVariant type) {
+inline bool VerifyValueVariant(::flatbuffers::Verifier &verifier, const void *obj, ValueVariant type) {
   switch (type) {
     case ValueVariant::NONE: {
       return true;
@@ -670,10 +670,10 @@ inline bool VerifyValueVariant(flatbuffers::Verifier &verifier, const void *obj,
   }
 }
 
-inline bool VerifyValueVariantVector(flatbuffers::Verifier &verifier, const flatbuffers::Vector<flatbuffers::Offset<void>> *values, const flatbuffers::Vector<ValueVariant> *types) {
+inline bool VerifyValueVariantVector(::flatbuffers::Verifier &verifier, const ::flatbuffers::Vector<::flatbuffers::Offset<void>> *values, const ::flatbuffers::Vector<ValueVariant> *types) {
   if (!values || !types) return !values && !types;
   if (values->size() != types->size()) return false;
-  for (flatbuffers::uoffset_t i = 0; i < values->size(); ++i) {
+  for (::flatbuffers::uoffset_t i = 0; i < values->size(); ++i) {
     if (!VerifyValueVariant(
         verifier,  values->Get(i), types->GetEnum<ValueVariant>(i))) {
       return false;
@@ -682,7 +682,7 @@ inline bool VerifyValueVariantVector(flatbuffers::Verifier &verifier, const flat
   return true;
 }
 
-inline bool VerifyResultVariant(flatbuffers::Verifier &verifier, const void *obj, ResultVariant type) {
+inline bool VerifyResultVariant(::flatbuffers::Verifier &verifier, const void *obj, ResultVariant type) {
   switch (type) {
     case ResultVariant::NONE: {
       return true;
@@ -699,10 +699,10 @@ inline bool VerifyResultVariant(flatbuffers::Verifier &verifier, const void *obj
   }
 }
 
-inline bool VerifyResultVariantVector(flatbuffers::Verifier &verifier, const flatbuffers::Vector<flatbuffers::Offset<void>> *values, const flatbuffers::Vector<ResultVariant> *types) {
+inline bool VerifyResultVariantVector(::flatbuffers::Verifier &verifier, const ::flatbuffers::Vector<::flatbuffers::Offset<void>> *values, const ::flatbuffers::Vector<ResultVariant> *types) {
   if (!values || !types) return !values && !types;
   if (values->size() != types->size()) return false;
-  for (flatbuffers::uoffset_t i = 0; i < values->size(); ++i) {
+  for (::flatbuffers::uoffset_t i = 0; i < values->size(); ++i) {
     if (!VerifyResultVariant(
         verifier,  values->Get(i), types->GetEnum<ResultVariant>(i))) {
       return false;
@@ -711,14 +711,14 @@ inline bool VerifyResultVariantVector(flatbuffers::Verifier &verifier, const fla
   return true;
 }
 
-inline const flatbuffers::TypeTable *ValueVariantTypeTable() {
-  static const flatbuffers::TypeCode type_codes[] = {
-    { flatbuffers::ET_SEQUENCE, 0, -1 },
-    { flatbuffers::ET_SEQUENCE, 0, 0 },
-    { flatbuffers::ET_SEQUENCE, 0, 1 },
-    { flatbuffers::ET_SEQUENCE, 0, 2 }
+inline const ::flatbuffers::TypeTable *ValueVariantTypeTable() {
+  static const ::flatbuffers::TypeCode type_codes[] = {
+    { ::flatbuffers::ET_SEQUENCE, 0, -1 },
+    { ::flatbuffers::ET_SEQUENCE, 0, 0 },
+    { ::flatbuffers::ET_SEQUENCE, 0, 1 },
+    { ::flatbuffers::ET_SEQUENCE, 0, 2 }
   };
-  static const flatbuffers::TypeFunction type_refs[] = {
+  static const ::flatbuffers::TypeFunction type_refs[] = {
     spt::configdb::model::ValueTypeTable,
     spt::configdb::model::ChildrenTypeTable,
     spt::configdb::model::SuccessTypeTable
@@ -729,19 +729,19 @@ inline const flatbuffers::TypeTable *ValueVariantTypeTable() {
     "Children",
     "Success"
   };
-  static const flatbuffers::TypeTable tt = {
-    flatbuffers::ST_UNION, 4, type_codes, type_refs, nullptr, nullptr, names
+  static const ::flatbuffers::TypeTable tt = {
+    ::flatbuffers::ST_UNION, 4, type_codes, type_refs, nullptr, nullptr, names
   };
   return &tt;
 }
 
-inline const flatbuffers::TypeTable *ResultVariantTypeTable() {
-  static const flatbuffers::TypeCode type_codes[] = {
-    { flatbuffers::ET_SEQUENCE, 0, -1 },
-    { flatbuffers::ET_SEQUENCE, 0, 0 },
-    { flatbuffers::ET_SEQUENCE, 0, 1 }
+inline const ::flatbuffers::TypeTable *ResultVariantTypeTable() {
+  static const ::flatbuffers::TypeCode type_codes[] = {
+    { ::flatbuffers::ET_SEQUENCE, 0, -1 },
+    { ::flatbuffers::ET_SEQUENCE, 0, 0 },
+    { ::flatbuffers::ET_SEQUENCE, 0, 1 }
   };
-  static const flatbuffers::TypeFunction type_refs[] = {
+  static const ::flatbuffers::TypeFunction type_refs[] = {
     spt::configdb::model::KeyValueResultsTypeTable,
     spt::configdb::model::SuccessTypeTable
   };
@@ -750,58 +750,58 @@ inline const flatbuffers::TypeTable *ResultVariantTypeTable() {
     "KeyValueResults",
     "Success"
   };
-  static const flatbuffers::TypeTable tt = {
-    flatbuffers::ST_UNION, 3, type_codes, type_refs, nullptr, nullptr, names
+  static const ::flatbuffers::TypeTable tt = {
+    ::flatbuffers::ST_UNION, 3, type_codes, type_refs, nullptr, nullptr, names
   };
   return &tt;
 }
 
-inline const flatbuffers::TypeTable *ValueTypeTable() {
-  static const flatbuffers::TypeCode type_codes[] = {
-    { flatbuffers::ET_STRING, 0, -1 }
+inline const ::flatbuffers::TypeTable *ValueTypeTable() {
+  static const ::flatbuffers::TypeCode type_codes[] = {
+    { ::flatbuffers::ET_STRING, 0, -1 }
   };
   static const char * const names[] = {
     "value"
   };
-  static const flatbuffers::TypeTable tt = {
-    flatbuffers::ST_TABLE, 1, type_codes, nullptr, nullptr, nullptr, names
+  static const ::flatbuffers::TypeTable tt = {
+    ::flatbuffers::ST_TABLE, 1, type_codes, nullptr, nullptr, nullptr, names
   };
   return &tt;
 }
 
-inline const flatbuffers::TypeTable *ChildrenTypeTable() {
-  static const flatbuffers::TypeCode type_codes[] = {
-    { flatbuffers::ET_STRING, 1, -1 }
+inline const ::flatbuffers::TypeTable *ChildrenTypeTable() {
+  static const ::flatbuffers::TypeCode type_codes[] = {
+    { ::flatbuffers::ET_STRING, 1, -1 }
   };
   static const char * const names[] = {
     "value"
   };
-  static const flatbuffers::TypeTable tt = {
-    flatbuffers::ST_TABLE, 1, type_codes, nullptr, nullptr, nullptr, names
+  static const ::flatbuffers::TypeTable tt = {
+    ::flatbuffers::ST_TABLE, 1, type_codes, nullptr, nullptr, nullptr, names
   };
   return &tt;
 }
 
-inline const flatbuffers::TypeTable *SuccessTypeTable() {
-  static const flatbuffers::TypeCode type_codes[] = {
-    { flatbuffers::ET_BOOL, 0, -1 }
+inline const ::flatbuffers::TypeTable *SuccessTypeTable() {
+  static const ::flatbuffers::TypeCode type_codes[] = {
+    { ::flatbuffers::ET_BOOL, 0, -1 }
   };
   static const char * const names[] = {
     "value"
   };
-  static const flatbuffers::TypeTable tt = {
-    flatbuffers::ST_TABLE, 1, type_codes, nullptr, nullptr, nullptr, names
+  static const ::flatbuffers::TypeTable tt = {
+    ::flatbuffers::ST_TABLE, 1, type_codes, nullptr, nullptr, nullptr, names
   };
   return &tt;
 }
 
-inline const flatbuffers::TypeTable *KeyValueResultTypeTable() {
-  static const flatbuffers::TypeCode type_codes[] = {
-    { flatbuffers::ET_STRING, 0, -1 },
-    { flatbuffers::ET_UTYPE, 0, 0 },
-    { flatbuffers::ET_SEQUENCE, 0, 0 }
+inline const ::flatbuffers::TypeTable *KeyValueResultTypeTable() {
+  static const ::flatbuffers::TypeCode type_codes[] = {
+    { ::flatbuffers::ET_STRING, 0, -1 },
+    { ::flatbuffers::ET_UTYPE, 0, 0 },
+    { ::flatbuffers::ET_SEQUENCE, 0, 0 }
   };
-  static const flatbuffers::TypeFunction type_refs[] = {
+  static const ::flatbuffers::TypeFunction type_refs[] = {
     spt::configdb::model::ValueVariantTypeTable
   };
   static const char * const names[] = {
@@ -809,73 +809,73 @@ inline const flatbuffers::TypeTable *KeyValueResultTypeTable() {
     "value_type",
     "value"
   };
-  static const flatbuffers::TypeTable tt = {
-    flatbuffers::ST_TABLE, 3, type_codes, type_refs, nullptr, nullptr, names
+  static const ::flatbuffers::TypeTable tt = {
+    ::flatbuffers::ST_TABLE, 3, type_codes, type_refs, nullptr, nullptr, names
   };
   return &tt;
 }
 
-inline const flatbuffers::TypeTable *KeyValueResultsTypeTable() {
-  static const flatbuffers::TypeCode type_codes[] = {
-    { flatbuffers::ET_SEQUENCE, 1, 0 }
+inline const ::flatbuffers::TypeTable *KeyValueResultsTypeTable() {
+  static const ::flatbuffers::TypeCode type_codes[] = {
+    { ::flatbuffers::ET_SEQUENCE, 1, 0 }
   };
-  static const flatbuffers::TypeFunction type_refs[] = {
+  static const ::flatbuffers::TypeFunction type_refs[] = {
     spt::configdb::model::KeyValueResultTypeTable
   };
   static const char * const names[] = {
     "value"
   };
-  static const flatbuffers::TypeTable tt = {
-    flatbuffers::ST_TABLE, 1, type_codes, type_refs, nullptr, nullptr, names
+  static const ::flatbuffers::TypeTable tt = {
+    ::flatbuffers::ST_TABLE, 1, type_codes, type_refs, nullptr, nullptr, names
   };
   return &tt;
 }
 
-inline const flatbuffers::TypeTable *ResponseTypeTable() {
-  static const flatbuffers::TypeCode type_codes[] = {
-    { flatbuffers::ET_UTYPE, 0, 0 },
-    { flatbuffers::ET_SEQUENCE, 0, 0 }
+inline const ::flatbuffers::TypeTable *ResponseTypeTable() {
+  static const ::flatbuffers::TypeCode type_codes[] = {
+    { ::flatbuffers::ET_UTYPE, 0, 0 },
+    { ::flatbuffers::ET_SEQUENCE, 0, 0 }
   };
-  static const flatbuffers::TypeFunction type_refs[] = {
+  static const ::flatbuffers::TypeFunction type_refs[] = {
     spt::configdb::model::ResultVariantTypeTable
   };
   static const char * const names[] = {
     "value_type",
     "value"
   };
-  static const flatbuffers::TypeTable tt = {
-    flatbuffers::ST_TABLE, 2, type_codes, type_refs, nullptr, nullptr, names
+  static const ::flatbuffers::TypeTable tt = {
+    ::flatbuffers::ST_TABLE, 2, type_codes, type_refs, nullptr, nullptr, names
   };
   return &tt;
 }
 
 inline const spt::configdb::model::Response *GetResponse(const void *buf) {
-  return flatbuffers::GetRoot<spt::configdb::model::Response>(buf);
+  return ::flatbuffers::GetRoot<spt::configdb::model::Response>(buf);
 }
 
 inline const spt::configdb::model::Response *GetSizePrefixedResponse(const void *buf) {
-  return flatbuffers::GetSizePrefixedRoot<spt::configdb::model::Response>(buf);
+  return ::flatbuffers::GetSizePrefixedRoot<spt::configdb::model::Response>(buf);
 }
 
 inline bool VerifyResponseBuffer(
-    flatbuffers::Verifier &verifier) {
+    ::flatbuffers::Verifier &verifier) {
   return verifier.VerifyBuffer<spt::configdb::model::Response>(nullptr);
 }
 
 inline bool VerifySizePrefixedResponseBuffer(
-    flatbuffers::Verifier &verifier) {
+    ::flatbuffers::Verifier &verifier) {
   return verifier.VerifySizePrefixedBuffer<spt::configdb::model::Response>(nullptr);
 }
 
 inline void FinishResponseBuffer(
-    flatbuffers::FlatBufferBuilder &fbb,
-    flatbuffers::Offset<spt::configdb::model::Response> root) {
+    ::flatbuffers::FlatBufferBuilder &fbb,
+    ::flatbuffers::Offset<spt::configdb::model::Response> root) {
   fbb.Finish(root);
 }
 
 inline void FinishSizePrefixedResponseBuffer(
-    flatbuffers::FlatBufferBuilder &fbb,
-    flatbuffers::Offset<spt::configdb::model::Response> root) {
+    ::flatbuffers::FlatBufferBuilder &fbb,
+    ::flatbuffers::Offset<spt::configdb::model::Response> root) {
   fbb.FinishSizePrefixed(root);
 }
 

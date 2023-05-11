@@ -1,5 +1,5 @@
 from asyncio import open_connection
-from ssl import SSLContext, PROTOCOL_TLS_CLIENT, OP_NO_TLSv1, OP_NO_TLSv1_1, OP_NO_TLSv1_2
+from ssl import SSLContext, PROTOCOL_TLS_CLIENT, TLSVersion
 from sys import byteorder
 from typing import Optional, Tuple, List
 
@@ -23,15 +23,12 @@ class Client:
         self._key_file = ssl_key_file
 
     async def _async_init(self):
-        # https://gist.github.com/zapstar/a7035795483753f7b71a542559afa83f
         if self._verify_file:
             context = SSLContext(PROTOCOL_TLS_CLIENT)
             context.load_verify_locations(self._verify_file)
             context.load_cert_chain(self._certificate_file, self._key_file)
             context.check_hostname = False
-            context.options |= OP_NO_TLSv1
-            context.options |= OP_NO_TLSv1_1
-            context.options |= OP_NO_TLSv1_2
+            context.minimum_version = TLSVersion.TLSv1_3
         else:
             context = None
 
@@ -227,7 +224,7 @@ class Client:
 
         kvrs: _KeyValueResults.KeyValueResultsT = resp.value
         if not kvrs.value:
-            _log.warning(f"Error retrieving {len(key)} keys")
+            _log.warning(f"Error retrieving {len(keys)} keys")
             return []
 
         results = []

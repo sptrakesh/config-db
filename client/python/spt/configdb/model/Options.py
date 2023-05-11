@@ -40,18 +40,30 @@ class Options(object):
             return self._tab.Get(flatbuffers.number_types.Uint32Flags, o + self._tab.Pos)
         return 0
 
-def OptionsStart(builder): builder.StartObject(2)
+def OptionsStart(builder):
+    builder.StartObject(2)
+
 def Start(builder):
-    return OptionsStart(builder)
-def OptionsAddIfNotExists(builder, ifNotExists): builder.PrependBoolSlot(0, ifNotExists, 0)
-def AddIfNotExists(builder, ifNotExists):
-    return OptionsAddIfNotExists(builder, ifNotExists)
-def OptionsAddExpirationInSeconds(builder, expirationInSeconds): builder.PrependUint32Slot(1, expirationInSeconds, 0)
-def AddExpirationInSeconds(builder, expirationInSeconds):
-    return OptionsAddExpirationInSeconds(builder, expirationInSeconds)
-def OptionsEnd(builder): return builder.EndObject()
+    OptionsStart(builder)
+
+def OptionsAddIfNotExists(builder, ifNotExists):
+    builder.PrependBoolSlot(0, ifNotExists, 0)
+
+def AddIfNotExists(builder: flatbuffers.Builder, ifNotExists: bool):
+    OptionsAddIfNotExists(builder, ifNotExists)
+
+def OptionsAddExpirationInSeconds(builder, expirationInSeconds):
+    builder.PrependUint32Slot(1, expirationInSeconds, 0)
+
+def AddExpirationInSeconds(builder: flatbuffers.Builder, expirationInSeconds: int):
+    OptionsAddExpirationInSeconds(builder, expirationInSeconds)
+
+def OptionsEnd(builder):
+    return builder.EndObject()
+
 def End(builder):
     return OptionsEnd(builder)
+
 
 class OptionsT(object):
 

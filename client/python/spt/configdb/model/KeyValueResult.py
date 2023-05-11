@@ -48,21 +48,36 @@ class KeyValueResult(object):
             return obj
         return None
 
-def KeyValueResultStart(builder): builder.StartObject(3)
+def KeyValueResultStart(builder):
+    builder.StartObject(3)
+
 def Start(builder):
-    return KeyValueResultStart(builder)
-def KeyValueResultAddKey(builder, key): builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(key), 0)
-def AddKey(builder, key):
-    return KeyValueResultAddKey(builder, key)
-def KeyValueResultAddValueType(builder, valueType): builder.PrependUint8Slot(1, valueType, 0)
-def AddValueType(builder, valueType):
-    return KeyValueResultAddValueType(builder, valueType)
-def KeyValueResultAddValue(builder, value): builder.PrependUOffsetTRelativeSlot(2, flatbuffers.number_types.UOffsetTFlags.py_type(value), 0)
-def AddValue(builder, value):
-    return KeyValueResultAddValue(builder, value)
-def KeyValueResultEnd(builder): return builder.EndObject()
+    KeyValueResultStart(builder)
+
+def KeyValueResultAddKey(builder, key):
+    builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(key), 0)
+
+def AddKey(builder: flatbuffers.Builder, key: int):
+    KeyValueResultAddKey(builder, key)
+
+def KeyValueResultAddValueType(builder, valueType):
+    builder.PrependUint8Slot(1, valueType, 0)
+
+def AddValueType(builder: flatbuffers.Builder, valueType: int):
+    KeyValueResultAddValueType(builder, valueType)
+
+def KeyValueResultAddValue(builder, value):
+    builder.PrependUOffsetTRelativeSlot(2, flatbuffers.number_types.UOffsetTFlags.py_type(value), 0)
+
+def AddValue(builder: flatbuffers.Builder, value: int):
+    KeyValueResultAddValue(builder, value)
+
+def KeyValueResultEnd(builder):
+    return builder.EndObject()
+
 def End(builder):
     return KeyValueResultEnd(builder)
+
 import spt.configdb.model.Children
 import spt.configdb.model.Success
 import spt.configdb.model.Value

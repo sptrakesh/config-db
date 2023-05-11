@@ -31,15 +31,24 @@ class Value(object):
             return self._tab.String(o + self._tab.Pos)
         return None
 
-def ValueStart(builder): builder.StartObject(1)
+def ValueStart(builder):
+    builder.StartObject(1)
+
 def Start(builder):
-    return ValueStart(builder)
-def ValueAddValue(builder, value): builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(value), 0)
-def AddValue(builder, value):
-    return ValueAddValue(builder, value)
-def ValueEnd(builder): return builder.EndObject()
+    ValueStart(builder)
+
+def ValueAddValue(builder, value):
+    builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(value), 0)
+
+def AddValue(builder: flatbuffers.Builder, value: int):
+    ValueAddValue(builder, value)
+
+def ValueEnd(builder):
+    return builder.EndObject()
+
 def End(builder):
     return ValueEnd(builder)
+
 
 class ValueT(object):
 
