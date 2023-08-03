@@ -17,13 +17,19 @@ endif(NOT CMAKE_BUILD_TYPE)
 # Find includes in the build directories
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
+if (UNIX)
 set(CMAKE_CXX_FLAGS_DEBUG "-g -O0")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+endif (UNIX)
 
+if (UNIX)
 set(Boost_USE_STATIC_LIBS ON)
 set(Boost_USE_STATIC_RUNTIME ON)
 set(Boost_USE_MULTITHREADED ON)
 set(OPENSSL_USE_STATIC_LIBS TRUE)
+else()
+set(Boost_USE_MULTITHREADED ON)
+endif (UNIX)
 
 if (CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
   execute_process(
@@ -55,14 +61,16 @@ if (CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
 endif()
 
 if (APPLE)
-  find_package(OpenSSL REQUIRED)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fcoroutines-ts")
 endif(APPLE)
 
-find_package(Boost)
+find_package(Boost REQUIRED)
 find_package(RocksDB)
-find_package(flatbuffers)
+find_package(flatbuffers REQUIRED)
+find_package(OpenSSL REQUIRED)
+find_package(Snappy REQUIRED)
 find_package(Threads)
+find_package(ZLIB REQUIRED)
 
 if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror")

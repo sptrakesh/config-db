@@ -431,7 +431,11 @@ sequence.  Ensure the dependencies are available under the following paths:
 * **MacOSX** - Various dependencies installed under the `/usr/local/<dependency>` path.
   See [dependencies](dependencies.md) for scripts used to install the dependencies.
 * **UNIX** - All dependencies installed under the `/opt/local` path.
+* **Windows** - Most dependencies installed under the `\opt\local` path.
+  A few dependencies also installed via `vcpkg` under `\opt\src\vcpkg`.
 
+### UNIX
+Check out the project and build.
 ```shell
 git clone git@github.com:sptrakesh/config-db.git
 cd config-db
@@ -443,6 +447,62 @@ cmake -DCMAKE_PREFIX_PATH=/usr/local/boost \
   -S . -B build
 cmake --build build -j12
 (cd build; sudo make install)
+```
+
+### Windows
+
+```shell
+cd \opt\src
+git clone -b v23.5.9 https://github.com/google/flatbuffers.git
+cd flatbuffers
+cmake -DFLATBUFFERS_BUILD_TESTS=OFF -DFLATBUFFERS_BUILD_CPP17=ON -DFLATBUFFERS_ENABLE_PCH=ON -DCMAKE_PREFIX_PATH=\opt\local -DCMAKE_INSTALL_PREFIX=\opt\local -S . -B build
+cmake --build build --target install -j8
+cd ..
+del /s /q flatbuffers
+rmdir /s /q flatbuffers
+```
+
+```shell
+cd \opt\src\vcpkg
+.\vcpkg install openssl:arm64-windows
+.\vcpkg install snappy:arm64-windows
+.\vcpkg install lz4:arm64-windows
+.\vcpkg install zstd:arm64-windows
+```
+
+```shell
+cd \opt\src
+git clone https://github.com/gflags/gflags.git
+cd gflags
+cmake -DBUILD_SHARED_LIBS=OFF -DBUILD_STATIC_LIBS=ON -DBUILD_TESTING=OFF -DBUILD_gflags_LIBS=ON -DINSTALL_HEADERS=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=\opt\local -DCMAKE_INSTALL_PREFIX=\opt\local -S . -B cmake-build
+cmake --build cmake-build --target install -j8
+cd ..
+del /s /q gflags
+rmdir /s /q gflags
+```
+
+```shell
+cd \opt\src
+git clone -b v8.3.2 https://github.com/facebook/rocksdb.git
+cd rocksdb
+cmake -DWITH_TESTS=OFF -DWITH_ALL_TESTS=OFF -DWITH_BENCHMARK_TOOLS=OFF -DCMAKE_CXX_STANDARD=20 -DCMAKE_BUILD_TYPE=Release -DROCKSDB_BUILD_SHARED=OFF -DCMAKE_PREFIX_PATH=\opt\local -DCMAKE_INSTALL_PREFIX=\opt\local -DCMAKE_TOOLCHAIN_FILE="C:/opt/src/vcpkg/scripts/buildsystems/vcpkg.cmake" -S . -B build -G"Unix Makefiles" -DCMAKE_MAKE_PROGRAM=nmake
+set CL=/MP
+cmake --build build
+cd ..
+del /s /q rocksdb
+rmdir /s /q rocksdb
+```
+
+```shell
+cd \opt\src
+curl -O -L https://github.com/nghttp2/nghttp2/releases/download/v1.51.0/nghttp2-1.51.0.tar.gz
+tar -xf nghttp2-1.51.0.tar.gz
+cd nghttp2-1.51.0
+cmake -DCMAKE_CXX_STANDARD=20 -DCMAKE_BUILD_TYPE=Release DCMAKE_PREFIX_PATH=\opt\local -DCMAKE_INSTALL_PREFIX=\opt\local -DCMAKE_TOOLCHAIN_FILE="C:/opt/src/vcpkg/scripts/buildsystems/vcpkg.cmake" -DENABLE_LIB_ONLY=ON -DENABLE_ASIO_LIB=ON -DENABLE_EXAMPLES=OFF -DENABLE_STATIC_CRT=ON -S . -B build 
+cmake --build build --target install -j8
+cd ..
+del /s /q nghttp2-1.51.0
+rmdir /s /q nghttp2-1.51.0
 ```
 
 ## Run
