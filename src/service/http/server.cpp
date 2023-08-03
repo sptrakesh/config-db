@@ -2,6 +2,7 @@
 // Created by Rakesh on 25/12/2021.
 //
 
+
 #include "server.h"
 #include "signal/signal.h"
 #include "../common/contextholder.h"
@@ -10,6 +11,7 @@
 #include "../lib/db/storage.h"
 #include "../log/NanoLog.h"
 
+#if defined(CONFIG_DB_HTTP_SERVER)
 #include <charconv>
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/json.hpp>
@@ -293,3 +295,12 @@ int spt::configdb::http::start( const std::string& port, int threads, bool ssl )
   return 0;
 }
 
+#else
+
+int spt::configdb::http::start( const std::string& , int , bool )
+{
+  LOG_INFO << "HTTP Server not enabled.";
+  return 0;
+}
+
+#endif

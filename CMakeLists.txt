@@ -14,6 +14,12 @@ if (NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Debug)
 endif(NOT CMAKE_BUILD_TYPE)
 
+option(HTTP_SERVER "enable HTTP server" ON)
+if (HTTP_SERVER)
+  message(STATUS "HTTP server enabled.  Requires nghttp2-asio")
+  add_definitions(-DCONFIG_DB_HTTP_SERVER)
+endif(HTTP_SERVER)
+
 # Find includes in the build directories
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -59,10 +65,11 @@ if (APPLE)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fcoroutines-ts")
 endif(APPLE)
 
-find_package(Boost)
-find_package(RocksDB)
-find_package(flatbuffers)
-find_package(Threads)
+find_package(Boost REQUIRED)
+find_package(RocksDB REQUIRED)
+find_package(flatbuffers REQUIRED)
+find_package(Threads REQUIRED)
+find_package(ZLIB REQUIRED)
 
 if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror")
@@ -81,22 +88,18 @@ if (APPLE)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
   include_directories(
     /usr/local/flatbuffers/include
-    /usr/local/nghttp2/include
     /usr/local/rocksdb/include
   )
-  LINK_DIRECTORIES(
-    /usr/local/flatbuffers/lib
-    /usr/local/nghttp2/lib
-    /usr/local/rocksdb/lib
-  )
+
+  if (HTTP_SERVER)
+    include_directories(/usr/local/nghttp2/include)
+    link_directories(/usr/local/nghttp2/lib)
+  endif (HTTP_SERVER)
+
   set(CMAKE_MACOSX_RPATH 1)
 elseif (UNIX)
-  include_directories(
-    /opt/local/include
-  )
-  link_directories(
-    /opt/local/lib
-  )
+  include_directories(/opt/local/include)
+  link_directories(/opt/local/lib)
 endif()
 
 IF(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)

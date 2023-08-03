@@ -439,7 +439,7 @@ cmake -DCMAKE_PREFIX_PATH=/usr/local/boost \
   -DCMAKE_PREFIX_PATH=/usr/local/rocksdb \
   -DCMAKE_PREFIX_PATH=/usr/local/flatbuffers \
   -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_INSTALL_PREFIX=/usr/local/configdb \
+  -DCMAKE_INSTALL_PREFIX=/usr/local/spt \
   -S . -B build
 cmake --build build -j12
 (cd build; sudo make install)
