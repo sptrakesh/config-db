@@ -3,11 +3,11 @@ add_executable(seed-configdb ${configdb_SRCS} )
 
 if (APPLE)
   target_link_libraries(seed-configdb
-    PRIVATE nanolog configdb-common configdb-lib configdb-api Boost::boost rocksdb flatbuffers ${OPENSSL_LIBRARIES} z
+    PRIVATE nanolog configdb-common configdb-lib configdb-api Boost::boost RocksDB::rocksdb flatbuffers::flatbuffers ${OPENSSL_LIBRARIES} ZLIB::ZLIB
   )
 else()
   target_link_libraries(seed-configdb
-    PRIVATE nanolog configdb-common configdb-lib configdb-api Boost::boost rocksdb flatbuffers crypto ssl pthread z
+    PRIVATE nanolog configdb-common configdb-lib configdb-api Boost::boost RocksDB::rocksdb flatbuffers::flatbuffers crypto ssl pthread ZLIB::ZLIB
   )
 endif()
 
