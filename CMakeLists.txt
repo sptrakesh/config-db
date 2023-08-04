@@ -6,6 +6,24 @@ endif(POLICY CMP0079)
 
 project(config-db)
 
+if (WIN32)
+  if (POLICY CMP0111)
+    cmake_policy(SET CMP0111 NEW)
+  endif (POLICY CMP0111)
+  if(POLICY CMP0091)
+    cmake_policy(SET CMP0091 NEW) 
+  endif()
+
+  if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    set(CMAKE_CXX_FLAGS "/EHsc /await:strict /std:c++20 /utf-8")
+    add_compile_definitions(_WIN32_WINNT=0x0A000007)
+  endif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+
+  set(OPENSSL_ROOT "/opt/src/vcpkg/packages/openssl_arm64-windows" CACHE STRING "Where openssl is installed by vcpkg")
+  set(READLINE_ROOT "/opt/src/vcpkg/packages/readline-win32_arm64-windows" CACHE STRING "Where readline is installed by vcpkg")
+  set(ROCKSDB_ROOT "/opt/src/vcpkg/packages/rocksdb_arm64-windows" CACHE STRING "Where rocksdb is installed by vcpkg")
+endif(WIN32)
+
 # Enable C++20 features (coroutine)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -23,11 +41,15 @@ endif(HTTP_SERVER)
 # Find includes in the build directories
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-set(CMAKE_CXX_FLAGS_DEBUG "-g -O0")
-set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+if (NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+  set(CMAKE_CXX_FLAGS_DEBUG "-g -O0")
+  set(CMAKE_CXX_FLAGS_RELEASE "-O3")
+endif (NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 
-set(Boost_USE_STATIC_LIBS ON)
-set(Boost_USE_STATIC_RUNTIME ON)
+if (UNIX)
+  set(Boost_USE_STATIC_LIBS ON)
+  set(Boost_USE_STATIC_RUNTIME ON)
+endif (UNIX)
 set(Boost_USE_MULTITHREADED ON)
 set(OPENSSL_USE_STATIC_LIBS TRUE)
 
@@ -61,13 +83,18 @@ if (CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
 endif()
 
 if (APPLE)
-  find_package(OpenSSL REQUIRED)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fcoroutines-ts")
 endif(APPLE)
 
-find_package(Boost REQUIRED)
+if (WIN32)
+  find_package(Boost REQUIRED COMPONENTS container json)
+  find_package(Snappy REQUIRED)
+else()
+  find_package(Boost REQUIRED)
+endif (WIN32)
 find_package(RocksDB REQUIRED)
 find_package(flatbuffers REQUIRED)
+find_package(OpenSSL REQUIRED)
 find_package(Threads REQUIRED)
 find_package(ZLIB REQUIRED)
 
@@ -100,6 +127,17 @@ if (APPLE)
 elseif (UNIX)
   include_directories(/opt/local/include)
   link_directories(/opt/local/lib)
+elseif (WIN32)
+  include_directories(
+    /opt/local/include
+    ${OPENSSL_ROOT}/include
+    ${READLINE_ROOT}/include
+    ${ROCKSDB_ROOT}/include
+  )
+  link_directories(
+    ${OPENSSL_ROOT}/lib
+    ${READLINE_ROOT}/lib
+  )
 endif()
 
 IF(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)

@@ -39,7 +39,11 @@ namespace spt::configdb::client::pclient
     }
     auto right = in.end() - 1;
     for ( ; right > left && std::isspace( *right ); --right );
+#if defined(_WIN32) || defined(WIN32)
+    return { left, right };
+#else
     return { left, static_cast<std::size_t>(std::distance( left, right ) + 1) };
+#endif
   }
 
   std::tuple<std::string_view, std::size_t> command( std::string_view line )

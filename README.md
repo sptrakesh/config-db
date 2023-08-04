@@ -17,6 +17,7 @@
   * [Seed](#seed)
 * [Docker](#docker)
 * [Build](#build)
+  * [Windows](#windows)
 * [Run](#run)
   * [Notifications](#notifications)
   * [SSL](#ssl)
@@ -435,7 +436,9 @@ sequence.  Ensure the dependencies are available under the following paths:
   A few dependencies also installed via `vcpkg` under `\opt\src\vcpkg`.
 
 ### UNIX
-Check out the project and build.
+Check out the project and build.  Install [dependencies](dependencies.md).  These instructions are for setting up on Mac OS X.  For Linux,
+the assumption is that all dependencies are installed under `/opt/local`.
+
 ```shell
 git clone git@github.com:sptrakesh/config-db.git
 cd config-db
@@ -451,6 +454,71 @@ cmake --build build -j12
 
 ### Windows
 
+Install pre-requisites for building and running on Windows.   The following instructions at times reference `arm` or `arm64`
+architecture.  Modify those values as appropriate for your hardware.  These instructions are based on steps I followed to set 
+up the project on a Windows 11 virtual machine running via Parallels Desktop on a M2 Mac.
+
+#### Issues
+At present final linking of the *service* fails with unresolved external symbols.  These have not manifested themselves on
+Mac OS X.  I will update here if I finally manage to resolve the linking problems.
+* `rocksdb::Cleanable::Cleanable(void)`
+* `rocksdb::PinnableSlice::PinnableSlice(class rocksdb::PinnableSlice &&)`
+* `rocksdb::Status::ToString(void)const`
+* `rocksdb::LRUCacheOptions::MakeSharedCache(void)const`
+* `rocksdb::ColumnFamilyOptions::OptimizeForPointLookup(unsigned __int64)`
+* `rocksdb::ColumnFamilyOptions::ColumnFamilyOptions(void)`
+* `rocksdb::DBOptions::OptimizeForSmallDb(class std::shared_ptr<class rocksdb::Cache> *)`
+* `rocksdb::DBOptions::DBOptions(void)`
+* `rocksdb::TransactionDB::Open(struct rocksdb::DBOptions const &,struct rocksdb::TransactionDBOptions const &,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > const &,class std::vector<struct rocksdb::ColumnFamilyDescriptor,class std::allocator<struct rocksdb::ColumnFamilyDescriptor> > const &,class std::vector<class rocksdb::ColumnFamilyHandle *,class std::allocator<class rocksdb::ColumnFamilyHandle *> > *,class rocksdb::TransactionDB **)`
+* `rocksdb::kDefaultColumnFamilyName`
+
+<details>
+<summary>Install <a href="https://boost.org/">Boost</a></summary>
+
+* Download and extract Boost 1.82 (or above) to a temporary location (eg. `\opt\src`).
+* Launch the Visual Studio Command utility and cd to the temporary location.
+```shell
+cd \opt\src
+curl -OL https://boostorg.jfrog.io/artifactory/main/release/1.82.0/source/boost_1_82_0.tar.gz
+tar -xfz boost_1_82_0.tar.gz
+cd boost_1_82_0
+.\bootstrap.bat
+.\b2 -j8 install threading=multi address-model=64 architecture=arm asynch-exceptions=on --prefix=\opt\local --without-python --without-mpi
+
+cd ..
+del /s /q boost_1_82_0
+rmdir /s /q boost_1_82_0
+```
+</details>
+
+<details>
+<summary>Install <a href="https://github.com/fmtlib/fmt">fmt</a> library</summary>
+
+Launch the Visual Studio Command utility and cd to a temporary location.
+```shell
+cd \opt\src
+git clone https://github.com/fmtlib/fmt.git --branch 9.1.0
+cd fmt
+cmake -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=\opt\local -DCMAKE_INSTALL_LIBDIR=lib -DFMT_TEST=OFF -DFMT_MODULE=ON -S . -B build
+cmake --build build --target install -j8
+```
+</details>
+
+<details>
+<summary>Install <a href="https://github.com/ericniebler/range-v3">range-v3</a> library</summary>
+
+Launch the Visual Studio Command utility and cd to a temporary location.
+```shell
+git clone https://github.com/ericniebler/range-v3.git --branch 0.12.0
+cd range-v3
+cmake -DCMAKE_CXX_STANDARD=20 -DCMAKE_CXX_STANDARD_REQUIRED=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=\opt\local -DCMAKE_INSTALL_LIBDIR=lib -DRANGE_V3_DOCS=OFF -DRANGE_V3_EXAMPLES=OFF -DRANGE_V3_PERF=OFF -DRANGE_V3_TESTS=OFF -DRANGE_V3_INSTALL=ON -B build -S .
+cmake --build build --target install -j8
+```
+</details>
+
+<details>
+<summary>Install <a href="https://github.com/google/flatbuffers">flatbuffers</a></summary>
+
 ```shell
 cd \opt\src
 git clone -b v23.5.9 https://github.com/google/flatbuffers.git
@@ -462,13 +530,27 @@ del /s /q flatbuffers
 rmdir /s /q flatbuffers
 ```
 
+</details>
+
+<details>
+<summary>Install <a href="https://vcpkg.io/">vcpkg</a></summary>
+
 ```shell
-cd \opt\src\vcpkg
+cd \opt\src
+git clone https://github.com/Microsoft/vcpkg.git
+cd vcpkg
+.\bootstrap-vcpkg.bat -disableMetrics
+.\vcpkg integrate install --vcpkg-root \opt\src\vcpkg
 .\vcpkg install openssl:arm64-windows
 .\vcpkg install snappy:arm64-windows
-.\vcpkg install lz4:arm64-windows
-.\vcpkg install zstd:arm64-windows
+.\vcpkg install rocksdb:arm64-windows
+.\vcpkg install readline:arm64-windows
 ```
+
+</details>
+
+<details>
+<summary>Install gflags if compiling RocksDB locally</summary>
 
 ```shell
 cd \opt\src
@@ -480,6 +562,11 @@ cd ..
 del /s /q gflags
 rmdir /s /q gflags
 ```
+
+</details>
+
+<details>
+<summary>Build <a href="https://github.com/facebook/rocksdb">RocksDB</a> locally</summary>
 
 ```shell
 cd \opt\src
@@ -493,17 +580,26 @@ del /s /q rocksdb
 rmdir /s /q rocksdb
 ```
 
+Note that the current `cmake` build files do not generate any appropriate *install* targets, hence the earlier instruction
+to install via `vcpkg`.
+</details>
+
+<details>
+<summary>Build and test the project</summary>
+
+Launch the Visual Studio Command utility.
+
+**Note:** I have not had any success attempting to build `nghttp2-asio` on Windows ARM64, hence the `-DHTTP_SERVER=OFF`
+option is required when invoking `cmake`.
+
 ```shell
-cd \opt\src
-curl -O -L https://github.com/nghttp2/nghttp2/releases/download/v1.51.0/nghttp2-1.51.0.tar.gz
-tar -xf nghttp2-1.51.0.tar.gz
-cd nghttp2-1.51.0
-cmake -DCMAKE_CXX_STANDARD=20 -DCMAKE_BUILD_TYPE=Release DCMAKE_PREFIX_PATH=\opt\local -DCMAKE_INSTALL_PREFIX=\opt\local -DCMAKE_TOOLCHAIN_FILE="C:/opt/src/vcpkg/scripts/buildsystems/vcpkg.cmake" -DENABLE_LIB_ONLY=ON -DENABLE_ASIO_LIB=ON -DENABLE_EXAMPLES=OFF -DENABLE_STATIC_CRT=ON -S . -B build 
+cd %homepath%\source\repos
+git clone https://github.com/sptrakesh/config-db.git
+cd config-db
+cmake -DCMAKE_PREFIX_PATH=\opt\local -DCMAKE_INSTALL_PREFIX=\opt\spt -DCMAKE_TOOLCHAIN_FILE="C:/opt/src/vcpkg/scripts/buildsystems/vcpkg.cmake" -DHTTP_SERVER=Off -S . -B build
 cmake --build build --target install -j8
-cd ..
-del /s /q nghttp2-1.51.0
-rmdir /s /q nghttp2-1.51.0
 ```
+</details>
 
 ## Run
 Run the service via the `/opt/spt/bin/configdb` executable.  Command line options
