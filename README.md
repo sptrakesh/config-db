@@ -427,7 +427,7 @@ The following environment variables can be used to customise the container:
 the database may get corrupted.
 
 ## Build
-Standard cmake build procedure.  See [Dockerfile](docker/Dockerfile.alpine) for build
+Standard cmake build procedure.  See [Dockerfile](docker/Dockerfile) for build
 sequence.  Ensure the dependencies are available under the following paths:
 * **MacOSX** - Various dependencies installed under the `/usr/local/<dependency>` path.
   See [dependencies](dependencies.md) for scripts used to install the dependencies.

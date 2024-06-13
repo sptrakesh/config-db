@@ -19,6 +19,8 @@
 #include <rocksdb/db.h>
 #include <rocksdb/options.h>
 #include <rocksdb/slice.h>
+#include <rocksdb/slice_transform.h>
+#include <rocksdb/table.h>
 #include <rocksdb/utilities/transaction_db.h>
 
 using namespace std::string_literals;
@@ -1002,8 +1004,14 @@ namespace spt::configdb::db::internal
     void init()
     {
       auto& conf = model::Configuration::instance();
+
       auto cfopts = rocksdb::ColumnFamilyOptions{};
+      cfopts.prefix_extractor.reset(rocksdb::NewFixedPrefixTransform(8));
+      cfopts.table_factory.reset( rocksdb::NewPlainTableFactory() );
       cfopts.OptimizeForPointLookup( conf.storage.blockCacheSizeMb );
+      cfopts.level_compaction_dynamic_level_bytes = true;
+      cfopts.write_buffer_size = 64 * 1024 * 1024;
+      cfopts.min_write_buffer_number_to_merge = 2;
       std::vector<rocksdb::ColumnFamilyDescriptor> families{
           { rocksdb::kDefaultColumnFamilyName, cfopts },
           { "data"s, cfopts },
@@ -1014,10 +1022,14 @@ namespace spt::configdb::db::internal
 
       handles.reserve( families.size() );
 
+      auto o = rocksdb::Options{};
+
       auto dbopts = rocksdb::DBOptions{};
-      dbopts.OptimizeForSmallDb( &cache );
+      dbopts.allow_mmap_reads = true;
       dbopts.create_if_missing = true;
       dbopts.create_missing_column_families = true;
+      dbopts.bytes_per_sync = 1048576;
+      dbopts.db_write_buffer_size = 128 * 1024 * 1024;
 
       rocksdb::TransactionDB* tdb;
 
@@ -1055,7 +1067,6 @@ namespace spt::configdb::db::internal
     spt::configdb::pool::Pool<Encrypter> pool{ spt::configdb::db::internal::create, poolConfig() };
     std::vector<rocksdb::ColumnFamilyHandle*> handles;
     std::unique_ptr<rocksdb::TransactionDB> db{ nullptr };
-    std::shared_ptr<rocksdb::Cache> cache = rocksdb::NewLRUCache( 1024 );
   };
 }
 
