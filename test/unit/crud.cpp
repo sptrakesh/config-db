@@ -2,7 +2,7 @@
 // Created by Rakesh on 24/12/2021.
 //
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include "../../src/lib/db/storage.h"
 
 using namespace std::string_literals;

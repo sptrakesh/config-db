@@ -38,7 +38,7 @@ class Request(object):
             x = self._tab.Vector(o)
             x += flatbuffers.number_types.UOffsetTFlags.py_type(j) * 4
             x = self._tab.Indirect(x)
-            from .spt.configdb.model.KeyValue import KeyValue
+            from spt.configdb.model.KeyValue import KeyValue
             obj = KeyValue()
             obj.Init(self._tab.Bytes, x)
             return obj
@@ -65,19 +65,19 @@ def Start(builder):
 def RequestAddAction(builder, action):
     builder.PrependInt8Slot(0, action, 0)
 
-def AddAction(builder: flatbuffers.Builder, action: int):
+def AddAction(builder, action):
     RequestAddAction(builder, action)
 
 def RequestAddData(builder, data):
     builder.PrependUOffsetTRelativeSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(data), 0)
 
-def AddData(builder: flatbuffers.Builder, data: int):
+def AddData(builder, data):
     RequestAddData(builder, data)
 
 def RequestStartDataVector(builder, numElems):
     return builder.StartVector(4, numElems, 4)
 
-def StartDataVector(builder, numElems: int) -> int:
+def StartDataVector(builder, numElems):
     return RequestStartDataVector(builder, numElems)
 
 def RequestEnd(builder):

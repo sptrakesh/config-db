@@ -50,13 +50,13 @@ def Start(builder):
 def ResponseAddValueType(builder, valueType):
     builder.PrependUint8Slot(0, valueType, 0)
 
-def AddValueType(builder: flatbuffers.Builder, valueType: int):
+def AddValueType(builder, valueType):
     ResponseAddValueType(builder, valueType)
 
 def ResponseAddValue(builder, value):
     builder.PrependUOffsetTRelativeSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(value), 0)
 
-def AddValue(builder: flatbuffers.Builder, value: int):
+def AddValue(builder, value):
     ResponseAddValue(builder, value)
 
 def ResponseEnd(builder):

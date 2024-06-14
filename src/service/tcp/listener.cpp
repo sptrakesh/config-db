@@ -119,7 +119,7 @@ namespace spt::configdb::tcp::plistener
       for ( auto&& kv : *request->data() )
       {
         auto opts = model::RequestData::Options{
-            kv->options()->expiration_in_seconds(), false };
+            kv->options()->expiration_in_seconds(), false, kv->options()->cache() };
         pairs.emplace_back( kv->key()->string_view(), kv->value()->string_view(), opts );
       }
 
@@ -143,7 +143,7 @@ namespace spt::configdb::tcp::plistener
       std::vector<model::RequestData> pairs;
       for ( auto&& kv : *request->data() )
       {
-        auto opts = model::RequestData::Options{ kv->options()->expiration_in_seconds(), false };
+        auto opts = model::RequestData::Options{ kv->options()->expiration_in_seconds(), false, kv->options()->cache() };
         pairs.emplace_back( kv->key()->string_view(), kv->value()->string_view(), opts );
       }
 

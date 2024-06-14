@@ -2,7 +2,7 @@
 // Created by Rakesh on 11/01/2022.
 //
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include "../../src/lib/db/storage.h"
 
 using namespace std::string_literals;
@@ -27,7 +27,7 @@ SCENARIO( "TTL test", "ttl" )
     {
       const auto value = get( key );
       REQUIRE( value );
-      REQUIRE( *value == "value"sv );
+      REQUIRE( *value == "value" );
     }
 
     AND_WHEN( "Getting non-existent TTL for key" )
@@ -64,6 +64,64 @@ SCENARIO( "TTL test", "ttl" )
     {
       const auto status = remove( dest );
       REQUIRE( status );
+    }
+
+    AND_WHEN( "Listing root node" )
+    {
+      CHECK_FALSE( list( "/"sv ) );
+    }
+  }
+
+  GIVEN( "A cache key" )
+  {
+    auto key = "key"sv;
+    auto dest = "key1"sv;
+
+    WHEN( "Setting a key-value pair" )
+    {
+      const auto status = set( RequestData{ key, "value"sv, RequestData::Options{ 60u, false, true } } );
+      REQUIRE( status );
+    }
+
+    AND_WHEN( "Reading the key" )
+    {
+      const auto value = get( key );
+      REQUIRE( value );
+      REQUIRE( *value == "value" );
+    }
+
+    AND_WHEN( "Listing root node" )
+    {
+      CHECK_FALSE( list( "/"sv ) );
+    }
+
+    AND_WHEN( "Getting TTL for key" )
+    {
+      const auto exp = ttl( key );
+      REQUIRE( exp.count() > 0 );
+    }
+
+    AND_WHEN( "Moving key to dest" )
+    {
+      const auto status = move( RequestData{ key, dest, RequestData::Options{ 60u, false, true } } );
+      REQUIRE( status );
+    }
+
+    AND_WHEN( "Getting TTL for dest" )
+    {
+      const auto exp = ttl( dest );
+      REQUIRE( exp.count() > 0 );
+    }
+
+    AND_WHEN( "Listing root node" )
+    {
+      CHECK_FALSE( list( "/"sv ) );
+    }
+
+    AND_WHEN( "Removing the dest" )
+    {
+      CHECK( remove( key ) );
+      CHECK( remove( dest ) );
     }
   }
 }

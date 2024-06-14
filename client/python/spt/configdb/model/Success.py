@@ -40,7 +40,7 @@ def Start(builder):
 def SuccessAddValue(builder, value):
     builder.PrependBoolSlot(0, value, 0)
 
-def AddValue(builder: flatbuffers.Builder, value: bool):
+def AddValue(builder, value):
     SuccessAddValue(builder, value)
 
 def SuccessEnd(builder):

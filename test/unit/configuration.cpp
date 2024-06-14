@@ -2,18 +2,14 @@
 // Created by Rakesh on 12/01/2022.
 //
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <chrono>
 #include <filesystem>
 #include <fstream>
-#include <iostream>
-//#include <set>
 #include <sstream>
 #include <vector>
 
 #include "../../src/common/model/configuration.h"
-//#include "../../src/common/model/tree_generated.h"
-//#include "../../src/lib/cpp-serializer/serialize.h"
 
 namespace spt::configdb::unittest::pconf
 {

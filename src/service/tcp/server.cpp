@@ -140,7 +140,7 @@ namespace spt::configdb::tcp::coroutine
       if ( kv->options() )
       {
         auto opts = model::RequestData::Options{
-            kv->options()->expiration_in_seconds(), kv->options()->if_not_exists() };
+            kv->options()->expiration_in_seconds(), kv->options()->if_not_exists(), kv->options()->cache() };
         pairs.emplace_back( kv->key()->string_view(), kv->value()->string_view(), opts );
       }
       else
@@ -194,7 +194,7 @@ namespace spt::configdb::tcp::coroutine
       if ( kv->options() )
       {
         auto opts = model::RequestData::Options{
-            kv->options()->expiration_in_seconds(), kv->options()->if_not_exists() };
+            kv->options()->expiration_in_seconds(), kv->options()->if_not_exists(), kv->options()->cache() };
         pairs.emplace_back( kv->key()->string_view(), kv->value()->string_view(), opts );
       }
       else

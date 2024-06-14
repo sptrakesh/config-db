@@ -40,8 +40,18 @@ class Options(object):
             return self._tab.Get(flatbuffers.number_types.Uint32Flags, o + self._tab.Pos)
         return 0
 
+    # Treat the value as `cache` (temporary storage).
+    # Cached keys are not added to the tree structure.
+    # If set to `true`, a non-zero `expiration_in_seconds` is required.
+    # Options
+    def Cache(self):
+        o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(8))
+        if o != 0:
+            return bool(self._tab.Get(flatbuffers.number_types.BoolFlags, o + self._tab.Pos))
+        return False
+
 def OptionsStart(builder):
-    builder.StartObject(2)
+    builder.StartObject(3)
 
 def Start(builder):
     OptionsStart(builder)
@@ -49,14 +59,20 @@ def Start(builder):
 def OptionsAddIfNotExists(builder, ifNotExists):
     builder.PrependBoolSlot(0, ifNotExists, 0)
 
-def AddIfNotExists(builder: flatbuffers.Builder, ifNotExists: bool):
+def AddIfNotExists(builder, ifNotExists):
     OptionsAddIfNotExists(builder, ifNotExists)
 
 def OptionsAddExpirationInSeconds(builder, expirationInSeconds):
     builder.PrependUint32Slot(1, expirationInSeconds, 0)
 
-def AddExpirationInSeconds(builder: flatbuffers.Builder, expirationInSeconds: int):
+def AddExpirationInSeconds(builder, expirationInSeconds):
     OptionsAddExpirationInSeconds(builder, expirationInSeconds)
+
+def OptionsAddCache(builder, cache):
+    builder.PrependBoolSlot(2, cache, 0)
+
+def AddCache(builder, cache):
+    OptionsAddCache(builder, cache)
 
 def OptionsEnd(builder):
     return builder.EndObject()
@@ -71,6 +87,7 @@ class OptionsT(object):
     def __init__(self):
         self.ifNotExists = False  # type: bool
         self.expirationInSeconds = 0  # type: int
+        self.cache = False  # type: bool
 
     @classmethod
     def InitFromBuf(cls, buf, pos):
@@ -95,11 +112,13 @@ class OptionsT(object):
             return
         self.ifNotExists = options.IfNotExists()
         self.expirationInSeconds = options.ExpirationInSeconds()
+        self.cache = options.Cache()
 
     # OptionsT
     def Pack(self, builder):
         OptionsStart(builder)
         OptionsAddIfNotExists(builder, self.ifNotExists)
         OptionsAddExpirationInSeconds(builder, self.expirationInSeconds)
+        OptionsAddCache(builder, self.cache)
         options = OptionsEnd(builder)
         return options

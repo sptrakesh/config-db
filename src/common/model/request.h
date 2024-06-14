@@ -14,9 +14,10 @@ namespace spt::configdb::model
     struct Options
     {
       Options() = default;
-      explicit Options( bool ine ) : ifNotExists{ ine } {}
-      explicit Options( uint32_t eis ) : expirationInSeconds{ eis } {}
-      Options( uint32_t eis, bool ine ) : expirationInSeconds{ eis }, ifNotExists{ ine } {}
+      explicit Options( bool ifNotExists ) : ifNotExists{ ifNotExists } {}
+      explicit Options( uint32_t expirationInSeconds ) : expirationInSeconds{ expirationInSeconds } {}
+      Options( uint32_t expirationInSeconds, bool ifNotExists, bool cache = false ) :
+        expirationInSeconds{ expirationInSeconds }, ifNotExists{ ifNotExists }, cache{ cache } {}
 
       ~Options() = default;
       Options(Options&&) = default;
@@ -28,6 +29,8 @@ namespace spt::configdb::model
       uint32_t expirationInSeconds{ 0 };
       // Store only if specified key does not exist
       bool ifNotExists{ false };
+      // Treat value as a cache entry.  Cached entries are not added to the tree model.
+      bool cache{ false };
     };
 
     RequestData( std::string_view k, std::string_view v ) : key{ k }, value{ v } {}

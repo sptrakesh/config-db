@@ -154,7 +154,7 @@ boost::asio::ssl::context SSLConnection::createContext()
 auto BaseConnection::list( std::string_view key ) -> const model::Response*
 {
   auto fb = flatbuffers::FlatBufferBuilder{};
-  auto vec = std::vector<flatbuffers::Offset<model::KeyValue>>{ model::CreateKeyValue( fb, fb.CreateString( key ) ) };
+  auto vec = std::vector{ model::CreateKeyValue( fb, fb.CreateString( key ) ) };
   auto request = CreateRequest( fb, model::Action::List, fb.CreateVector( vec ) );
   fb.Finish( request );
 
@@ -164,7 +164,7 @@ auto BaseConnection::list( std::string_view key ) -> const model::Response*
 auto BaseConnection::get( std::string_view key ) -> const model::Response*
 {
   auto fb = flatbuffers::FlatBufferBuilder{};
-  auto vec = std::vector<flatbuffers::Offset<model::KeyValue>>{ model::CreateKeyValue( fb, fb.CreateString( key ) ) };
+  auto vec = std::vector{ model::CreateKeyValue( fb, fb.CreateString( key ) ) };
   auto request = CreateRequest( fb, model::Action::Get, fb.CreateVector( vec ) );
   fb.Finish( request );
 
@@ -174,8 +174,8 @@ auto BaseConnection::get( std::string_view key ) -> const model::Response*
 auto BaseConnection::set( const model::RequestData& data ) -> const model::Response*
 {
   auto fb = flatbuffers::FlatBufferBuilder{};
-  auto opts = model::CreateOptions( fb, data.options.ifNotExists, data.options.expirationInSeconds );
-  auto vec = std::vector<flatbuffers::Offset<model::KeyValue>>{
+  auto opts = model::CreateOptions( fb, data.options.ifNotExists, data.options.expirationInSeconds, data.options.cache );
+  auto vec = std::vector{
     model::CreateKeyValue( fb, fb.CreateString( data.key ), fb.CreateString( data.value ), opts ) };
   auto request = model::CreateRequest( fb, model::Action::Put, fb.CreateVector( vec ) );
   fb.Finish( request );
@@ -186,7 +186,7 @@ auto BaseConnection::set( const model::RequestData& data ) -> const model::Respo
 auto BaseConnection::remove( std::string_view key ) -> const model::Response*
 {
   auto fb = flatbuffers::FlatBufferBuilder{};
-  auto vec = std::vector<flatbuffers::Offset<model::KeyValue>>{ model::CreateKeyValue( fb, fb.CreateString( key ) ) };
+  auto vec = std::vector{ model::CreateKeyValue( fb, fb.CreateString( key ) ) };
   auto request = CreateRequest( fb, model::Action::Delete, fb.CreateVector( vec ) );
   fb.Finish( request );
 
@@ -196,7 +196,7 @@ auto BaseConnection::remove( std::string_view key ) -> const model::Response*
 auto BaseConnection::move( const model::RequestData& data ) -> const model::Response*
 {
   auto fb = flatbuffers::FlatBufferBuilder{};
-  auto opts = model::CreateOptions( fb, data.options.ifNotExists, data.options.expirationInSeconds );
+  auto opts = model::CreateOptions( fb, data.options.ifNotExists, data.options.expirationInSeconds, data.options.cache );
   auto vec = std::vector<flatbuffers::Offset<model::KeyValue>>{
       model::CreateKeyValue( fb, fb.CreateString( data.key ), fb.CreateString( data.value ), opts ) };
   auto request = CreateRequest( fb, model::Action::Move, fb.CreateVector( vec ) );
@@ -246,7 +246,7 @@ auto BaseConnection::set( const std::vector<model::RequestData>& kvs ) -> const 
   vec.reserve( kvs.size() );
   for ( auto&& data : kvs )
   {
-    auto opts = model::CreateOptions( fb, data.options.ifNotExists, data.options.expirationInSeconds );
+    auto opts = model::CreateOptions( fb, data.options.ifNotExists, data.options.expirationInSeconds, data.options.cache );
     vec.push_back( model::CreateKeyValue( fb, fb.CreateString( data.key ), fb.CreateString( data.value ), opts ) );
   }
   auto request = CreateRequest( fb, model::Action::Put, fb.CreateVector( vec ) );
@@ -274,7 +274,7 @@ auto BaseConnection::move( const std::vector<model::RequestData>& kvs ) -> const
   vec.reserve( kvs.size() );
   for ( auto&& data : kvs )
   {
-    auto opts = model::CreateOptions( fb, data.options.ifNotExists, data.options.expirationInSeconds );
+    auto opts = model::CreateOptions( fb, data.options.ifNotExists, data.options.expirationInSeconds, data.options.cache );
     vec.push_back( model::CreateKeyValue( fb, fb.CreateString( data.key ), fb.CreateString( data.value ), opts ) );
   }
   auto request = CreateRequest( fb, model::Action::Move, fb.CreateVector( vec ) );

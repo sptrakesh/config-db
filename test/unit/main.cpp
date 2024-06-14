@@ -2,9 +2,7 @@
 // Created by Rakesh on 2019-05-16.
 //
 
-#define CATCH_CONFIG_RUNNER
-#include <catch2/catch.hpp>
-#include <boost/json/src.hpp>
+#include <catch2/catch_session.hpp>
 
 #include "../../src/lib/db/storage.h"
 #include "../../src/log/NanoLog.h"

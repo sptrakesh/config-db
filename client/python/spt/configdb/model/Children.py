@@ -53,13 +53,13 @@ def Start(builder):
 def ChildrenAddValue(builder, value):
     builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(value), 0)
 
-def AddValue(builder: flatbuffers.Builder, value: int):
+def AddValue(builder, value):
     ChildrenAddValue(builder, value)
 
 def ChildrenStartValueVector(builder, numElems):
     return builder.StartVector(4, numElems, 4)
 
-def StartValueVector(builder, numElems: int) -> int:
+def StartValueVector(builder, numElems):
     return ChildrenStartValueVector(builder, numElems)
 
 def ChildrenEnd(builder):

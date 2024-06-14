@@ -8,9 +8,9 @@
 
 // Ensure the included flatbuffers.h is the same version as when this file was
 // generated, otherwise it may not be compatible.
-static_assert(FLATBUFFERS_VERSION_MAJOR == 23 &&
-              FLATBUFFERS_VERSION_MINOR == 5 &&
-              FLATBUFFERS_VERSION_REVISION == 26,
+static_assert(FLATBUFFERS_VERSION_MAJOR == 24 &&
+              FLATBUFFERS_VERSION_MINOR == 3 &&
+              FLATBUFFERS_VERSION_REVISION == 25,
              "Non-compatible flatbuffers version included");
 
 namespace spt {
@@ -82,7 +82,8 @@ struct Options FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   }
   enum FlatBuffersVTableOffset FLATBUFFERS_VTABLE_UNDERLYING_TYPE {
     VT_IF_NOT_EXISTS = 4,
-    VT_EXPIRATION_IN_SECONDS = 6
+    VT_EXPIRATION_IN_SECONDS = 6,
+    VT_CACHE = 8
   };
   /// Only set the value if key does not exist.  Can be used as a locking mechanism.
   bool if_not_exists() const {
@@ -92,16 +93,24 @@ struct Options FLATBUFFERS_FINAL_CLASS : private ::flatbuffers::Table {
   uint32_t expiration_in_seconds() const {
     return GetField<uint32_t>(VT_EXPIRATION_IN_SECONDS, 0);
   }
+  /// Treat the value as `cache` (temporary storage).
+  /// Cached keys are not added to the tree structure.
+  /// If set to `true`, a non-zero `expiration_in_seconds` is required.
+  bool cache() const {
+    return GetField<uint8_t>(VT_CACHE, 0) != 0;
+  }
   template<size_t Index>
   auto get_field() const {
          if constexpr (Index == 0) return if_not_exists();
     else if constexpr (Index == 1) return expiration_in_seconds();
+    else if constexpr (Index == 2) return cache();
     else static_assert(Index != Index, "Invalid Field Index");
   }
   bool Verify(::flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<uint8_t>(verifier, VT_IF_NOT_EXISTS, 1) &&
            VerifyField<uint32_t>(verifier, VT_EXPIRATION_IN_SECONDS, 4) &&
+           VerifyField<uint8_t>(verifier, VT_CACHE, 1) &&
            verifier.EndTable();
   }
 };
@@ -115,6 +124,9 @@ struct OptionsBuilder {
   }
   void add_expiration_in_seconds(uint32_t expiration_in_seconds) {
     fbb_.AddElement<uint32_t>(Options::VT_EXPIRATION_IN_SECONDS, expiration_in_seconds, 0);
+  }
+  void add_cache(bool cache) {
+    fbb_.AddElement<uint8_t>(Options::VT_CACHE, static_cast<uint8_t>(cache), 0);
   }
   explicit OptionsBuilder(::flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
@@ -130,9 +142,11 @@ struct OptionsBuilder {
 inline ::flatbuffers::Offset<Options> CreateOptions(
     ::flatbuffers::FlatBufferBuilder &_fbb,
     bool if_not_exists = false,
-    uint32_t expiration_in_seconds = 0) {
+    uint32_t expiration_in_seconds = 0,
+    bool cache = false) {
   OptionsBuilder builder_(_fbb);
   builder_.add_expiration_in_seconds(expiration_in_seconds);
+  builder_.add_cache(cache);
   builder_.add_if_not_exists(if_not_exists);
   return builder_.Finish();
 }
@@ -142,10 +156,11 @@ struct Options::Traits {
   static auto constexpr Create = CreateOptions;
   static constexpr auto name = "Options";
   static constexpr auto fully_qualified_name = "spt.configdb.model.Options";
-  static constexpr size_t fields_number = 2;
+  static constexpr size_t fields_number = 3;
   static constexpr std::array<const char *, fields_number> field_names = {
     "if_not_exists",
-    "expiration_in_seconds"
+    "expiration_in_seconds",
+    "cache"
   };
   template<size_t Index>
   using FieldType = decltype(std::declval<type>().get_field<Index>());
@@ -372,14 +387,16 @@ inline const ::flatbuffers::TypeTable *ActionTypeTable() {
 inline const ::flatbuffers::TypeTable *OptionsTypeTable() {
   static const ::flatbuffers::TypeCode type_codes[] = {
     { ::flatbuffers::ET_BOOL, 0, -1 },
-    { ::flatbuffers::ET_UINT, 0, -1 }
+    { ::flatbuffers::ET_UINT, 0, -1 },
+    { ::flatbuffers::ET_BOOL, 0, -1 }
   };
   static const char * const names[] = {
     "if_not_exists",
-    "expiration_in_seconds"
+    "expiration_in_seconds",
+    "cache"
   };
   static const ::flatbuffers::TypeTable tt = {
-    ::flatbuffers::ST_TABLE, 2, type_codes, nullptr, nullptr, nullptr, names
+    ::flatbuffers::ST_TABLE, 3, type_codes, nullptr, nullptr, nullptr, names
   };
   return &tt;
 }

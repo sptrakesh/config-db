@@ -2,7 +2,7 @@
 // Created by Rakesh on 05/01/2022.
 //
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include "../../src/api/api.h"
 
@@ -113,6 +113,11 @@ SCENARIO( "API Move test", "api-move" )
       const auto keys = std::vector<std::string_view>{ dest1, dest2, dest3, dest4 };
       const auto results = remove( keys );
       REQUIRE( results );
+    }
+
+    AND_WHEN( "Listing the root node" )
+    {
+      REQUIRE_FALSE( list( "/"sv ) );
     }
   }
 }

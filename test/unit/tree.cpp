@@ -1,7 +1,7 @@
 //
 // Created by Rakesh on 27/12/2021.
 //
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include "../../src/lib/db/storage.h"
 
 using namespace std::string_literals;
@@ -57,6 +57,16 @@ SCENARIO( "Tree concept test" )
     {
       const auto children = list( "/"sv );
       REQUIRE_FALSE( children );
+    }
+
+    AND_WHEN( "Caching a key" )
+    {
+      REQUIRE( set( RequestData{ key1, "value1"sv, RequestData::Options{ 1, false, true } } ) );
+      CHECK_FALSE( list( "/"sv ) );
+      const auto value = get( key1 );
+      REQUIRE( value );
+      CHECK( *value == "value1"sv );
+      CHECK( remove( key1 ) );
     }
   }
 
@@ -122,6 +132,16 @@ SCENARIO( "Tree concept test" )
     {
       const auto children = list( "/"sv );
       REQUIRE_FALSE( children );
+    }
+
+    AND_WHEN( "Caching the key" )
+    {
+      REQUIRE( set( RequestData{ key, "value1"sv, RequestData::Options{ 1, false, true } } ) );
+      CHECK_FALSE( list( "/"sv ) );
+      const auto value = get( key );
+      REQUIRE( value );
+      CHECK( *value == "value1"sv );
+      CHECK( remove( key ) );
     }
   }
 

@@ -2,13 +2,13 @@
 // Created by Rakesh on 05/01/2022.
 //
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include "../../src/lib/db/storage.h"
 
-using namespace std::string_literals;
-using namespace std::string_view_literals;
 using namespace spt::configdb::db;
 using spt::configdb::model::RequestData;
+using std::operator ""s;
+using std::operator ""sv;
 
 SCENARIO( "Persistence test", "persistence" )
 {

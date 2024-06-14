@@ -2,7 +2,7 @@
 // Created by Rakesh on 28/12/2021.
 //
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include "../../src/api/api.h"
 
@@ -64,9 +64,14 @@ SCENARIO( "Deep tree test", "[tree]" )
 
     AND_WHEN( "Removing the keys" )
     {
-      const auto keys = std::vector<std::string_view>{ key1, key2, key3, key4 };
+      const auto keys = std::vector{ key1, key2, key3, key4 };
       const auto results = remove( keys );
       REQUIRE( results );
+    }
+
+    AND_WHEN( "Listing the root node" )
+    {
+      REQUIRE_FALSE( list( "/"sv ) );
     }
   }
 }

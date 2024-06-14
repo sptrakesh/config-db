@@ -2,7 +2,7 @@
 // Created by Rakesh on 11/01/2022.
 //
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <iostream>
 #include <thread>
 

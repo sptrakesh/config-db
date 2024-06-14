@@ -76,13 +76,14 @@ class Client:
 
         return kvr.value.value.decode("utf-8")
 
-    async def set(self, key: str, value: str, if_not_exists: bool = False, expiration_in_seconds: int = 0) -> bool:
+    async def set(self, key: str, value: str, if_not_exists: bool = False, expiration_in_seconds: int = 0, cache: bool = False) -> bool:
         kv = _KeyValue.KeyValueT()
         kv.key = key
         kv.value = value
         kv.options = _Options.OptionsT()
         kv.options.ifNotExists = if_not_exists
         kv.options.expirationInSeconds = expiration_in_seconds
+        kv.options.cache = cache
 
         req = _Request.RequestT()
         req.action = _Action.Action.Put
@@ -111,11 +112,12 @@ class Client:
         resp = await self._execute(buf)
         return self._read_success(resp=resp, msg=f"Error deleting key: {key}")
 
-    async def move(self, key: str, dest: str, if_not_exists: bool = False) -> bool:
+    async def move(self, key: str, dest: str, if_not_exists: bool = False, cache: bool = False) -> bool:
         builder = _Builder(256)
 
         _Options.Start(builder)
         _Options.AddIfNotExists(builder, if_not_exists)
+        _Options.AddIfNotExists(builder, cache)
         opts = _Options.End(builder)
 
         ks = builder.CreateString(key)

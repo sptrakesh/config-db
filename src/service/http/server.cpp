@@ -125,9 +125,9 @@ namespace spt::configdb::http::endpoints
       const auto key = boost::algorithm::replace_first_copy( req.uri().path, "/key"sv, ""sv );
 
       auto opts = model::RequestData::Options{};
-      auto iter = req.header().find( "x-config-db-if-not-exists"s );
-      if ( iter != req.header().end() ) opts.ifNotExists = iter->second.value == "true"s;
-      iter = req.header().find( "x-config-db-ttl"s );
+      auto iter = req.header().find( "x-config-db-if-not-exists" );
+      if ( iter != req.header().end() ) opts.ifNotExists = iter->second.value == "true";
+      iter = req.header().find( "x-config-db-ttl" );
       if ( iter != req.header().end() )
       {
         auto sv = std::string_view{ iter->second.value };
@@ -136,8 +136,10 @@ namespace spt::configdb::http::endpoints
         if ( ec != std::errc() )
         {
           LOG_WARN << "Invalid TTL: " << sv;
-        } else opts.expirationInSeconds = ttl;
+        } else opts.expirationInSeconds = static_cast<uint32_t>( ttl );
       }
+      iter = req.header().find( "x-config-db-cache" );
+      if ( iter != req.header().end() ) opts.cache = iter->second.value == "true";
 
       const auto rd = model::RequestData{ key, *body, opts };
       if ( const auto result = db::set( rd ); result )
@@ -151,7 +153,7 @@ namespace spt::configdb::http::endpoints
       }
 
       LOG_WARN << "Error saving " << key;
-      write( 412, R"({"code": 412, "cause": "Unable to save"})"s, res );
+      return write( 412, R"({"code": 412, "cause": "Unable to save"})"s, res );
     } );
   }
 

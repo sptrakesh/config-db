@@ -40,7 +40,7 @@ def Start(builder):
 def ValueAddValue(builder, value):
     builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(value), 0)
 
-def AddValue(builder: flatbuffers.Builder, value: int):
+def AddValue(builder, value):
     ValueAddValue(builder, value)
 
 def ValueEnd(builder):

@@ -58,13 +58,13 @@ def Start(builder):
 def KeyValueResultsAddValue(builder, value):
     builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(value), 0)
 
-def AddValue(builder: flatbuffers.Builder, value: int):
+def AddValue(builder, value):
     KeyValueResultsAddValue(builder, value)
 
 def KeyValueResultsStartValueVector(builder, numElems):
     return builder.StartVector(4, numElems, 4)
 
-def StartValueVector(builder, numElems: int) -> int:
+def StartValueVector(builder, numElems):
     return KeyValueResultsStartValueVector(builder, numElems)
 
 def KeyValueResultsEnd(builder):

@@ -43,7 +43,7 @@ class KeyValue(object):
         o = flatbuffers.number_types.UOffsetTFlags.py_type(self._tab.Offset(8))
         if o != 0:
             x = self._tab.Indirect(o + self._tab.Pos)
-            from .spt.configdb.model.Options import Options
+            from spt.configdb.model.Options import Options
             obj = Options()
             obj.Init(self._tab.Bytes, x)
             return obj
@@ -58,19 +58,19 @@ def Start(builder):
 def KeyValueAddKey(builder, key):
     builder.PrependUOffsetTRelativeSlot(0, flatbuffers.number_types.UOffsetTFlags.py_type(key), 0)
 
-def AddKey(builder: flatbuffers.Builder, key: int):
+def AddKey(builder, key):
     KeyValueAddKey(builder, key)
 
 def KeyValueAddValue(builder, value):
     builder.PrependUOffsetTRelativeSlot(1, flatbuffers.number_types.UOffsetTFlags.py_type(value), 0)
 
-def AddValue(builder: flatbuffers.Builder, value: int):
+def AddValue(builder, value):
     KeyValueAddValue(builder, value)
 
 def KeyValueAddOptions(builder, options):
     builder.PrependUOffsetTRelativeSlot(2, flatbuffers.number_types.UOffsetTFlags.py_type(options), 0)
 
-def AddOptions(builder: flatbuffers.Builder, options: int):
+def AddOptions(builder, options):
     KeyValueAddOptions(builder, options)
 
 def KeyValueEnd(builder):

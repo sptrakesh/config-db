@@ -2,7 +2,7 @@
 // Created by Rakesh on 05/01/2022.
 //
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include "../../src/api/api.h"
 
@@ -138,6 +138,11 @@ SCENARIO( "API Batch test", "api-batch" )
 
       REQUIRE( std::get<0>( results[3] ) == paths[3] );
       REQUIRE_FALSE( std::get<1>( results[3] ) );
+    }
+
+    AND_WHEN( "Listing the root node" )
+    {
+      REQUIRE_FALSE( list( "/"sv ) );
     }
   }
 }

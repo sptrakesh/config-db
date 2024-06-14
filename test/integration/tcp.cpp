@@ -2,7 +2,7 @@
 // Created by Rakesh on 25/12/2021.
 //
 
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include "../../src/api/api.h"
 #include "../../src/log/NanoLog.h"

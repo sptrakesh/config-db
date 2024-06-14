@@ -9,6 +9,10 @@ table Options
   if_not_exists:bool = false;
   /// Expire key after specified number of seconds.  Default value of 0 indicates no expiration.
   expiration_in_seconds:uint32 = 0;
+  /// Treat the value as `cache` (temporary storage).
+  /// Cached keys are not added to the tree structure.
+  /// If set to `true`, a non-zero `expiration_in_seconds` is required.
+  cache:bool = false;
 }
 
 // For Move, specify the destination key as the value

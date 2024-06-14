@@ -18,7 +18,6 @@
 
 #include <boost/lexical_cast.hpp>
 #include <boost/asio/signal_set.hpp>
-#include <boost/json/src.hpp>
 
 void loadConfig( int argc, char const * const * argv )
 {
@@ -32,7 +31,7 @@ void loadConfig( int argc, char const * const * argv )
       Opt(file, "/tmp/configdb.json")["-f"]["--config-file"]("The JSON configuration file to load.  All other options are ignored.") |
       Opt(peers, "confdb1:2020,confdb2:2020")["-z"]["--peers"]("Comma separated list of peers to listen to for notifications.") |
       Opt(conf.logging.console)["-c"]["--console"]("Log to console (default false)") |
-      Opt(conf.services.http, "6000")["-p"]["--http-port"]("Port on which to listen for http/2 traffic.  Specify 0 to disable (default 6020)") |
+      Opt(conf.services.http, "6020")["-p"]["--http-port"]("Port on which to listen for http/2 traffic.  Specify 0 to disable (default 6020)") |
       Opt(conf.services.tcp, "2020")["-t"]["--tcp-port"]("Port on which to listen for tcp traffic (default 2020)") |
       Opt(conf.services.notify, "2120")["-b"]["--notify-port"]("Port on which to publish notifications (default 2120)") |
       Opt(conf.ssl.enable)["-s"]["--with-ssl"]("Enable SSL wrappers for services (default false)") |

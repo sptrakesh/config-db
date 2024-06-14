@@ -12,7 +12,6 @@
 #include <filesystem>
 #include <fstream>
 #include <vector>
-#include <boost/json/src.hpp>
 
 int main( int argc, char const * const * argv )
 {

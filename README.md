@@ -100,7 +100,7 @@ the configuration data.
 as the desired *key* within the configuration database.  This is used to
 retrieve child node names for the specified path.
 
-See [example](test/integration/curl.sh) for sample HTTP requests and responses.
+See [shell](test/integration/curl.sh) and/or [cpr](test/integration/http.cpp) for sample HTTP requests and responses.
 
 #### Custom headers
 Request options as defined in the flatbuffers schema can be specified using
@@ -110,6 +110,8 @@ custom HTTP headers when making request to the HTTP/2 service.
   are interpreted as `false`.  See the `PutNotExists` function in the example.
 * `x-config-db-ttl` - Use to specify the `expiration_in_seconds` property.  Must
   be a numeric value, and represent the expiration from current time in *seconds*.
+* `x-config-db-cache` - Use to specify the `cache` property. A value of `true` is 
+  interpreted as the boolean value `true`.  Any other values are interpreted as `false`.
 
 **Note:** The HTTP service does not support batch (multiple *key*) operations.
 
@@ -199,6 +201,10 @@ be omitted for all actions other than `Put`.
       serves as the destination *key*.
     * **expiration_in_seconds** - TTL in seconds from request time.  The *key* will
       be automatically deleted by the system after the specified time has elapsed.
+    * **cache** - Indicate that the *key-value* pair is to be treated as a *cache* entry.
+      Cached keys are maintained in the *tree* structure, and are meant to be used purely
+      as temporary values that can be looked up by *unique* key.  Cached keys **must** have
+      a TTL.
 
 ### Response
 The [response](src/common/model/response.fbs) message contains either the *value*
