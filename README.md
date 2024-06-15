@@ -41,6 +41,28 @@ list the child node names under each level in the hierarchy.
 **Note:** When listing child node names, the full path of the parent *has* to
 be specified.  Relative path names are not supported.
 
+## Implementation
+Key-value pairs are stored in a RocksDB column family.  A few addition column families are
+used to provide support for additional features provided.
+* **data** - The main column family used to store the *key->value* mapping.  The *value* is
+  stored encrypted.
+* **forrest** - The column family used to store the *tree* hierarchy.
+* **expiration** - The column family used to store TTL values for expiring keys.
+* **expiring** - The column family used to efficiently determine expired keys.  The TTL value
+  (along with a value for disambiguation) is stored as the *key* and the data *key* is stored
+  as the *value* in this column.  RocksDB keys are stored sorted, hence using the expiration
+  time as the *key* allows for efficiently breaking from the loop when the first non-expired
+  key is encountered.  A custom *iterator* is used to retrieve only the *expired* keys from
+  this column.
+* **cache** - The column family used to indicate that the specified *key* is stored as
+  a *cache* entry.
+
+### Peering
+Each instance is designed to run independently.  It is possible to configure instances
+to run as a *co-ordinated cluster* by configuring *peers* for each instance.  There is
+no complicated leadership election process/protocol using **Raft** or similar consensus
+algorithms.  Commands received by each node is relayed to peers.  This helps all nodes
+in the cluster remain in sync with each other eventually.
 
 ## Commands
 The following *actions/commands* are supported by the service:
@@ -62,8 +84,7 @@ The following *actions/commands* are supported by the service:
 
 ## Protocols
 Service supports both TCP/IP and HTTP/2 connections.  The TCP service uses
-[flatbuffers](https://google.github.io/flatbuffers/) as the data interchange
-format, while the HTTP/2 service uses JSON.
+[flatbuffers](https://google.github.io/flatbuffers/) as the data interchange format, while the HTTP/2 service uses JSON.
 
 The models were generated from the schema files using the following command:
 
@@ -654,10 +675,10 @@ docker run -d --rm -p 6020:6020 -p 2022:2020 \
   --name config-db config-db
 ```
 
-
 ### Notifications
 A notification system is available when services are run in a cluster.  There
-is no cluster management/coordination at present.  *Peer* instances are
+is no complicated leadership election process (using Raft or similar) for cluster 
+management/coordination.  Each node is designed to run *stand-alone*.  *Peer* instances are
 assumed to run independently (multi-master setup).  A simple notification system
 has been implemented which will attempt to keep the independent nodes in sync.
 Notifications are primarily useful when using a cluster of instances that are
@@ -706,18 +727,13 @@ bit keys, it takes about `1.3s`.
 ## Acknowledgements
 The following components are used to build this software:
 * **[RocksDB](http://rocksdb.org/)** - The database used to persist configuration.
-* **[OpenSSL](https://www.openssl.org/)** - For AES encryption of the values 
-  stored in the database.
-* **[Boost](https://github.com/boostorg/boost)** - In particular **Asio** for the
-  `TCP socket` server implementation.
+* **[OpenSSL](https://www.openssl.org/)** - For AES encryption of the values stored in the database.
+* **[Boost](https://github.com/boostorg/boost)** - In particular **Asio** for the `TCP socket` server implementation.
 * **[nghttp2](https://www.nghttp2.org/)** - for the HTTP/2 server implementation.
-* **[flatbuffers](https://google.github.io/flatbuffers)** - The data interchange
-  format for client-server TCP/IP interactions.
-* **[nano-signal-slot](https://github.com/NoAvailableAlias/nano-signal-slot)** - 
-  Thread safe signal-slot library.
-* **[concurrentqueue](https://github.com/cameron314/concurrentqueue)** - Lock
-  free concurrent queue implementation for notifications.
-* **[NanoLog](https://github.com/Iyengar111/NanoLog)** - Logging framework used
-  for the server.  I modified the implementation for daily rolling log files.
+* **[flatbuffers](https://google.github.io/flatbuffers)** - The data interchange format for client-server TCP/IP interactions.
+* **[nano-signal-slot](https://github.com/NoAvailableAlias/nano-signal-slot)** - Thread safe signal-slot library.
+* **[concurrentqueue](https://github.com/cameron314/concurrentqueue)** - Lock free concurrent queue implementation for notifications.
+* **[NanoLog](https://github.com/Iyengar111/NanoLog)** - Logging framework used for the server.  I modified the implementation for daily rolling log files.
 * **[Clara](https://github.com/catchorg/Clara)** - Command line options parser.
 * **[Catch2](https://github.com/catchorg/Catch2)** - Testing framework.
+* **[cpr](https://github.com/libcpr/cpr)** - HTTP client library for integration test.

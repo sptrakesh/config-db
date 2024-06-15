@@ -2,6 +2,8 @@
 // Created by Rakesh on 11/01/2022.
 //
 
+#include <iostream>
+#include <thread>
 #include <catch2/catch_test_macros.hpp>
 #include "../../src/lib/db/storage.h"
 
@@ -58,6 +60,16 @@ SCENARIO( "TTL test", "ttl" )
     {
       const auto exp = ttl( dest );
       REQUIRE( exp.count() > 0 );
+    }
+
+    AND_WHEN( "Reading the key after 5 seconds" )
+    {
+      std::cout << "Sleeping 5s to ensure we can read TTL key\n";
+      std::this_thread::sleep_for( std::chrono::seconds{ 5 } );
+
+      const auto value = get( dest );
+      REQUIRE( value );
+      REQUIRE( *value == "value" );
     }
 
     AND_WHEN( "Removing the dest" )

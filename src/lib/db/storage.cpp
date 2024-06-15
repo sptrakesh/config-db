@@ -445,7 +445,6 @@ namespace
           auto now = std::chrono::high_resolution_clock::now();
           auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>( now.time_since_epoch() ).count();
           limit = std::to_string( ns );
-          lv = limit;
           slice = rocksdb::Slice{ limit };
 
           auto opts = rocksdb::ReadOptions{};
@@ -465,13 +464,16 @@ namespace
 
       private:
         std::string limit;
-        std::string_view lv;
         rocksdb::Slice slice;
         std::unique_ptr<rocksdb::Iterator> it;
       };
 
       void clearExpired( const std::atomic_bool& stop )
       {
+        const auto now = std::chrono::high_resolution_clock::now();
+        const auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>( now.time_since_epoch() ).count();
+        auto ts = std::to_string( ns );
+
         auto txn = db->BeginTransaction( rocksdb::WriteOptions{} );
         auto it = IteratorHolder{ *db, handles[4] };
 
@@ -592,14 +594,21 @@ namespace
         }
 
         LOG_INFO << "Setting key " << ks;
-        if ( const auto s = txn->Put( handles[1], rocksdb::Slice{ ks }, rocksdb::Slice{ v } );
-            !s.ok() )
+        if ( const auto s = txn->Put( handles[1], rocksdb::Slice{ ks }, rocksdb::Slice{ v } ); !s.ok() )
         {
           LOG_WARN << "Error setting key " << key << ". " << s.ToString();
           return rollback();
         }
 
-        if ( !opts.cache && !manageTree( ks, txn ) )
+        if ( opts.cache )
+        {
+          if ( const auto s = txn->Put( handles[5], rocksdb::Slice{ ks }, rocksdb::Slice{ "1" } ); !s.ok() )
+          {
+            LOG_WARN << "Error setting key " << key << " in cache column family. " << s.ToString();
+            return rollback();
+          }
+        }
+        else if ( !manageTree( ks, txn ) )
         {
           LOG_WARN << "Error managing tree for key " << key;
           return rollback();
@@ -769,7 +778,16 @@ namespace
           return rollback();
         }
 
-        if ( !removeChild( ks, txn ) )
+        std::string value;
+        if ( const auto s = db->Get( rocksdb::ReadOptions{}, handles[5], rocksdb::Slice{ ks }, &value ); s.ok() )
+        {
+          if ( const auto st = txn->Delete( handles[5], rocksdb::Slice{ ks } ); !s.ok() )
+          {
+            LOG_WARN << "Error removing key " << key << " from cache entries column. " << s.ToString();
+            return rollback();
+          }
+        }
+        else if ( !removeChild( ks, txn ) )
         {
           LOG_WARN << "Error managing tree after removing key " << key;
           return rollback();
@@ -963,14 +981,19 @@ namespace
         }
 
         std::string value;
-        if ( const auto s = txn->Get( rocksdb::ReadOptions{}, handles[1], rocksdb::Slice{ ks }, &value );
-            !s.ok() )
+        if ( const auto s = txn->Get( rocksdb::ReadOptions{}, handles[1], rocksdb::Slice{ ks }, &value ); !s.ok() )
         {
           if ( s.IsNotFound() ) LOG_WARN << "Key " << ks << " not found.";
           else LOG_WARN << "Error retrieving key " << ks << ". " << s.ToString();
           return false;
         }
         value = ( *encrypter )->decrypt( value );
+
+        std::string cvalue;
+        if ( const auto s = txn->Get( rocksdb::ReadOptions{}, handles[5], rocksdb::Slice{ ks }, &cvalue ); !s.ok() )
+        {
+          LOG_DEBUG << "Key " << ks << " not cache key.";
+        }
 
         std::chrono::seconds exp{ opts.expirationInSeconds };
         if ( opts.expirationInSeconds == 0 )
@@ -994,7 +1017,7 @@ namespace
         auto nopts = model::RequestData::Options{};
         nopts.ifNotExists = opts.ifNotExists;
         nopts.expirationInSeconds = static_cast<uint32_t>( exp.count() );
-        nopts.cache = opts.cache;
+        nopts.cache = cvalue.empty() ? opts.cache : true;
         if ( const auto s = set( ds, value, nopts, txn ); !s )
         {
           if ( const auto st = txn->Rollback(); !st.ok() )
@@ -1012,7 +1035,7 @@ namespace
         auto& conf = model::Configuration::instance();
 
         auto cfopts = rocksdb::ColumnFamilyOptions{};
-        cfopts.prefix_extractor.reset( rocksdb::NewFixedPrefixTransform( 8 ) );
+        cfopts.prefix_extractor.reset( rocksdb::NewFixedPrefixTransform( 4 ) );
         cfopts.table_factory.reset( rocksdb::NewPlainTableFactory() );
         cfopts.OptimizeForPointLookup( conf.storage.blockCacheSizeMb );
         cfopts.level_compaction_dynamic_level_bytes = true;
@@ -1023,7 +1046,8 @@ namespace
             { "data"s, cfopts },
             { "forrest"s, cfopts },
             { "expiration"s, cfopts },
-            { "expiring"s, rocksdb::ColumnFamilyOptions{} }
+            { "expiring"s, cfopts },
+            { "cache"s, cfopts }
         };
 
         handles.reserve( families.size() );
