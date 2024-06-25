@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.2 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 
 if (POLICY CMP0079)
   cmake_policy(SET CMP0079 NEW)
@@ -24,8 +24,8 @@ if (WIN32)
   set(ROCKSDB_ROOT "/opt/src/vcpkg/packages/rocksdb_arm64-windows" CACHE STRING "Where rocksdb is installed by vcpkg")
 endif(WIN32)
 
-# Enable C++20 features (coroutine)
-set(CMAKE_CXX_STANDARD 20)
+# Enable C++23 features
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if (NOT CMAKE_BUILD_TYPE)

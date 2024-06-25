@@ -485,7 +485,7 @@ auto spt::configdb::api::ttl( const std::vector<std::string_view>& keys ) -> std
     {
       auto rv = r->value_as<model::Value>();
       auto sv = rv->value()->string_view();
-      uint64_t v;
+      uint64_t v{ 0 };
       auto [p, ec] = std::from_chars( sv.data(), sv.data() + sv.size(), v );
       if ( ec != std::errc() )
       {

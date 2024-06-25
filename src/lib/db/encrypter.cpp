@@ -60,7 +60,7 @@ std::string Encrypter::encrypt( std::string_view value )
     {
       LOG_WARN << "EVP_EncryptFinal() failed!";
       printError();
-      return nullptr;
+      return {};
     }
 
     outlen += templen;
@@ -102,7 +102,7 @@ std::string Encrypter::decrypt( std::string_view sec )
     {
       LOG_WARN << "EVP_DecryptUpdate() failed!";
       printError();
-      return nullptr;
+      return {};
     }
 
     int templen;
@@ -110,7 +110,7 @@ std::string Encrypter::decrypt( std::string_view sec )
     {
       LOG_WARN << "EVP_DecryptFinal() failed!";
       printError();
-      return nullptr;
+      return {};
     }
 
     outlen += templen;
