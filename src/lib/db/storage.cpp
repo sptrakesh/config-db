@@ -84,13 +84,14 @@ namespace
         }
 
         std::string value;
-
-        if ( const auto s = db->Get( rocksdb::ReadOptions{}, handles[1],
-              rocksdb::Slice{ ks }, &value );
-            !s.ok() )
         {
-          LOG_WARN << "Error retrieving key [" << key << "]. " << s.ToString();
-          return std::nullopt;
+          auto lock = std::shared_lock( mutex );
+          if ( const auto s = db->Get( rocksdb::ReadOptions{}, handles[1],
+                rocksdb::Slice{ ks }, &value ); !s.ok() )
+          {
+            LOG_WARN << "Error retrieving key [" << key << "]. " << s.ToString();
+            return std::nullopt;
+          }
         }
 
         auto encrypter = pool.acquire();
@@ -119,8 +120,9 @@ namespace
           return false;
         }
 
-        auto txn = db->BeginTransaction( rocksdb::WriteOptions{} );
-        if ( const auto saved = set( data.key, data.value, data.options, txn ); !saved ) return saved;
+        auto lock = std::unique_lock( mutex );
+        auto txn = std::unique_ptr<rocksdb::Transaction>( db->BeginTransaction( rocksdb::WriteOptions{} ) );
+        if ( const auto saved = set( data.key, data.value, data.options, txn.get() ); !saved ) return saved;
 
         if ( const auto s = txn->Commit(); !s.ok() )
         {
@@ -139,8 +141,9 @@ namespace
           return false;
         }
 
-        auto txn = db->BeginTransaction( rocksdb::WriteOptions{} );
-        if ( const auto s = remove( key, txn ); !s ) return s;
+        auto lock = std::unique_lock( mutex );
+        auto txn = std::unique_ptr<rocksdb::Transaction>( db->BeginTransaction( rocksdb::WriteOptions{} ) );
+        if ( const auto s = remove( key, txn.get() ); !s ) return s;
         if ( const auto s = txn->Commit(); !s.ok() )
         {
           LOG_WARN << "Error removing key [" << key << "]. " << s.ToString();
@@ -158,8 +161,15 @@ namespace
           return false;
         }
 
-        auto txn = db->BeginTransaction( rocksdb::WriteOptions{} );
-        if ( const auto s = move( data.key, data.value, data.options, txn ); !s ) return s;
+        if ( data.value.empty() )
+        {
+          LOG_INFO << "Rejecting request for empty destination key";
+          return false;
+        }
+
+        auto lock = std::unique_lock( mutex );
+        auto txn = std::unique_ptr<rocksdb::Transaction>( db->BeginTransaction( rocksdb::WriteOptions{} ) );
+        if ( const auto s = move( data.key, data.value, data.options, txn.get() ); !s ) return s;
 
         if ( const auto s = txn->Commit(); !s.ok() )
         {
@@ -174,6 +184,7 @@ namespace
       {
         auto ks = getKey( key );
         std::string value;
+        auto lock = std::shared_lock( mutex );
         if ( const auto s = db->Get( rocksdb::ReadOptions{}, handles[3], rocksdb::Slice{ ks }, &value ); s.ok() )
         {
           return parseTTL( value );
@@ -191,25 +202,19 @@ namespace
         }
 
         auto ks = getKey( key );
+        auto lock = std::shared_lock( mutex );
         std::string value;
-        if ( const auto s = db->Get( rocksdb::ReadOptions{}, handles[2],
-              rocksdb::Slice{ ks }, &value );
-            s.ok() )
+        if ( const auto s = db->Get( rocksdb::ReadOptions{}, handles[2], rocksdb::Slice{ ks }, &value ); s.ok() )
         {
           const auto d = reinterpret_cast<const uint8_t*>( value.data() );
-          auto response = model::GetNode( d );
-
-          if ( response )
+          if ( auto response = model::GetNode( d ); response )
           {
             auto vec = std::vector<std::string>{};
             vec.reserve( response->children()->size() + 1 );
             for ( const auto& child : *response->children() ) vec.push_back( child->str() );
             return vec;
           }
-          else
-          {
-            LOG_CRIT << "Error marshalling buffer for path " << key;
-          }
+          LOG_CRIT << "Error marshalling buffer for path " << key;
         }
         else
         {
@@ -267,8 +272,11 @@ namespace
         std::vector<rocksdb::Status> statuses;
         statuses.resize( keys.size() );
 
-        db->MultiGet( rocksdb::ReadOptions{}, handles[1], keys.size(),
-            keys.data(), values.data(), statuses.data() );
+        {
+          auto lock = std::shared_lock( mutex );
+          db->MultiGet( rocksdb::ReadOptions{}, handles[1], keys.size(),
+              keys.data(), values.data(), statuses.data() );
+        }
 
         for ( std::size_t i = 0; i < keys.size(); ++i )
         {
@@ -291,11 +299,12 @@ namespace
 
       bool set( const std::vector<model::RequestData>& kvs )
       {
-        auto txn = db->BeginTransaction( rocksdb::WriteOptions{} );
+        auto lock = std::unique_lock( mutex );
+        auto txn = std::unique_ptr<rocksdb::Transaction>( db->BeginTransaction( rocksdb::WriteOptions{} ) );
 
         for ( const auto& data : kvs )
         {
-          if ( const auto s = set( data.key, data.value, data.options, txn ); !s )
+          if ( const auto s = set( data.key, data.value, data.options, txn.get() ); !s )
           {
             LOG_WARN << "Error setting key " << data.key;
             return s;
@@ -313,11 +322,12 @@ namespace
 
       bool remove( const std::vector<std::string_view>& keys )
       {
-        auto txn = db->BeginTransaction( rocksdb::WriteOptions{} );
+        auto lock = std::unique_lock( mutex );
+        auto txn = std::unique_ptr<rocksdb::Transaction>( db->BeginTransaction( rocksdb::WriteOptions{} ) );
 
         for ( const auto& key : keys )
         {
-          if ( const auto s = remove( key, txn ); !s )
+          if ( const auto s = remove( key, txn.get() ); !s )
           {
             LOG_WARN << "Error removing key " << key;
             return s;
@@ -335,11 +345,12 @@ namespace
 
       bool move( const std::vector<model::RequestData>& kvs )
       {
-        auto txn = db->BeginTransaction( rocksdb::WriteOptions{} );
+        auto lock = std::unique_lock( mutex );
+        auto txn = std::unique_ptr<rocksdb::Transaction>( db->BeginTransaction( rocksdb::WriteOptions{} ) );
 
         for ( const auto& data : kvs )
         {
-          if ( const auto s = move( data.key, data.value, data.options, txn ); !s )
+          if ( const auto s = move( data.key, data.value, data.options, txn.get() ); !s )
           {
             LOG_WARN << "Error moving key " << data.key << " to destination " << data.value;
             return s;
@@ -366,8 +377,11 @@ namespace
 
         values.resize( keys.size() );
         statuses.resize( keys.size() );
-        db->MultiGet( rocksdb::ReadOptions{}, handles[3], keys.size(),
-            keys.data(), values.data(), statuses.data() );
+        {
+          auto lock = std::shared_lock( mutex );
+          db->MultiGet( rocksdb::ReadOptions{}, handles[3], keys.size(),
+              keys.data(), values.data(), statuses.data() );
+        }
 
         std::vector<TTLPair> result;
         result.reserve( vec.size() );
@@ -401,8 +415,11 @@ namespace
 
         values.resize( keys.size() );
         statuses.resize( keys.size() );
-        db->MultiGet( rocksdb::ReadOptions{}, handles[2], keys.size(),
-            keys.data(), values.data(), statuses.data() );
+        {
+          auto lock = std::shared_lock( mutex );
+          db->MultiGet( rocksdb::ReadOptions{}, handles[2], keys.size(),
+              keys.data(), values.data(), statuses.data() );
+        }
 
         std::vector<NodePair> result;
         result.reserve( vec.size() );
@@ -474,7 +491,8 @@ namespace
         const auto ns = std::chrono::duration_cast<std::chrono::nanoseconds>( now.time_since_epoch() ).count();
         auto ts = std::to_string( ns );
 
-        auto txn = db->BeginTransaction( rocksdb::WriteOptions{} );
+        auto lock = std::unique_lock( mutex );
+        auto txn = std::unique_ptr<rocksdb::Transaction>( db->BeginTransaction( rocksdb::WriteOptions{} ) );
         auto it = IteratorHolder{ *db, handles[4] };
 
         std::vector<std::tuple<std::string,std::string>> keys;
@@ -492,7 +510,7 @@ namespace
         for ( const auto& [key, value] : keys )
         {
           LOG_INFO << "Removing expired key " << value;
-          if ( remove( value, txn, false ) )
+          if ( remove( value, txn.get(), false ) )
           {
             ++count;
 
@@ -1096,6 +1114,7 @@ namespace
       pool::Pool<Encrypter> pool{ create, poolConfig() };
       std::vector<rocksdb::ColumnFamilyHandle*> handles;
       std::unique_ptr<rocksdb::TransactionDB> db{ nullptr };
+      std::shared_mutex mutex;
     };
   }
 }

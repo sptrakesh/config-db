@@ -18,6 +18,8 @@ namespace spt::configdb::model
       explicit Options( uint32_t expirationInSeconds ) : expirationInSeconds{ expirationInSeconds } {}
       Options( uint32_t expirationInSeconds, bool ifNotExists, bool cache = false ) :
         expirationInSeconds{ expirationInSeconds }, ifNotExists{ ifNotExists }, cache{ cache } {}
+      Options( std::chrono::seconds expiration, bool ifNotExists, bool cache = false ) :
+        expirationInSeconds{ static_cast<uint32_t>( expiration.count() ) }, ifNotExists{ ifNotExists }, cache{ cache } {}
 
       ~Options() = default;
       Options(Options&&) = default;

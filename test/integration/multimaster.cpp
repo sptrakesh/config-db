@@ -33,7 +33,7 @@ namespace spt::configdb::itest::mmaster
       g.terminate( ec );
       if ( ec ) LOG_CRIT << "Error terminating processes group. " << ec.message();
 
-      for ( auto&& c : children ) c.wait();
+      for ( auto& c : children ) c.wait();
       auto path = std::filesystem::path{ "/tmp/configdb" };
       std::filesystem::remove_all( path, ec );
       if ( ec ) LOG_CRIT << "Error deleting directory tree. " << ec.message();
@@ -311,7 +311,7 @@ SCENARIO( "Multi-master cluster test", "multi-master" )
       REQUIRE( v->value()->string_view() == updated );
     }
 
-    AND_WHEN( "Deleting key on first server" )
+    AND_WHEN( "Deleting dest key on first server" )
     {
       auto c = Connection{ "localhost"sv, "2023"sv };
       auto response = c.remove( dest );
@@ -322,7 +322,7 @@ SCENARIO( "Multi-master cluster test", "multi-master" )
       sleep();
     }
 
-    AND_WHEN( "Reading deleted key on second server" )
+    AND_WHEN( "Reading deleted dest key on second server" )
     {
       auto c = Connection{ "localhost"sv, "2024"sv };
       auto response = c.get( dest );
@@ -335,7 +335,7 @@ SCENARIO( "Multi-master cluster test", "multi-master" )
       REQUIRE_FALSE( v->value() );
     }
 
-    AND_WHEN( "Reading deleted key on third server" )
+    AND_WHEN( "Reading deleted dest key on third server" )
     {
       auto c = Connection{ "localhost"sv, "2025"sv };
       auto response = c.get( dest );
@@ -424,7 +424,7 @@ SCENARIO( "Multi-master cluster test", "multi-master" )
     AND_WHEN( "Deleting key on third server" )
     {
       auto c = Connection{ "localhost"sv, "2025"sv };
-      auto response = c.remove( dest );
+      auto response = c.remove( key );
       REQUIRE( response );
       REQUIRE( response->value_type() == ResultVariant::Success );
       auto resp = response->value_as<Success>();
@@ -435,7 +435,7 @@ SCENARIO( "Multi-master cluster test", "multi-master" )
     AND_WHEN( "Reading deleted key on first server" )
     {
       auto c = Connection{ "localhost"sv, "2023"sv };
-      auto response = c.get( dest );
+      auto response = c.get( key );
       REQUIRE( response );
       REQUIRE( response->value_type() == ResultVariant::KeyValueResults );
       auto resp = response->value_as<KeyValueResults>();
@@ -448,7 +448,7 @@ SCENARIO( "Multi-master cluster test", "multi-master" )
     AND_WHEN( "Reading deleted key on second server" )
     {
       auto c = Connection{ "localhost"sv, "2024"sv };
-      auto response = c.get( dest );
+      auto response = c.get( key );
       REQUIRE( response );
       REQUIRE( response->value_type() == ResultVariant::KeyValueResults );
       auto resp = response->value_as<KeyValueResults>();
