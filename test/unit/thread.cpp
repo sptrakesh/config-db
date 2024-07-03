@@ -8,6 +8,8 @@
 #include <thread>
 
 #include <catch2/catch_test_macros.hpp>
+
+#include "../../src/common/model/configuration.h"
 #include "../../src/lib/db/storage.h"
 
 using spt::configdb::model::RequestData;
@@ -113,39 +115,42 @@ SCENARIO( "Multi-threaded test", "thread" )
   {
     WHEN( "Spawning threaded requests to database" )
     {
-      const std::size_t nthreads = 8;
-      std::mutex mutex;
-      std::vector<std::thread> threads;
-      threads.reserve( nthreads );
-      std::vector<test::pthread::Result> results;
-      results.reserve( nthreads );
-
-      for ( auto i = 0ul; i < nthreads; ++i )
+      if ( spt::configdb::model::Configuration::instance().storage.useMutex )
       {
-        threads.emplace_back( [&results, &mutex]()
+        const std::size_t nthreads = 8;
+        std::mutex mutex;
+        std::vector<std::thread> threads;
+        threads.reserve( nthreads );
+        std::vector<test::pthread::Result> results;
+        results.reserve( nthreads );
+
+        for ( auto i = 0ul; i < nthreads; ++i )
         {
-          auto runner = test::pthread::Crud{};
-          auto result = runner.run();
-          auto lg = std::lock_guard{ mutex };
-          results.push_back( result );
-        } );
-      }
+          threads.emplace_back( [&results, &mutex]()
+          {
+            auto runner = test::pthread::Crud{};
+            auto result = runner.run();
+            auto lg = std::lock_guard{ mutex };
+            results.push_back( result );
+          } );
+        }
 
-      for ( auto& thread : threads ) if ( thread.joinable() ) thread.join();
+        for ( auto& thread : threads ) if ( thread.joinable() ) thread.join();
 
-      for ( auto i = 0ul; i < nthreads; ++i )
-      {
-        INFO( std::format( "Checking thread {}", i ) );
-        const auto& result = results[i];
-        CHECK( result.create );
-        CHECK( result.get );
-        CHECK( result.list );
-        CHECK( result.update );
-        CHECK( result.move );
-        CHECK( result.getDest );
-        CHECK( result.listAfterMove );
-        CHECK( result.ttl );
-        CHECK( result.remove );
+        for ( auto i = 0ul; i < nthreads; ++i )
+        {
+          INFO( std::format( "Checking thread {}", i ) );
+          const auto& result = results[i];
+          CHECK( result.create );
+          CHECK( result.get );
+          CHECK( result.list );
+          CHECK( result.update );
+          CHECK( result.move );
+          CHECK( result.getDest );
+          CHECK( result.listAfterMove );
+          CHECK( result.ttl );
+          CHECK( result.remove );
+        }
       }
     }
   }

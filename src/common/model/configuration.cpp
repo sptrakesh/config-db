@@ -4,6 +4,8 @@
 
 #include "configuration.h"
 
+#include <cstdlib>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <memory>
@@ -13,29 +15,32 @@
 
 using spt::configdb::model::Configuration;
 
-namespace spt::configdb::model::pconf
+namespace
 {
-  std::mutex mutex;
-
-  struct Holder
+  namespace pconf
   {
-    static Holder& instance()
+    std::mutex mutex;
+
+    struct Holder
     {
-      static Holder h;
-      return h;
-    }
+      static Holder& instance()
+      {
+        static Holder h;
+        return h;
+      }
 
-    ~Holder() = default;
-    Holder(const Holder&) = delete;
-    Holder& operator=(const Holder&) = delete;
+      ~Holder() = default;
+      Holder(const Holder&) = delete;
+      Holder& operator=(const Holder&) = delete;
 
-    Configuration* conf() { return cfg.get(); }
-    void assign( Configuration* c ) { cfg.reset( c ); }
+      Configuration* conf() { return cfg.get(); }
+      void assign( Configuration* c ) { cfg.reset( c ); }
 
-  private:
-    std::unique_ptr<Configuration> cfg{ nullptr };
-    Holder() = default;
-  };
+    private:
+      std::unique_ptr<Configuration> cfg{ nullptr };
+      Holder() = default;
+    };
+  }
 }
 
 const Configuration& Configuration::instance()
@@ -50,6 +55,128 @@ const Configuration& Configuration::instance()
   }
   return *cfg;
 }
+
+Configuration::Configuration()
+{
+  if ( const auto value = std::getenv( "CONFIG_DB_THREADS" ); value != nullptr )
+  {
+    threads = static_cast<uint32_t>( std::strtol( value, nullptr, 10 ) );
+  }
+  if ( const auto value = std::getenv( "CONFIG_DB_ENABLE_CACHE" ); value != nullptr ) enableCache = std::strcmp( value, "true" ) == 0;
+
+  if ( const auto value = std::getenv( "CONFIG_DB_ENCRYPTION_SALT" ); value != nullptr ) encryption.salt = value;
+  if ( const auto value = std::getenv( "CONFIG_DB_ENCRYPTION_KEY" ); value != nullptr ) encryption.key = value;
+  if ( const auto value = std::getenv( "CONFIG_DB_ENCRYPTION_IV" ); value != nullptr ) encryption.iv = value;
+  if ( const auto value = std::getenv( "CONFIG_DB_ENCRYPTION_SECRET" ); value != nullptr ) encryption.secret = value;
+  if ( const auto value = std::getenv( "CONFIG_DB_ENCRYPTION_ROUNDS" ); value != nullptr )
+  {
+    encryption.rounds = static_cast<int>( std::strtol( value, nullptr, 10 ) );
+  }
+
+  if ( const auto value = std::getenv( "CONFIG_DB_LOGGING_LEVEL" ); value != nullptr )
+  {
+    if ( std::strcmp( value, "debug" ) == 0 || std::strcmp( value, "info" ) == 0 ||
+      std::strcmp( value, "warn" ) == 0 || std::strcmp( value, "critical" ) == 0 ) logging.level = value;
+  }
+  if ( const auto value = std::getenv( "CONFIG_DB_LOGGING_DIR" ); value != nullptr ) logging.level = value;
+  if ( const auto value = std::getenv( "CONFIG_DB_LOGGING_CONSOLE" ); value != nullptr ) logging.console = std::strcmp( value, "true" ) == 0;
+
+  if ( const auto value = std::getenv( "CONFIG_DB_SERVICES_HTTP" ); value != nullptr ) services.http = value;
+  if ( const auto value = std::getenv( "CONFIG_DB_SERVICES_TCP" ); value != nullptr )
+  {
+    services.tcp = static_cast<int>( std::strtol( value, nullptr, 10 ) );
+  }
+  if ( const auto value = std::getenv( "CONFIG_DB_SERVICES_NOTIFY" ); value != nullptr )
+  {
+    services.notify = static_cast<int>( std::strtol( value, nullptr, 10 ) );
+  }
+
+  if ( const auto value = std::getenv( "CONFIG_DB_PEERS0_HOST" ); value != nullptr && peers.empty() )
+  {
+    peers.emplace_back();
+    peers.front().host = value;
+  }
+  if ( const auto value = std::getenv( "CONFIG_DB_PEERS0_PORT" ); value != nullptr && peers.size() == 1 )
+  {
+    peers.back().port = static_cast<int>( std::strtol( value, nullptr, 10 ) );
+  }
+
+  if ( const auto value = std::getenv( "CONFIG_DB_PEERS1_HOST" ); value != nullptr && peers.size() == 1 )
+  {
+    peers.emplace_back();
+    peers.back().host = value;
+  }
+  if ( const auto value = std::getenv( "CONFIG_DB_PEERS1_PORT" ); value != nullptr && peers.size() == 2 )
+  {
+    peers.back().port = static_cast<int>( std::strtol( value, nullptr, 10 ) );
+  }
+
+  if ( const auto value = std::getenv( "CONFIG_DB_PEERS2_HOST" ); value != nullptr && peers.size() == 2 )
+  {
+    peers.emplace_back();
+    peers.back().host = value;
+  }
+  if ( const auto value = std::getenv( "CONFIG_DB_PEERS2_PORT" ); value != nullptr && peers.size() == 3 )
+  {
+    peers.back().port = static_cast<int>( std::strtol( value, nullptr, 10 ) );
+  }
+
+  if ( const auto value = std::getenv( "CONFIG_DB_PEERS3_HOST" ); value != nullptr && peers.size() == 3 )
+  {
+    peers.emplace_back();
+    peers.back().host = value;
+  }
+  if ( const auto value = std::getenv( "CONFIG_DB_PEERS3_PORT" ); value != nullptr && peers.size() == 4 )
+  {
+    peers.back().port = static_cast<int>( std::strtol( value, nullptr, 10 ) );
+  }
+
+  if ( const auto value = std::getenv( "CONFIG_DB_PEERS4_HOST" ); value != nullptr && peers.size() == 4 )
+  {
+    peers.emplace_back();
+    peers.back().host = value;
+  }
+  if ( const auto value = std::getenv( "CONFIG_DB_PEERS4_PORT" ); value != nullptr && peers.size() == 5 )
+  {
+    peers.back().port = static_cast<int>( std::strtol( value, nullptr, 10 ) );
+  }
+
+  if ( const auto value = std::getenv( "CONFIG_DB_PEERS5_HOST" ); value != nullptr && peers.size() == 5 )
+  {
+    peers.emplace_back();
+    peers.back().host = value;
+  }
+  if ( const auto value = std::getenv( "CONFIG_DB_PEERS5_PORT" ); value != nullptr && peers.size() == 6 )
+  {
+    peers.back().port = static_cast<int>( std::strtol( value, nullptr, 10 ) );
+  }
+
+  if ( const auto value = std::getenv( "CONFIG_DB_PEERS6_HOST" ); value != nullptr && peers.size() == 6 )
+  {
+    peers.emplace_back();
+    peers.back().host = value;
+  }
+  if ( const auto value = std::getenv( "CONFIG_DB_PEERS6_PORT" ); value != nullptr && peers.size() == 7 )
+  {
+    peers.back().port = static_cast<int>( std::strtol( value, nullptr, 10 ) );
+  }
+
+  if ( const auto value = std::getenv( "CONFIG_DB_STORAGE_DBPATH" ); value != nullptr ) storage.dbpath = value;
+  if ( const auto value = std::getenv( "CONFIG_DB_STORAGE_BLOCK_CACHE_SIZE_MB" ); value != nullptr )
+  {
+    storage.blockCacheSizeMb = static_cast<uint64_t>( std::strtoll( value, nullptr, 10 ) );
+  }
+  if ( const auto value = std::getenv( "CONFIG_DB_STORAGE_CLEAN_EXPIRED_KEYS_INTERVAL" ); value != nullptr )
+  {
+    storage.cleanExpiredKeysInterval = static_cast<uint32_t>( std::strtoll( value, nullptr, 10 ) );
+  }
+  if ( const auto value = std::getenv( "CONFIG_DB_STORAGE_ENCRYPTER_INITIAL_POOL_SIZE" ); value != nullptr )
+  {
+    storage.encrypterInitialPoolSize = static_cast<uint32_t>( std::strtoll( value, nullptr, 10 ) );
+  }
+  if ( const auto value = std::getenv( "CONFIG_DB_STORAGE_USE_MUTEX" ); value != nullptr ) storage.useMutex = std::strcmp( value, "true" ) == 0;
+}
+
 
 void Configuration::loadFromFile( const std::string& file )
 {
@@ -156,6 +283,9 @@ void Configuration::loadFromFile( const std::string& file )
 
     v = storage.if_contains( "encrypterInitialPoolSize" );
     if ( v ) cfg->storage.encrypterInitialPoolSize = v->as_int64();
+
+    v = storage.if_contains( "useMutex" );
+    if ( v ) cfg->storage.useMutex = v->as_bool();
   }
 
   v = obj.if_contains( "peers" );

@@ -139,6 +139,11 @@ namespace spt::configdb::model
 
       // Initial size of pool of encrypters
       uint32_t encrypterInitialPoolSize{ 5u };
+
+      // Use mutex to ensure multi-thread safety.  RocksDB documentation claims safe to use
+      // database instance from multiple threads, but our multi-thread test suite fails without
+      // use of mutex.
+      bool useMutex{ true };
     };
 
     static const Configuration& instance();
@@ -160,6 +165,6 @@ namespace spt::configdb::model
     bool enableCache{ false };
 
   private:
-    Configuration() = default;
+    Configuration();
   };
 }

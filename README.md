@@ -435,7 +435,8 @@ docker run -d --rm -p 6026:6020 -p 2022:2020 --name config-db sptrakesh/config-d
 docker run -d --rm -p 6026:6020 -p 2022:2020 -e "ENABLE_SSL=true" --name config-db sptrakesh/config-db
 ```
 
-The following environment variables can be used to customise the container:
+The following custom environment variables can be used to customise the container (the standard [variables](#environment-variables)
+also work):
 * `CONFIG_FILE` - The JSON file (volume mount) with full configuration.  All
   other variables/options are ignored.
 * `HTTP_PORT` - The port to run the HTTP/2 service on.  Default `6020`.
@@ -476,7 +477,7 @@ cmake -DCMAKE_PREFIX_PATH=/usr/local/boost \
   -DCMAKE_INSTALL_PREFIX=/usr/local/spt \
   -S . -B build
 cmake --build build -j12
-(cd build; sudo make install)
+sudo cmake --install build
 ```
 
 ### Windows
@@ -674,6 +675,31 @@ docker run -d --rm -p 6020:6020 -p 2022:2020 \
   -e "ENCRYPTION_SECRET=svn91sc+rlZXlIXz1ZrGP4m3OgznyW5DrWONGjYw4bc=" -e "LOG_LEVEL=debug" \
   --name config-db config-db
 ```
+
+### Environment Variables
+Service [configuration](src/common/model/configuration.h) can be customised using environment variables.
+All properties can be specified using a *snake case* convention with the common root `CONFIG_DB_` prefix.
+
+* `CONFIG_DB_THREADS` - use to set the value of the `threads` field.
+* `CONFIG_DB_ENABLE_CACHE` - use to set the value of the `enableCache` field.  Set to `false` to disable (default).  Set to `true` to enable.
+* `CONFIG_DB_ENCRYPTION_SALT` - use to set the value of the `encryption.salt` field.
+* `CONFIG_DB_ENCRYPTION_KEY` - use to set the value of the `encryption.key` field.
+* `CONFIG_DB_ENCRYPTION_IV` - use to set the value of the `encryption.iv` field.
+* `CONFIG_DB_ENCRYPTION_SECRET` - use to set the value of the `encryption.secret` field.
+* `CONFIG_DB_ENCRYPTION_ROUNDS` - use to set the value of the `encryption.rounds` field.
+* `CONFIG_DB_LOGGING_LEVEL` - use to set the value of the `logging.level` field.
+* `CONFIG_DB_LOGGING_DIR` - use to set the value of the `logging.dir` field.
+* `CONFIG_DB_LOGGING_CONSOLE` - use to set the value of the `logging.console` field.
+* `CONFIG_DB_SERVICES_HTTP` - use to set the value of the `services.http` field.
+* `CONFIG_DB_SERVICES_TCP` - use to set the value of the `services.tcp` field.
+* `CONFIG_DB_SERVICES_NOTIFY` - use to set the value of the `services.notify` field.
+* `CONFIG_DB_PEERS[0..6]_HOST` - use to set the value of the `peers[n].host` field (eg. `CONFIG_DB_PEERS0_HOST`).
+* `CONFIG_DB_PEERS[0..6]_PORT` - use to set the value of the `peers[n].port` field.
+* `CONFIG_DB_STORAGE_DBPATH` - use to set the value of the `storage.dbpath` field.
+* `CONFIG_DB_STORAGE_BLOCK_CACHE_SIZE_MB` - use to set the value of the `storage.blockCacheSizeMb` field.
+* `CONFIG_DB_STORAGE_CLEAN_EXPIRED_KEYS_INTERVAL` - use to set the value of the `storage.cleanExpiredKeysInterval` field.
+* `CONFIG_DB_STORAGE_ENCRYPTER_INITIAL_POOL_SIZE` - use to set the value of the `storage.encrypterInitialPoolSize` field.
+* `CONFIG_DB_STORAGE_USE_MUTEX` - use to set the value of the `storage.useMutex` field.
 
 ### Notifications
 A notification system is available when services are run in a cluster.  There
