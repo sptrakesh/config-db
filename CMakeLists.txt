@@ -4,7 +4,12 @@ if (POLICY CMP0079)
   cmake_policy(SET CMP0079 NEW)
 endif(POLICY CMP0079)
 
-project(config-db)
+file(STRINGS "docker/env.sh" ver REGEX "VERSION=([0-9]*)")
+string(REGEX REPLACE "VERSION='" "" project_version ${ver})
+string(REGEX REPLACE "'" "" project_version ${project_version})
+message("Project version: ${project_version}")
+
+project(config-db LANGUAGES CXX VERSION ${project_version})
 
 if (WIN32)
   if (POLICY CMP0111)
@@ -12,7 +17,7 @@ if (WIN32)
   endif (POLICY CMP0111)
   if(POLICY CMP0091)
     cmake_policy(SET CMP0091 NEW) 
-  endif()
+  endif(POLICY CMP0091)
 
   if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     set(CMAKE_CXX_FLAGS "/EHsc /await:strict /std:c++20 /utf-8")
@@ -32,7 +37,12 @@ if (NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Debug)
 endif(NOT CMAKE_BUILD_TYPE)
 
-option(HTTP_SERVER "enable HTTP server" ON)
+if (WIN32)
+  option(HTTP_SERVER "enable HTTP server" OFF)
+else (WIN32)
+  option(HTTP_SERVER "enable HTTP server" ON)
+endif (WIN32)
+
 if (HTTP_SERVER)
   message(STATUS "HTTP server enabled.  Requires nghttp2-asio")
   add_definitions(-DCONFIG_DB_HTTP_SERVER)
@@ -66,7 +76,7 @@ if (CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
     set(OPENSSL_INCLUDE_DIR "${BREW_OPENSSL_PREFIX}/include")
     set(OPENSSL_LIBRARIES "${BREW_OPENSSL_PREFIX}/lib")
     set(OPENSSL_CRYPTO_LIBRARY "${BREW_OPENSSL_PREFIX}/lib/libcrypto.dylib")
-  endif()
+  endif(BREW_OPENSSL EQUAL 0 AND EXISTS "${BREW_OPENSSL_PREFIX}")
 
   execute_process(
     COMMAND brew --prefix jemalloc
@@ -79,8 +89,8 @@ if (CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
     set(JEMALLOC_ROOT_DIR "${BREW_JEMALLOC_PREFIX}/")
     set(JEMALLOC_LIBRARIES "${BREW_JEMALLOC_PREFIX}/lib")
     set(JEMALLOC_LIBRARY "${BREW_JEMALLOC_PREFIX}/lib/libjemalloc.dylib")
-  endif()
-endif()
+  endif(BREW_JEMALLOC EQUAL 0 AND EXISTS "${BREW_JEMALLOC_PREFIX}")
+endif(CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
 
 if (APPLE)
   find_package(OpenSSL REQUIRED)
@@ -138,7 +148,7 @@ elseif (WIN32)
     ${OPENSSL_ROOT}/lib
     ${READLINE_ROOT}/lib
   )
-endif()
+endif(APPLE)
 
 IF(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
   set(CMAKE_INSTALL_PREFIX /opt/spt)
@@ -158,3 +168,11 @@ if (BUILD_TESTING)
   add_subdirectory(test/unit)
   add_subdirectory(test/integration)
 endif()
+
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+  "ConfigdbConfigVersion.cmake"
+  VERSION ${configdb_VERSION}
+  COMPATIBILITY AnyNewerVersion)
+
+install(FILES "ConfigDbConfig.cmake" "${CMAKE_CURRENT_BINARY_DIR}/ConfigdbConfigVersion.cmake" DESTINATION lib/cmake/ConfigDb)

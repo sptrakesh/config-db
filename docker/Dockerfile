@@ -6,9 +6,11 @@ COPY --from=rocksdb /opt/local /opt/local
 COPY --from=flatbuffers /opt/local /opt/local
 RUN apk add --no-cache readline-dev snappy-dev
 
-COPY CMakeLists.txt /opt/spt/config-db/CMakeLists.txt
+COPY CMakeLists.txt /opt/spt/config-db/
+COPY ConfigDbConfig.cmake /opt/spt/config-db/
 COPY src /opt/spt/config-db/src
 COPY certs /opt/spt/config-db/certs
+COPY docker/env.sh /opt/spt/config-db/docker/
 
 WORKDIR /opt/spt/config-db/build
 RUN rm -rf * \

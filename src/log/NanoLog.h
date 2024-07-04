@@ -33,6 +33,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SO
 #include <iosfwd>
 #include <type_traits>
 
+#ifdef WITH_BSON_SUPPORT
+  #include <bsoncxx/oid.hpp>
+#endif
+
 namespace nanolog
 {
   enum class LogLevel : uint8_t { DEBUG, INFO, WARN, CRIT };
@@ -56,6 +60,9 @@ namespace nanolog
     NanoLogLine& operator<<(double arg);
     NanoLogLine& operator<<(std::string const & arg);
     NanoLogLine& operator<<(std::string_view arg);
+#ifdef WITH_BSON_SUPPORT
+    NanoLogLine& operator<<(bsoncxx::oid arg);
+#endif
 
     template < size_t N >
     NanoLogLine& operator<<(const char (&arg)[N])

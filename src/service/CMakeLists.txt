@@ -1,38 +1,34 @@
 file(GLOB_RECURSE configdb_SRCS *.cpp *.h)
 add_executable(configdb ${configdb_SRCS} )
 
+target_compile_definitions(configdb PRIVATE _FORTIFY_SOURCE=2)
+
 if (HTTP_SERVER)
   if (UNIX)
     if (APPLE)
-      target_link_libraries(configdb
-          PRIVATE nanolog configdb-common configdb-lib Boost::boost Boost::json nghttp2_asio RocksDB::rocksdb flatbuffers::flatbuffers ${OPENSSL_LIBRARIES} ${JEMALLOC_LIBRARY} ZLIB::ZLIB
-      )
+      target_link_libraries(configdb PRIVATE lib nghttp2_asio)
     else()
-      target_link_libraries(configdb
-          PRIVATE nanolog configdb-common configdb-lib Boost::boost Boost::json nghttp2_asio nghttp2 RocksDB::rocksdb flatbuffers::flatbuffers crypto ssl snappy pthread jemalloc ZLIB::ZLIB
-      )
+      target_link_libraries(configdb PRIVATE lib nghttp2_asio nghttp2)
     endif()
   else()
-    target_link_libraries(configdb
-      PRIVATE nanolog configdb-common configdb-lib Boost::boost Boost::container Boost::json nghttp2_asio nghttp2 RocksDB::rocksdb-shared flatbuffers::flatbuffers OpenSSL::SSL OpenSSL::Crypto Snappy::snappy ZLIB::ZLIB
-    )
+    target_link_libraries(configdb PRIVATE lib nghttp2_asio nghttp2)
   endif (UNIX)
 else()
-  if (UNIX)
-    if (APPLE)
-      target_link_libraries(configdb
-          PRIVATE nanolog configdb-common configdb-lib Boost::boost Boost::json RocksDB::rocksdb flatbuffers::flatbuffers ${OPENSSL_LIBRARIES} ${JEMALLOC_LIBRARY} ZLIB::ZLIB
-      )
-    else()
-      target_link_libraries(configdb
-          PRIVATE nanolog configdb-common configdb-lib Boost::boost Boost::json RocksDB::rocksdb flatbuffers::flatbuffers crypto ssl snappy pthread jemalloc ZLIB::ZLIB
-      )
-    endif()
-  else()
-    target_link_libraries(configdb
-      PRIVATE nanolog configdb-common configdb-lib Boost::boost Boost::container Boost::json RocksDB::rocksdb-shared flatbuffers::flatbuffers OpenSSL::SSL OpenSSL::Crypto Snappy::snappy ZLIB::ZLIB
-    )
-  endif (UNIX)
+  target_link_libraries(configdb PRIVATE lib)
 endif (HTTP_SERVER)
+
+if (CMAKE_BUILD_TYPE MATCHES Debug)
+  message(STATUS "Debug build, not enabling IPO/LTO")
+else()
+  include(CheckIPOSupported)
+  check_ipo_supported(RESULT result OUTPUT output LANGUAGES CXX)
+  if (result)
+    message(STATUS "IPO is supported: ${output}")
+    set_property(TARGET ${Target_Name} PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -flto=auto")
+  else()
+    message(STATUS "IPO is not supported: ${output}")
+  endif()
+endif (CMAKE_BUILD_TYPE MATCHES Debug)
 
 install(TARGETS configdb DESTINATION bin)

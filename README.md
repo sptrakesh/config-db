@@ -18,6 +18,7 @@
 * [Docker](#docker)
 * [Build](#build)
   * [Windows](#windows)
+  * [API Usage](#api-usage)
 * [Run](#run)
   * [Notifications](#notifications)
   * [SSL](#ssl)
@@ -261,6 +262,7 @@ to the service and performs the required interactions using the flatbuffer model
 
 See [integration test](test/integration/apicrud.cpp) for sample usage of the API.
 The *shell* application is built using the client API.
+See [cmake](#api-usage) for including the API in your cmake project.
 
 
 ## Utilities
@@ -628,6 +630,20 @@ cmake -DCMAKE_PREFIX_PATH=\opt\local -DCMAKE_INSTALL_PREFIX=\opt\spt -DCMAKE_TOO
 cmake --build build --target install -j8
 ```
 </details>
+
+### API Usage
+The [API](src/api/api.h) can be used to communicate with the TCP service.  Client code bases
+can use cmake to use the library.
+
+```shell
+# In your CMakeLists.txt file
+find_package(ConfigDb REQUIRED COMPONENTS api)
+target_link_libraries(${Target_Name} PRIVATE configdb::api ...)
+
+# Run cmake
+cmake -DCMAKE_PREFIX_PATH=/usr/local/boost -DCMAKE_PREFIX_PATH=/usr/local/spt -S . -B build
+cmake --build build -j12
+```
 
 ## Run
 Run the service via the `/opt/spt/bin/configdb` executable.  Command line options
