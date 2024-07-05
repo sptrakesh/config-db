@@ -2,6 +2,7 @@ set(Target_Name "api")
 file(GLOB_RECURSE configdb_SRCS *.cpp *.h)
 add_library(${Target_Name} STATIC ${configdb_SRCS})
 add_library(configdb::api ALIAS ${Target_Name})
+target_compile_features(${Target_Name} INTERFACE cxx_std_23)
 set_target_properties(${Target_Name} PROPERTIES OUTPUT_NAME configapi)
 target_compile_definitions(${Target_Name} PRIVATE _FORTIFY_SOURCE=2)
 target_include_directories(${Target_Name}

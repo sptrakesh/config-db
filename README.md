@@ -20,6 +20,7 @@
   * [Windows](#windows)
   * [API Usage](#api-usage)
 * [Run](#run)
+  * [Environment Variables](#environment-variables)
   * [Notifications](#notifications)
   * [SSL](#ssl)
 * [Acknowledgements](#acknowledgements)

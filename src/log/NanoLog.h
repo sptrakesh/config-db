@@ -27,6 +27,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SO
 #define NANO_LOG_HEADER_GUARD
 
 #include <cstdint>
+#include <chrono>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -60,6 +61,16 @@ namespace nanolog
     NanoLogLine& operator<<(double arg);
     NanoLogLine& operator<<(std::string const & arg);
     NanoLogLine& operator<<(std::string_view arg);
+
+    using DateTime = std::chrono::time_point<std::chrono::system_clock, std::chrono::microseconds>;
+    NanoLogLine& operator<<(DateTime arg);
+
+    using DateTimeMs = std::chrono::time_point<std::chrono::system_clock, std::chrono::milliseconds>;
+    NanoLogLine& operator<<(DateTimeMs arg);
+
+    using DateTimeNs = std::chrono::time_point<std::chrono::high_resolution_clock, std::chrono::nanoseconds>;
+    NanoLogLine& operator<<(DateTimeNs arg);
+
 #ifdef WITH_BSON_SUPPORT
     NanoLogLine& operator<<(bsoncxx::oid arg);
 #endif

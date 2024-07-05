@@ -2,10 +2,9 @@ set(Target_Name "nanolog")
 
 file(GLOB_RECURSE log_SRCS *.cpp *.h)
 add_library(${Target_Name} STATIC ${log_SRCS})
-
-target_compile_definitions(${Target_Name}
-  PRIVATE _FORTIFY_SOURCE=2
-)
+add_library(nanolog::nanolog ALIAS ${Target_Name})
+target_compile_definitions(${Target_Name} PRIVATE _FORTIFY_SOURCE=2)
+target_compile_features(${Target_Name} INTERFACE cxx_std_23)
 
 find_package(bsoncxx QUIET)
 if (bsoncxx_FOUND)

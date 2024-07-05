@@ -33,6 +33,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SO
 #include <cstring>
 #include <chrono>
 #include <ctime>
+#include <format>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -347,6 +348,28 @@ namespace nanolog
   NanoLogLine& NanoLogLine::operator<<(char arg)
   {
     encode < char >(arg, TupleIndex < char, SupportedTypes >::value);
+    return *this;
+  }
+
+  NanoLogLine& NanoLogLine::operator<<(DateTime arg)
+  {
+    const auto str = std::format( "{:%Y-%m-%dT%T}Z", arg );
+    encode_c_string(str.c_str(), str.length());
+    return *this;
+  }
+
+  NanoLogLine& NanoLogLine::operator<<(DateTimeMs arg)
+  {
+    const auto str = std::format( "{:%Y-%m-%dT%T}Z", arg );
+    encode_c_string(str.c_str(), str.length());
+    return *this;
+  }
+
+  NanoLogLine& NanoLogLine::operator<<(DateTimeNs arg)
+  {
+    const auto ms = DateTime{ std::chrono::duration_cast<std::chrono::microseconds>( arg.time_since_epoch() ) };
+    const auto str = std::format( "{:%Y-%m-%dT%T}Z", ms );
+    encode_c_string(str.c_str(), str.length());
     return *this;
   }
 
