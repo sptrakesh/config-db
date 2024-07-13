@@ -59,6 +59,12 @@ used to provide support for additional features provided.
 * **cache** - The column family used to indicate that the specified *key* is stored as
   a *cache* entry.
 
+### Backup
+Daily backups are performed and saved under the `storage.backupPath` configured.  The maximum
+number of previous backups to maintain can be configured using the `storage.maxBackups` property.
+RocksDB makes incremental backups, and the cost of initialising the *BackupEngine* is proportional
+to the number of old backups.
+
 ### Peering
 Each instance is designed to run independently.  It is possible to configure instances
 to run as a *co-ordinated cluster* by configuring *peers* for each instance.  There is
@@ -639,10 +645,15 @@ can use cmake to use the library.
 ```shell
 # In your CMakeLists.txt file
 find_package(ConfigDb REQUIRED COMPONENTS api)
+if (APPLE)
+  include_directories(/usr/local/spt/include)
+else()
+  include_directories(/opt/spt/include)
+endif (APPLE)
 target_link_libraries(${Target_Name} PRIVATE configdb::api ...)
 
 # Run cmake
-cmake -DCMAKE_PREFIX_PATH=/usr/local/boost -DCMAKE_PREFIX_PATH=/usr/local/spt -S . -B build
+cmake -DCMAKE_PREFIX_PATH="/usr/local/boost;/usr/local/spt" -S . -B build
 cmake --build build -j12
 ```
 
@@ -713,9 +724,11 @@ All properties can be specified using a *snake case* convention with the common 
 * `CONFIG_DB_PEERS[0..6]_HOST` - use to set the value of the `peers[n].host` field (eg. `CONFIG_DB_PEERS0_HOST`).
 * `CONFIG_DB_PEERS[0..6]_PORT` - use to set the value of the `peers[n].port` field.
 * `CONFIG_DB_STORAGE_DBPATH` - use to set the value of the `storage.dbpath` field.
+* `CONFIG_DB_STORAGE_BACKUP_PATH` - use to set the value of the `storage.backupPath` field.
 * `CONFIG_DB_STORAGE_BLOCK_CACHE_SIZE_MB` - use to set the value of the `storage.blockCacheSizeMb` field.
 * `CONFIG_DB_STORAGE_CLEAN_EXPIRED_KEYS_INTERVAL` - use to set the value of the `storage.cleanExpiredKeysInterval` field.
 * `CONFIG_DB_STORAGE_ENCRYPTER_INITIAL_POOL_SIZE` - use to set the value of the `storage.encrypterInitialPoolSize` field.
+* `CONFIG_DB_STORAGE_MAX_BACKUPS` - use to set the value of the `storage.maxBackups` field.
 * `CONFIG_DB_STORAGE_USE_MUTEX` - use to set the value of the `storage.useMutex` field.
 
 ### Notifications

@@ -162,6 +162,7 @@ Configuration::Configuration()
   }
 
   if ( const auto value = std::getenv( "CONFIG_DB_STORAGE_DBPATH" ); value != nullptr ) storage.dbpath = value;
+  if ( const auto value = std::getenv( "CONFIG_DB_STORAGE_BACKUP_PATH" ); value != nullptr ) storage.backupPath = value;
   if ( const auto value = std::getenv( "CONFIG_DB_STORAGE_BLOCK_CACHE_SIZE_MB" ); value != nullptr )
   {
     storage.blockCacheSizeMb = static_cast<uint64_t>( std::strtoll( value, nullptr, 10 ) );
@@ -173,6 +174,10 @@ Configuration::Configuration()
   if ( const auto value = std::getenv( "CONFIG_DB_STORAGE_ENCRYPTER_INITIAL_POOL_SIZE" ); value != nullptr )
   {
     storage.encrypterInitialPoolSize = static_cast<uint32_t>( std::strtoll( value, nullptr, 10 ) );
+  }
+  if ( const auto value = std::getenv( "CONFIG_DB_STORAGE_MAX_BACKUPS" ); value != nullptr )
+  {
+    storage.maxBackups = static_cast<uint32_t>( std::strtoll( value, nullptr, 10 ) );
   }
   if ( const auto value = std::getenv( "CONFIG_DB_STORAGE_USE_MUTEX" ); value != nullptr ) storage.useMutex = std::strcmp( value, "true" ) == 0;
 }
@@ -193,7 +198,7 @@ void Configuration::loadFromFile( const std::string& file )
   auto& obj = jv.as_object();
 
   auto v = obj.if_contains( "threads" );
-  if ( v ) cfg->threads = v->as_int64();
+  if ( v ) cfg->threads = static_cast<uint32_t>( v->as_int64() );
 
   v = obj.if_contains( "enableCache" );
   if ( v ) cfg->enableCache = v->as_bool();
@@ -216,7 +221,7 @@ void Configuration::loadFromFile( const std::string& file )
     if ( v ) cfg->encryption.secret = v->as_string();
 
     v = enc.if_contains( "rounds" );
-    if ( v ) cfg->encryption.rounds = v->as_int64();
+    if ( v ) cfg->encryption.rounds = static_cast<int>( v->as_int64() );
   }
 
   v = obj.if_contains( "logging" );
@@ -261,10 +266,10 @@ void Configuration::loadFromFile( const std::string& file )
     if ( v ) cfg->services.http = v->as_string();
 
     v = svcs.if_contains( "tcp" );
-    if ( v ) cfg->services.tcp = v->as_int64();
+    if ( v ) cfg->services.tcp = static_cast<int>( v->as_int64() );
 
     v = svcs.if_contains( "notify" );
-    if ( v ) cfg->services.notify = v->as_int64();
+    if ( v ) cfg->services.notify = static_cast<int>( v->as_int64() );
   }
 
   v = obj.if_contains( "storage" );
@@ -275,14 +280,20 @@ void Configuration::loadFromFile( const std::string& file )
     v = storage.if_contains( "dbpath" );
     if ( v ) cfg->storage.dbpath = v->as_string();
 
+    v = storage.if_contains( "backupPath" );
+    if ( v ) cfg->storage.backupPath = v->as_string();
+
     v = storage.if_contains( "blockCacheSizeMb" );
     if ( v ) cfg->storage.blockCacheSizeMb = v->as_int64();
 
     v = storage.if_contains( "cleanExpiredKeysInterval" );
-    if ( v ) cfg->storage.cleanExpiredKeysInterval = v->as_int64();
+    if ( v ) cfg->storage.cleanExpiredKeysInterval = static_cast<uint32_t>( v->as_int64() );
 
     v = storage.if_contains( "encrypterInitialPoolSize" );
-    if ( v ) cfg->storage.encrypterInitialPoolSize = v->as_int64();
+    if ( v ) cfg->storage.encrypterInitialPoolSize = static_cast<uint32_t>( v->as_int64() );
+
+    v = storage.if_contains( "maxBackups" );
+    if ( v ) cfg->storage.maxBackups = static_cast<uint32_t>( v->as_int64() );
 
     v = storage.if_contains( "useMutex" );
     if ( v ) cfg->storage.useMutex = v->as_bool();
@@ -302,7 +313,7 @@ void Configuration::loadFromFile( const std::string& file )
       if ( h ) peer.host = h->as_string();
 
       h = o.if_contains( "port" );
-      if ( h ) peer.port = h->as_int64();
+      if ( h ) peer.port = static_cast<int>( h->as_int64() );
 
       if ( !peer.host.empty() && peer.port > 0 ) cfg->peers.push_back( std::move( peer ) );
     }

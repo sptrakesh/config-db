@@ -20,6 +20,7 @@
 #include <rocksdb/slice.h>
 #include <rocksdb/slice_transform.h>
 #include <rocksdb/table.h>
+#include <rocksdb/utilities/backup_engine.h>
 #include <rocksdb/utilities/transaction_db.h>
 
 using std::operator ""s;
@@ -694,6 +695,37 @@ namespace
         }
       }
 
+      void backup( const std::atomic_bool& stop )
+      {
+        const auto& conf = model::Configuration::instance();
+        rocksdb::BackupEngine* engine{ nullptr };
+
+        if ( const auto s = rocksdb::BackupEngine::Open( rocksdb::Env::Default(),
+          rocksdb::BackupEngineOptions( conf.storage.backupPath ), &engine ); !s.ok() )
+        {
+          LOG_WARN << "Error initialising backup engine.";
+          return;
+        }
+        std::unique_ptr<rocksdb::BackupEngine> ptr{ engine };
+
+        if ( !stop.load() )
+        {
+          if ( const auto s = ptr->CreateNewBackup( db.get() ); s.ok() )
+          {
+            LOG_INFO << "Completed backup to " << conf.storage.backupPath;
+          }
+          else LOG_WARN << "Error backing up database";
+        }
+
+        if ( !stop.load() )
+        {
+          if ( const auto s = ptr->PurgeOldBackups( conf.storage.maxBackups ); !s.ok() )
+          {
+            LOG_WARN << "Error puring old backups";
+          }
+        }
+      }
+
       void reopen()
       {
         close();
@@ -1350,6 +1382,11 @@ auto spt::configdb::db::list( const std::vector<std::string_view>& keys ) -> std
 void spt::configdb::db::clearExpired( const std::atomic_bool& stop )
 {
   internal::Database::instance().clearExpired( stop );
+}
+
+void spt::configdb::db::backup( const std::atomic_bool& stop )
+{
+  internal::Database::instance().backup( stop );
 }
 
 void spt::configdb::db::reopen()

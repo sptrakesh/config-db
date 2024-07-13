@@ -8,7 +8,6 @@ target_include_directories(${Target_Name}
   INTERFACE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
   $<INSTALL_INTERFACE:include>
-  ${Boost_INCLUDE_DIR}
 )
 if (UNIX)
   if (APPLE)

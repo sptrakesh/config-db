@@ -127,9 +127,11 @@ namespace spt::configdb::model
 #ifdef __APPLE__
       // Path under which the database files are to be stored
       std::string dbpath{ "/tmp/config-db" };
+      std::string backupPath{ "/tmp/config-db/backup" };
 #else
       // Path under which the database files are to be stored
       std::string dbpath{ "/opt/spt/data/config-db" };
+      std::string backupPath{ "/opt/spt/data/config-db/backup" };
 #endif
       // Block size passed to rocksdb::ColumnFamilyOptions::OptimizeForPointLookup
       uint64_t blockCacheSizeMb{ 8u };
@@ -139,6 +141,9 @@ namespace spt::configdb::model
 
       // Initial size of pool of encrypters
       uint32_t encrypterInitialPoolSize{ 5u };
+
+      // Maximum number of backups to maintain.  Backup performance degrades with increasing number of old backups.
+      uint32_t maxBackups{ 5u };
 
       // Use mutex to ensure multi-thread safety.  RocksDB documentation claims safe to use
       // database instance from multiple threads, but our multi-thread test suite fails without

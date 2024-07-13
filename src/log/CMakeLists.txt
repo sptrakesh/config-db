@@ -9,6 +9,7 @@ target_compile_features(${Target_Name} INTERFACE cxx_std_23)
 find_package(bsoncxx QUIET)
 if (bsoncxx_FOUND)
   add_compile_definitions(WITH_BSON_SUPPORT)
+  target_link_libraries(${Target_Name} PRIVATE mongo::bsoncxx_static)
   target_link_libraries(${Target_Name} INTERFACE mongo::bsoncxx_static)
 endif (bsoncxx_FOUND)
 

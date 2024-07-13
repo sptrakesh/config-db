@@ -3,6 +3,7 @@
 //
 
 #include "clearexpired.h"
+#include "backup.h"
 #include "http/server.h"
 #include "tcp/server.h"
 #include "../common/contextholder.h"
@@ -98,15 +99,17 @@ int main( int argc, char const * const * argv )
 
   spt::configdb::db::init();
   auto cleaner = spt::configdb::service::ClearExpired{};
+  auto backup = spt::configdb::service::Backup{};
   spt::configdb::tcp::start( conf.services.tcp, conf.ssl.enable );
 
   std::vector<std::thread> v;
-  v.reserve( conf.threads + 2 );
+  v.reserve( conf.threads + 3 );
   if ( conf.services.http != "0"s )
   {
     v.emplace_back( [&conf]{ spt::configdb::http::start( conf.services.http, conf.threads, conf.ssl.enable ); } );
   }
   v.emplace_back( [&cleaner]{ cleaner.run(); } );
+  v.emplace_back( [&backup]{ backup.run(); } );
 
   if ( !conf.peers.empty() )
   {
@@ -145,6 +148,7 @@ int main( int argc, char const * const * argv )
 
   run();
   cleaner.stop();
+  backup.stop();
 
   for ( auto&& t : v ) if ( t.joinable() ) t.join();
 }

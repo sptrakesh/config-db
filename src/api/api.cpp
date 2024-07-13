@@ -42,31 +42,31 @@ std::optional<std::string> spt::configdb::api::get( std::string_view key )
   auto response = (*popt)->get( key );
   if ( !response )
   {
-    LOG_WARN << "Error retrieving value for key " << key;
+    LOG_DEBUG << "Error retrieving value for key " << key;
     return std::nullopt;
   }
 
   if ( response->value_type() != model::ResultVariant::KeyValueResults )
   {
-    LOG_WARN << "Error retrieving key " << key;
+    LOG_DEBUG << "Error retrieving key " << key;
     return std::nullopt;
   }
 
   auto resp = response->value_as<model::KeyValueResults>();
   if ( resp->value()->size() != 1 )
   {
-    LOG_WARN << "Error retrieving key " << key;
+    LOG_DEBUG << "Error retrieving key " << key;
     return std::nullopt;
   }
 
   if ( resp->value()->Get( 0 )->value_type() != model::ValueVariant::Value )
   {
-    LOG_WARN << "Error retrieving key " << key;
+    LOG_DEBUG << "Error retrieving key " << key;
     return std::nullopt;
   }
 
   auto value = resp->value()->Get( 0 )->value_as<model::Value>();
-  LOG_INFO << "Retrieved value for key " << key;
+  LOG_DEBUG << "Retrieved value for key " << key;
   return value->value()->str();
 }
 
@@ -88,18 +88,18 @@ bool spt::configdb::api::set( const model::RequestData& data )
   auto response = (*popt)->set( data );
   if ( !response )
   {
-    LOG_WARN << "Unable to set key " << data.key;
+    LOG_DEBUG << "Unable to set key " << data.key;
     return false;
   }
 
   if ( response->value_type() != model::ResultVariant::Success ||
       !response->value_as<model::Success>()->value() )
   {
-    LOG_WARN << "Error setting key " << data.key;
+    LOG_DEBUG << "Error setting key " << data.key;
     return false;
   }
 
-  LOG_INFO << "Set key " << data.key;
+  LOG_DEBUG << "Set key " << data.key;
   return true;
 }
 
@@ -115,18 +115,18 @@ bool spt::configdb::api::remove( std::string_view key )
   auto response = ( *popt )->remove( key );
   if ( !response )
   {
-    LOG_WARN << "Error removing key " << key;
+    LOG_DEBUG << "Error removing key " << key;
     return false;
   }
 
   if ( response->value_type() != model::ResultVariant::Success ||
       !response->value_as<model::Success>()->value() )
   {
-    LOG_WARN << "Error removing key " << key;
+    LOG_DEBUG << "Error removing key " << key;
     return false;
   }
 
-  LOG_INFO << "Removed key " << key;
+  LOG_DEBUG << "Removed key " << key;
   return true;
 }
 
@@ -148,18 +148,18 @@ bool spt::configdb::api::move( const model::RequestData& data )
   auto response = (*popt)->move( data );
   if ( !response )
   {
-    LOG_WARN << "Unable to move key " << data.key << " to destination " << data.value;
+    LOG_DEBUG << "Unable to move key " << data.key << " to destination " << data.value;
     return false;
   }
 
   if ( response->value_type() != model::ResultVariant::Success ||
       !response->value_as<model::Success>()->value() )
   {
-    LOG_WARN << "Error moving key " << data.key << " to destination " << data.value;
+    LOG_DEBUG << "Error moving key " << data.key << " to destination " << data.value;
     return false;
   }
 
-  LOG_INFO << "Moved key " << data.key << " to dest " << data.value;
+  LOG_DEBUG << "Moved key " << data.key << " to dest " << data.value;
   return true;
 }
 
@@ -175,31 +175,31 @@ auto spt::configdb::api::list( std::string_view path ) -> Nodes
   auto response = (*popt)->list( path );
   if ( response->value_type() != model::ResultVariant::KeyValueResults )
   {
-    LOG_WARN << "Error retrieving path " << path;
+    LOG_DEBUG << "Error retrieving path " << path;
     return std::nullopt;
   }
 
   auto resp = response->value_as<model::KeyValueResults>();
   if ( resp->value()->size() != 1 )
   {
-    LOG_WARN << "Error retrieving path " << path;
+    LOG_DEBUG << "Error retrieving path " << path;
     return std::nullopt;
   }
 
   if ( resp->value()->Get( 0 )->value_type() != model::ValueVariant::Children )
   {
-    LOG_WARN << "Error listing path " << path;
+    LOG_DEBUG << "Error listing path " << path;
     return std::nullopt;
   }
 
   auto value = resp->value()->Get( 0 )->value_as<model::Children>();
   if ( value->value()->size() == 0 )
   {
-    LOG_WARN << "Error listing path " << path;
+    LOG_DEBUG << "Error listing path " << path;
     return std::nullopt;
   }
 
-  LOG_INFO << "Retrieved children for path " << path;
+  LOG_DEBUG << "Retrieved children for path " << path;
   std::vector<std::string> results;
   for ( auto&& v : *value->value() ) results.emplace_back( v->string_view() );
   return results;
@@ -217,25 +217,25 @@ std::chrono::seconds spt::configdb::api::ttl( std::string_view key )
   auto response = ( *popt )->ttl( key );
   if ( response->value_type() != model::ResultVariant::KeyValueResults )
   {
-    LOG_WARN << "Error retrieving TTL for key " << key;
+    LOG_DEBUG << "Error retrieving TTL for key " << key;
     return std::chrono::seconds{ 0 };
   }
 
   auto resp = response->value_as<model::KeyValueResults>();
   if ( resp->value()->size() != 1 )
   {
-    LOG_WARN << "Error retrieving TTL for key " << key;
+    LOG_DEBUG << "Error retrieving TTL for key " << key;
     return std::chrono::seconds{ 0 };
   }
 
   if ( resp->value()->Get( 0 )->value_type() != model::ValueVariant::Value )
   {
-    LOG_WARN << "Error retrieving TTL for key " << key;
+    LOG_DEBUG << "Error retrieving TTL for key " << key;
     return std::chrono::seconds{ 0 };
   }
 
   auto value = resp->value()->Get( 0 )->value_as<model::Value>();
-  LOG_INFO << "Retrieved TTL for key " << key;
+  LOG_DEBUG << "Retrieved TTL for key " << key;
   auto sv = value->value()->string_view();
   uint64_t v;
   auto [p, ec] = std::from_chars( sv.data(), sv.data() + sv.size(), v );
@@ -259,20 +259,20 @@ auto spt::configdb::api::get( const std::vector<std::string_view>& keys ) -> std
   auto response = ( *popt )->get( keys );
   if ( !response )
   {
-    LOG_WARN << "Error retrieving values for " << int(keys.size()) << " keys";
+    LOG_DEBUG << "Error retrieving values for " << int(keys.size()) << " keys";
     return {};
   }
 
   if ( response->value_type() != model::ResultVariant::KeyValueResults )
   {
-    LOG_WARN << "Error retrieving values for " << int(keys.size()) << " keys";
+    LOG_DEBUG << "Error retrieving values for " << int(keys.size()) << " keys";
     return {};
   }
 
   auto resp = response->value_as<model::KeyValueResults>();
   if ( resp->value()->size() != keys.size() )
   {
-    LOG_WARN << "Error retrieving values for " << int(keys.size()) << " keys";
+    LOG_DEBUG << "Error retrieving values for " << int(keys.size()) << " keys";
     return {};
   }
 
@@ -288,12 +288,12 @@ auto spt::configdb::api::get( const std::vector<std::string_view>& keys ) -> std
     }
     else
     {
-      LOG_WARN << "Error retrieving key " << r->key()->string_view();
+      LOG_DEBUG << "Error retrieving key " << r->key()->string_view();
       results.emplace_back( r->key()->str(), std::nullopt );
     }
   }
 
-  LOG_INFO << "Retrieved values for " << int(size(keys)) << " keys";
+  LOG_DEBUG << "Retrieved values for " << int(size(keys)) << " keys";
   return results;
 }
 
@@ -317,18 +317,18 @@ bool spt::configdb::api::set( const std::vector<model::RequestData>& kvs )
   auto response = ( *popt )->set( kvs );
   if ( !response )
   {
-    LOG_WARN << "Unable to set values for " << int(size(kvs)) << " keys";
+    LOG_DEBUG << "Unable to set values for " << int(size(kvs)) << " keys";
     return false;
   }
 
   if ( response->value_type() != model::ResultVariant::Success ||
       !response->value_as<model::Success>()->value() )
   {
-    LOG_WARN << "Error setting values for " << int(size(kvs)) << " keys";
+    LOG_DEBUG << "Error setting values for " << int(size(kvs)) << " keys";
     return false;
   }
 
-  LOG_INFO << "Set values for " << int(size(kvs)) << " keys";
+  LOG_DEBUG << "Set values for " << int(size(kvs)) << " keys";
   return true;
 }
 
@@ -344,18 +344,18 @@ bool spt::configdb::api::remove( const std::vector<std::string_view>& keys )
   auto response = ( *popt )->remove( keys );
   if ( !response )
   {
-    LOG_WARN << "Unable to remove " << int(size(keys)) << " keys";
+    LOG_DEBUG << "Unable to remove " << int(size(keys)) << " keys";
     return false;
   }
 
   if ( response->value_type() != model::ResultVariant::Success ||
       !response->value_as<model::Success>()->value() )
   {
-    LOG_WARN << "Error removing " << int(size(keys)) << " keys";
+    LOG_DEBUG << "Error removing " << int(size(keys)) << " keys";
     return false;
   }
 
-  LOG_INFO << "Removed " << int(size(keys)) << " keys";
+  LOG_DEBUG << "Removed " << int(size(keys)) << " keys";
   return true;
 }
 
@@ -379,18 +379,18 @@ bool spt::configdb::api::move( const std::vector<model::RequestData>& kvs )
   auto response = ( *popt )->move( kvs );
   if ( !response )
   {
-    LOG_WARN << "Unable to move " << int(size(kvs)) << " keys";
+    LOG_DEBUG << "Unable to move " << int(size(kvs)) << " keys";
     return false;
   }
 
   if ( response->value_type() != model::ResultVariant::Success ||
       !response->value_as<model::Success>()->value() )
   {
-    LOG_WARN << "Error moving " << int(size(kvs)) << " keys";
+    LOG_DEBUG << "Error moving " << int(size(kvs)) << " keys";
     return false;
   }
 
-  LOG_INFO << "Moved " << int(size(kvs)) << " keys";
+  LOG_DEBUG << "Moved " << int(size(kvs)) << " keys";
   return true;
 }
 
@@ -406,20 +406,20 @@ auto spt::configdb::api::list( const std::vector<std::string_view>& paths ) -> s
   auto response = ( *popt )->list( paths );
   if ( !response )
   {
-    LOG_WARN << "Unable to list " << int(size(paths)) << " paths";
+    LOG_DEBUG << "Unable to list " << int(size(paths)) << " paths";
     return {};
   }
 
   if ( response->value_type() != model::ResultVariant::KeyValueResults )
   {
-    LOG_WARN << "Error retrieving " << int(paths.size()) << " paths";
+    LOG_DEBUG << "Error retrieving " << int(paths.size()) << " paths";
     return {};
   }
 
   auto resp = response->value_as<model::KeyValueResults>();
   if ( resp->value()->size() != paths.size() )
   {
-    LOG_WARN << "Error retrieving " << int(paths.size()) << " paths";
+    LOG_DEBUG << "Error retrieving " << int(paths.size()) << " paths";
     return {};
   }
 
@@ -438,12 +438,12 @@ auto spt::configdb::api::list( const std::vector<std::string_view>& paths ) -> s
     }
     else
     {
-      LOG_WARN << "Error retrieving key " << r->key()->string_view();
+      LOG_DEBUG << "Error retrieving key " << r->key()->string_view();
       results.emplace_back( r->key()->str(), std::nullopt );
     }
   }
 
-  LOG_INFO << "Retrieved " << int(size(paths)) << " paths";
+  LOG_DEBUG << "Retrieved " << int(size(paths)) << " paths";
   return results;
 }
 
@@ -459,20 +459,20 @@ auto spt::configdb::api::ttl( const std::vector<std::string_view>& keys ) -> std
   auto response = ( *popt )->ttl( keys );
   if ( !response )
   {
-    LOG_WARN << "Error retrieving TTL values for " << int(keys.size()) << " keys";
+    LOG_DEBUG << "Error retrieving TTL values for " << int(keys.size()) << " keys";
     return {};
   }
 
   if ( response->value_type() != model::ResultVariant::KeyValueResults )
   {
-    LOG_WARN << "Error retrieving TTL values for " << int(keys.size()) << " keys";
+    LOG_DEBUG << "Error retrieving TTL values for " << int(keys.size()) << " keys";
     return {};
   }
 
   auto resp = response->value_as<model::KeyValueResults>();
   if ( resp->value()->size() != keys.size() )
   {
-    LOG_WARN << "Error retrieving TTL values for " << int(keys.size()) << " keys";
+    LOG_DEBUG << "Error retrieving TTL values for " << int(keys.size()) << " keys";
     return {};
   }
 
@@ -496,12 +496,12 @@ auto spt::configdb::api::ttl( const std::vector<std::string_view>& keys ) -> std
     }
     else
     {
-      LOG_WARN << "Error retrieving TTL for key " << r->key()->string_view();
+      LOG_DEBUG << "Error retrieving TTL for key " << r->key()->string_view();
       results.emplace_back( r->key()->str(), std::chrono::seconds{ 0 } );
     }
   }
 
-  LOG_INFO << "Retrieved TTL values for " << int(size(keys)) << " keys";
+  LOG_DEBUG << "Retrieved TTL values for " << int(size(keys)) << " keys";
   return results;
 }
 
@@ -517,17 +517,17 @@ auto spt::configdb::api::import( const std::string& file ) -> ImportResponse
   const auto& [response, size, count] = ( *popt )->import( file );
   if ( !response )
   {
-    LOG_WARN << "Unable to import (" << int(size) << '/' << count << ") key-values";
+    LOG_DEBUG << "Unable to import (" << int(size) << '/' << count << ") key-values";
     return { false, size, count };
   }
 
   if ( response->value_type() != model::ResultVariant::Success ||
       !response->value_as<model::Success>()->value() )
   {
-    LOG_WARN << "Error importing (" << int(size) << '/' << count << ") key-values";
+    LOG_DEBUG << "Error importing (" << int(size) << '/' << count << ") key-values";
     return { false, size, count };
   }
 
-  LOG_INFO << "Imported (" << int(size) << '/' << count << ") key-values";
+  LOG_DEBUG << "Imported (" << int(size) << '/' << count << ") key-values";
   return { true, size, count };
 }

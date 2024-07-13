@@ -332,7 +332,7 @@ auto BaseConnection::import( const std::string& file ) -> ImportResponse
     }
 
     ++count;
-    LOG_INFO << "Creating key: " << lv.substr( 0, idx ) << "; value: " << lv.substr( end + 1 );
+    LOG_DEBUG << "Creating key: " << lv.substr( 0, idx ) << "; value: " << lv.substr( end + 1 );
     kvs.emplace_back( lv.substr( 0, idx ), lv.substr( end + 1 ) );
   }
 

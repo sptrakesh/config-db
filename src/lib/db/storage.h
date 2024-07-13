@@ -48,6 +48,9 @@ namespace spt::configdb::db
   // To be used by expired key clearing thread
   void clearExpired( const std::atomic_bool& stop );
 
+  // To be used by backup thread
+  void backup( const std::atomic_bool& stop );
+
   // For testing only
   void reopen();
 }
