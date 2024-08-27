@@ -2,12 +2,12 @@
 // Created by Rakesh on 25/01/2022.
 //
 
-#include "server.h"
-#include "signal/signal.h"
-#include "../common/contextholder.h"
-#include "../common/model/configuration.h"
+#include "server.hpp"
+#include "signal/signal.hpp"
+#include "../common/contextholder.hpp"
+#include "../common/model/configuration.hpp"
 #include "../common/util/concurrentqueue.h"
-#include "../log/NanoLog.h"
+#include "../log/NanoLog.hpp"
 
 #include <functional>
 #include <sstream>

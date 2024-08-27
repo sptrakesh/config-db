@@ -9,8 +9,8 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include "../../src/common/model/configuration.h"
-#include "../../src/lib/db/storage.h"
+#include "../../src/common/model/configuration.hpp"
+#include "../../src/lib/db/storage.hpp"
 
 using spt::configdb::model::RequestData;
 using std::operator ""s;

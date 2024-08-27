@@ -3,7 +3,7 @@
 //
 
 #include <catch2/catch_test_macros.hpp>
-#include "../../src/lib/db/storage.h"
+#include "../../src/lib/db/storage.hpp"
 
 using namespace spt::configdb::db;
 using spt::configdb::model::RequestData;

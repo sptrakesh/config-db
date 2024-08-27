@@ -3,7 +3,7 @@
 //
 
 #include <catch2/catch_test_macros.hpp>
-#include "../../src/lib/db/encrypter.h"
+#include "../../src/lib/db/encrypter.hpp"
 
 namespace test::encrypt
 {

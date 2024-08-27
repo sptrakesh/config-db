@@ -2,9 +2,9 @@
 // Created by Rakesh on 29/12/2021.
 //
 
-#include "client.h"
-#include "../../api/api.h"
-#include "../log/NanoLog.h"
+#include "client.hpp"
+#include "../../api/api.hpp"
+#include "../log/NanoLog.hpp"
 
 #include <cctype>
 #include <cstring>

@@ -11,7 +11,7 @@
 #include <tuple>
 #include <vector>
 
-#include "../common/contextholder.h"
+#include "../common/contextholder.hpp"
 #include "../common/model/request.h"
 
 namespace spt::configdb::api

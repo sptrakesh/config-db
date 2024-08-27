@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "ExpirationCache.h"
+#include "ExpirationCache.hpp"
 
 namespace spt::util
 {

@@ -3,13 +3,13 @@
 //
 
 
-#include "server.h"
-#include "signal/signal.h"
-#include "../common/contextholder.h"
-#include "../common/model/configuration.h"
+#include "server.hpp"
+#include "signal/signal.hpp"
+#include "../common/contextholder.hpp"
+#include "../common/model/configuration.hpp"
 #include "../common/model/request_generated.h"
-#include "../lib/db/storage.h"
-#include "../log/NanoLog.h"
+#include "../lib/db/storage.hpp"
+#include "../log/NanoLog.hpp"
 
 #if defined(CONFIG_DB_HTTP_SERVER)
 #include <charconv>

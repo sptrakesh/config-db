@@ -1,8 +1,17 @@
 cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 
+# For INTERPROCEDURAL_OPTIMIZATION
+if (POLICY CMP0069)
+  cmake_policy(SET CMP0069 NEW)
+endif()
+
 if (POLICY CMP0079)
   cmake_policy(SET CMP0079 NEW)
 endif (POLICY CMP0079)
+
+if (POLICY CMP0167)
+  cmake_policy(SET CMP0167 NEW)
+endif()
 
 file(STRINGS "docker/env.sh" ver REGEX "VERSION=([0-9]*)")
 string(REGEX REPLACE "VERSION='" "" project_version ${ver})
@@ -116,6 +125,7 @@ include_directories(
 if (APPLE)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
   include_directories(
+    /usr/local/boost/include
     /usr/local/flatbuffers/include
     /usr/local/rocksdb/include
   )

@@ -2,16 +2,16 @@
 // Created by Rakesh on 25/12/2021.
 //
 
-#include "clearexpired.h"
-#include "backup.h"
-#include "http/server.h"
-#include "tcp/server.h"
-#include "../common/contextholder.h"
-#include "../common/model/configuration.h"
-#include "../common/util/clara.h"
-#include "../common/util/split.h"
-#include "../lib/db/storage.h"
-#include "../log/NanoLog.h"
+#include "clearexpired.hpp"
+#include "backup.hpp"
+#include "http/server.hpp"
+#include "tcp/server.hpp"
+#include "../common/contextholder.hpp"
+#include "../common/model/configuration.hpp"
+#include "../common/util/clara.hpp"
+#include "../common/util/split.hpp"
+#include "../lib/db/storage.hpp"
+#include "../log/NanoLog.hpp"
 
 #include <iostream>
 #include <thread>

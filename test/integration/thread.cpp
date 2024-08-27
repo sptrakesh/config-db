@@ -9,7 +9,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include "../../src/api/api.h"
+#include "../../src/api/api.hpp"
 
 using spt::configdb::model::RequestData;
 using std::operator ""s;

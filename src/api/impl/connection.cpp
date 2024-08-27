@@ -2,8 +2,8 @@
 // Created by Rakesh on 29/12/2021.
 //
 
-#include "api.h"
-#include "connection.h"
+#include "api.hpp"
+#include "connection.hpp"
 #include "../common/model/request_generated.h"
 
 #include <filesystem>

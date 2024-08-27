@@ -10,7 +10,7 @@
 #include <catch2/catch_test_macros.hpp>
 #include <boost/process.hpp>
 
-#include "../../src/api/impl/connection.h"
+#include "../../src/api/impl/connection.hpp"
 
 using namespace std::string_literals;
 using namespace std::string_view_literals;

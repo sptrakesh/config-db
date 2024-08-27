@@ -2,10 +2,10 @@
 // Created by Rakesh on 22/06/2024.
 //
 
-#include "backup.h"
-#include "../common/model/configuration.h"
-#include "../log/NanoLog.h"
-#include "../lib/db/storage.h"
+#include "backup.hpp"
+#include "../common/model/configuration.hpp"
+#include "../log/NanoLog.hpp"
+#include "../lib/db/storage.hpp"
 
 #include <chrono>
 #include <thread>

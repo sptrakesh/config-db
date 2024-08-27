@@ -2,12 +2,12 @@
 // Created by Rakesh on 25/01/2022.
 //
 
-#include "server.h"
-#include "../common/contextholder.h"
+#include "server.hpp"
+#include "../common/contextholder.hpp"
 #include "../common/model/request_generated.h"
 #include "../common/model/request.h"
-#include "../lib/db/storage.h"
-#include "../log/NanoLog.h"
+#include "../lib/db/storage.hpp"
+#include "../log/NanoLog.hpp"
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio/connect.hpp>

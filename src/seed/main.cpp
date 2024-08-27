@@ -2,11 +2,11 @@
 // Created by Rakesh on 25/12/2021.
 //
 
-#include "../common/model/configuration.h"
+#include "../common/model/configuration.hpp"
 #include "../common/model/request.h"
-#include "../common/util/clara.h"
-#include "../lib/db/storage.h"
-#include "../log/NanoLog.h"
+#include "../common/util/clara.hpp"
+#include "../lib/db/storage.hpp"
+#include "../log/NanoLog.hpp"
 
 #include <iostream>
 #include <filesystem>

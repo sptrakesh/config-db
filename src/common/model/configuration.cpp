@@ -2,7 +2,7 @@
 // Created by Rakesh on 12/01/2022.
 //
 
-#include "configuration.h"
+#include "configuration.hpp"
 
 #include <cstdlib>
 #include <cstring>

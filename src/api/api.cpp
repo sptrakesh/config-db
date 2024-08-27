@@ -2,9 +2,9 @@
 // Created by Rakesh on 02/01/2022.
 //
 
-#include "api.h"
-#include "impl/connection.h"
-#include "../common/pool/pool.h"
+#include "api.hpp"
+#include "impl/connection.hpp"
+#include "../common/pool/pool.hpp"
 
 #include <charconv>
 

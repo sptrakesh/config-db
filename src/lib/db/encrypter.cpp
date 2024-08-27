@@ -2,9 +2,9 @@
 // Created by Rakesh on 24/12/2021.
 //
 
-#include "encrypter.h"
-#include "../common/model/configuration.h"
-#include "../log/NanoLog.h"
+#include "encrypter.hpp"
+#include "../common/model/configuration.hpp"
+#include "../log/NanoLog.hpp"
 
 #include <chrono>
 #include <openssl/err.h>

@@ -4,8 +4,8 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include "../../src/api/api.h"
-#include "../../src/log/NanoLog.h"
+#include "../../src/api/api.hpp"
+#include "../../src/log/NanoLog.hpp"
 #include "../../src/common/model/request_generated.h"
 
 using namespace spt::configdb::api;

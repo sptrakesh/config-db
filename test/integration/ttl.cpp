@@ -6,7 +6,7 @@
 #include <iostream>
 #include <thread>
 
-#include "../../src/api/api.h"
+#include "../../src/api/api.hpp"
 
 using namespace spt::configdb::api;
 using namespace spt::configdb::model;

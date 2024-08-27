@@ -2,12 +2,12 @@
 // Created by Rakesh on 24/12/2021.
 //
 
-#include "encrypter.h"
-#include "storage.h"
-#include "util/cache.h"
-#include "../common/model/configuration.h"
+#include "encrypter.hpp"
+#include "storage.hpp"
+#include "util/cache.hpp"
+#include "../common/model/configuration.hpp"
 #include "../common/model/tree_generated.h"
-#include "../common/pool/pool.h"
+#include "../common/pool/pool.hpp"
 
 #include <algorithm>
 #include <charconv>

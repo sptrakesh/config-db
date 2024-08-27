@@ -2,10 +2,10 @@
 // Created by Rakesh on 25/12/2021.
 //
 
-#include "client/client.h"
-#include "../api/api.h"
-#include "../common/util/clara.h"
-#include "../log/NanoLog.h"
+#include "client/client.hpp"
+#include "../api/api.hpp"
+#include "../common/util/clara.hpp"
+#include "../log/NanoLog.hpp"
 
 #include <algorithm>
 #include <iostream>

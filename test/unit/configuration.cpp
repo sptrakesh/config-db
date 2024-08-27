@@ -9,7 +9,7 @@
 #include <sstream>
 #include <vector>
 
-#include "../../src/common/model/configuration.h"
+#include "../../src/common/model/configuration.hpp"
 
 namespace spt::configdb::unittest::pconf
 {

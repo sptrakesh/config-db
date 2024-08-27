@@ -2,8 +2,8 @@
 // Created by Rakesh on 30/12/2021.
 //
 
-#include "client.h"
-#include "../api/impl/connection.h"
+#include "client.hpp"
+#include "../api/impl/connection.hpp"
 
 #include <iostream>
 

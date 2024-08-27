@@ -14,20 +14,20 @@
 #include <boost/numeric/conversion/cast.hpp>
 
 #if defined __has_include
-  #if __has_include("../common/contextholder.h")
-    #include "../common/contextholder.h"
+  #if __has_include("../common/contextholder.hpp")
+    #include "../common/contextholder.hpp"
     #include "../common/model/request.h"
-  #elif __has_include("../../src/common/contextholder.h")
-    #include "../../src/common/contextholder.h"
+  #elif __has_include("../../src/common/contextholder.hpp")
+    #include "../../src/common/contextholder.hpp"
     #include "../../src/common/model/request.h"
   #else
     #include <configdb/common/contextholder.h>
     #include <configdb/common/model/request.h>
   #endif
-  #if __has_include("../../log/NanoLog.h")
-    #include "../../log/NanoLog.h"
-  #elif __has_include("../../src/log/NanoLog.h")
-    #include "../../src/log/NanoLog.h"
+  #if __has_include("../../log/NanoLog.hpp")
+    #include "../../log/NanoLog.hpp"
+  #elif __has_include("../../src/log/NanoLog.hpp")
+    #include "../../src/log/NanoLog.hpp"
   #else
     #include <log/NanoLog.h>
   #endif

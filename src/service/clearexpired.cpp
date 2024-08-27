@@ -2,10 +2,10 @@
 // Created by Rakesh on 11/01/2022.
 //
 
-#include "clearexpired.h"
-#include "../common/model/configuration.h"
-#include "../log/NanoLog.h"
-#include "../lib/db/storage.h"
+#include "clearexpired.hpp"
+#include "../common/model/configuration.hpp"
+#include "../log/NanoLog.hpp"
+#include "../lib/db/storage.hpp"
 
 #include <thread>
 
