@@ -14,7 +14,7 @@ COPY docker/env.sh /opt/spt/config-db/docker/
 
 WORKDIR /opt/spt/config-db/build
 RUN rm -rf * \
-  && cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=/opt/local -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=mold" -DCMAKE_SHARED_LINKER_FLAGS="-fuse-ld=mold" .. \
+  && cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=/opt/local .. \
   && make -j8 \
   && make install
 

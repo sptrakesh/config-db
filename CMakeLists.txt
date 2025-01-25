@@ -85,6 +85,17 @@ if (CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
   endif (BREW_OPENSSL EQUAL 0 AND EXISTS "${BREW_OPENSSL_PREFIX}")
 
   execute_process(
+      COMMAND brew --prefix libnghttp2
+      RESULT_VARIABLE BREW_NGHTTP2
+      OUTPUT_VARIABLE BREW_NGHTTP2_PREFIX
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  if (BREW_NGHTTP2 EQUAL 0 AND EXISTS "${BREW_NGHTTP2_PREFIX}")
+    message(STATUS "Found libnghttp2 keg installed by Homebrew at ${BREW_NGHTTP2_PREFIX}")
+    list(APPEND CMAKE_PREFIX_PATH "${BREW_NGHTTP2_PREFIX}/")
+  endif()
+
+  execute_process(
     COMMAND brew --prefix jemalloc
     RESULT_VARIABLE BREW_JEMALLOC
     OUTPUT_VARIABLE BREW_JEMALLOC_PREFIX
@@ -98,7 +109,7 @@ if (CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
   endif (BREW_JEMALLOC EQUAL 0 AND EXISTS "${BREW_JEMALLOC_PREFIX}")
 endif (CMAKE_HOST_SYSTEM_NAME MATCHES "Darwin")
 
-find_package(Boost REQUIRED COMPONENTS container json)
+find_package(Boost REQUIRED COMPONENTS container json url)
 find_package(RocksDB REQUIRED)
 find_package(flatbuffers REQUIRED)
 find_package(OpenSSL REQUIRED)
@@ -115,6 +126,16 @@ endif (NOT CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 
 if (UNIX AND NOT APPLE)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fcoroutines")
+
+  if (CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "arm64" )
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=mold")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=mold")
+    message(STATUS "Enabling mold linker")
+  elseif (CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "aarch64" )
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fuse-ld=mold")
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -fuse-ld=mold")
+    message(STATUS "Enabling mold linker")
+  endif (CMAKE_HOST_SYSTEM_PROCESSOR STREQUAL "arm64" )
 endif (UNIX AND NOT APPLE)
 
 include_directories(
@@ -131,12 +152,19 @@ if (APPLE)
   )
 
   if (HTTP_SERVER)
-    include_directories(/usr/local/nghttp2/include)
-    link_directories(/usr/local/nghttp2/lib)
+    include_directories(
+      /usr/local/nghttp2/include
+      ${BREW_NGHTTP2_PREFIX}/include
+    )
+    link_directories(
+      /usr/local/nghttp2/lib
+      ${BREW_NGHTTP2_PREFIX}/lib
+    )
   endif (HTTP_SERVER)
 
   set(CMAKE_MACOSX_RPATH 1)
 elseif (UNIX)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-tautological-compare")
   include_directories(/opt/local/include)
   link_directories(/opt/local/lib)
 elseif (WIN32)
@@ -152,9 +180,9 @@ elseif (WIN32)
   )
 endif (APPLE)
 
-IF(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
   set(CMAKE_INSTALL_PREFIX /opt/spt)
-ENDIF(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+endif (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 
 add_subdirectory(src/log)
 add_subdirectory(src/common)
