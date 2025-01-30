@@ -243,7 +243,7 @@ namespace spt::configdb::http::endpoints
     } );
   }
 
-  int startWithSSL( const std::string& port, int threads )
+  int startWithSSL( const std::string& port, int )
   {
     auto& conf = model::Configuration::instance();
     boost::asio::ssl::context tls{ boost::asio::ssl::context::tlsv12_server };
@@ -255,7 +255,6 @@ namespace spt::configdb::http::endpoints
     nghttp2::asio_http2::server::configure_tls_context_easy( ec, tls );
 
     nghttp2::asio_http2::server::http2 server;
-    server.num_threads( threads );
 
     endpoints::setup( server );
 
@@ -280,7 +279,6 @@ int spt::configdb::http::start( const std::string& port, int threads, bool ssl )
 
   boost::system::error_code ec;
   nghttp2::asio_http2::server::http2 server;
-  server.num_threads( threads );
 
   endpoints::setup( server );
 
