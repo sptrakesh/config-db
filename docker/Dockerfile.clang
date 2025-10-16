@@ -1,8 +1,6 @@
-FROM sptrakesh/rocksdb AS rocksdb
-FROM sptrakesh/flatbuffers AS flatbuffers
-FROM sptrakesh/nghttp2 AS base
+FROM sptrakesh/flatbuffers:clang as flatbuffers
+FROM sptrakesh/nghttp2:clang as base
 
-COPY --from=rocksdb /opt/local /opt/local
 COPY --from=flatbuffers /opt/local /opt/local
 RUN apk add --no-cache readline-dev snappy-dev
 
@@ -12,13 +10,15 @@ COPY src /opt/spt/config-db/src
 COPY certs /opt/spt/config-db/certs
 COPY docker/env.sh /opt/spt/config-db/docker/
 
-WORKDIR /opt/spt/config-db/build
-RUN rm -rf * \
-  && cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=/opt/local .. \
-  && make -j8 \
-  && make install
+WORKDIR /opt/spt/config-db
+RUN cmake -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_PREFIX_PATH=/opt/local \
+    -DSERVER_ENABLED=OFF \
+    -B build -S . \
+  && cmake --build build -j8 \
+  && cmake --install build
 
-FROM sptrakesh/cppruntime
+FROM sptrakesh/cppruntime:clang
 LABEL org.opencontainers.image.authors="Rakesh Vidyadharan <rakesh@sptci.com>"
 
 RUN apk add --no-cache libcurl snappy readline \
@@ -27,7 +27,6 @@ RUN apk add --no-cache libcurl snappy readline \
   && mkdir -p /opt/spt/logs /opt/spt/data \
   && chown spt:spt /opt/spt/logs /opt/spt/data
 
-COPY --from=base /opt/spt/bin /opt/spt/bin
 COPY --from=base /opt/spt/include /opt/spt/include
 COPY --from=base /opt/spt/lib /opt/spt/lib
 COPY docker/scripts/*.sh /opt/spt/bin/
@@ -37,4 +36,3 @@ WORKDIR /opt/spt
 ENV LD_LIBRARY_PATH=/usr/lib \
   PATH=$PATH:/opt/spt/bin
 USER spt
-ENTRYPOINT [ "/opt/spt/bin/entrypoint.sh" ]

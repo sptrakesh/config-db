@@ -3,7 +3,7 @@
 //
 
 #include "../common/model/configuration.hpp"
-#include "../common/model/request.h"
+#include "../common/model/request.hpp"
 #include "../common/util/clara.hpp"
 #include "../lib/db/storage.hpp"
 #include "../log/NanoLog.hpp"

@@ -261,7 +261,7 @@ message.  Service will echo the message back to the client.  Examples include
 ## API
 A high-level client API to interact with the service is provided.  The interface hides
 the complexities involved with making TCP/IP requests using flatbuffers.  The
-[api](src/api/api.h) presents an interface that is very similar to the persistence
+[api](src/api/api.hpp) presents an interface that is very similar to the persistence
 interface used internally by the service.  The API maintains a connection pool
 to the service and performs the required interactions using the flatbuffer models.
 
@@ -639,7 +639,7 @@ cmake --build build --target install -j8
 </details>
 
 ### API Usage
-The [API](src/api/api.h) can be used to communicate with the TCP service.  Client code bases
+The [API](src/api/api.hpp) can be used to communicate with the TCP service.  Client code bases
 can use cmake to use the library.
 
 ```shell
@@ -664,7 +664,7 @@ use environment variables to specify the command line options.
 * **-f | --config-file** - The path to the JSON configuration file.  All other
   options are ignored.  This option provides total control over all configurable
   options including encryption. File must have same structure as the 
-  [struct](src/common/model/configuration.h).  See [test](test/unit/configuration.cpp)
+  [struct](src/common/model/configuration.hpp).  See [test](test/unit/configuration.cpp)
   for sample JSON configuration.  For Docker specify the `CONFIG_FILE` 
   environment variable.
 * **Logging** - Options related to logging.
@@ -705,7 +705,7 @@ docker run -d --rm -p 6020:6020 -p 2022:2020 \
 ```
 
 ### Environment Variables
-Service [configuration](src/common/model/configuration.h) can be customised using environment variables.
+Service [configuration](src/common/model/configuration.hpp) can be customised using environment variables.
 All properties can be specified using a *snake case* convention with the common root `CONFIG_DB_` prefix.
 
 * `CONFIG_DB_THREADS` - use to set the value of the `threads` field.

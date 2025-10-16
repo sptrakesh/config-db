@@ -12,7 +12,7 @@
 #include <vector>
 
 #include "../common/contextholder.hpp"
-#include "../common/model/request.h"
+#include "../common/model/request.hpp"
 
 namespace spt::configdb::api
 {

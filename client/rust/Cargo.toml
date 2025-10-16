@@ -1,0 +1,10 @@
+[package]
+name = "configdb"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+cxx = { version = "1.0", features = ["alloc", "c++20"] }
+
+[build-dependencies]
+cxx-build = "1.0"

@@ -5,7 +5,7 @@
 #include "server.hpp"
 #include "../common/contextholder.hpp"
 #include "../common/model/request_generated.h"
-#include "../common/model/request.h"
+#include "../common/model/request.hpp"
 #include "../lib/db/storage.hpp"
 #include "../log/NanoLog.hpp"
 

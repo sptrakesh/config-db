@@ -38,13 +38,22 @@ class Signal<RT(Args...), MT_Policy> final : public Observer<MT_Policy>
     }
 
     public:
- 
+
+    Signal() noexcept = default;
+    ~Signal() noexcept = default;
+
+    Signal(Signal const&) noexcept = delete;
+    Signal& operator= (Signal const&) noexcept = delete;
+
+    Signal(Signal&&) noexcept = default;
+    Signal& operator=(Signal&&) noexcept = default;
+
     //-------------------------------------------------------------------CONNECT
 
     template <typename L>
     void connect(L* instance)
     {
-        observer::insert(function::template bind(instance), this);
+        observer::insert(function::template bind<>(instance), this);
     }
     template <typename L>
     void connect(L& instance)
@@ -96,7 +105,7 @@ class Signal<RT(Args...), MT_Policy> final : public Observer<MT_Policy>
     template <typename L>
     void disconnect(L* instance)
     {
-        observer::remove(function::template bind(instance));
+        observer::remove(function::template bind<>(instance));
     }
     template <typename L>
     void disconnect(L& instance)

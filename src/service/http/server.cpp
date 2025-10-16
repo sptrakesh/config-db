@@ -206,8 +206,8 @@ namespace spt::configdb::http::endpoints
         const nghttp2::asio_http2::server::response &res )
     {
       if ( req.method() == "GET"s ) return get( req, res );
-      else if ( req.method() == "PUT"s ) return put( req, res );
-      else if ( req.method() == "DELETE"s ) return remove( req, res );
+      if ( req.method() == "PUT"s ) return put( req, res );
+      if ( req.method() == "DELETE"s ) return remove( req, res );
 
       res.write_head( 405 );
       res.end( R"({"code": 405, "cause": "Method not supported"})" );
@@ -246,7 +246,7 @@ namespace spt::configdb::http::endpoints
   int startWithSSL( const std::string& port, int )
   {
     auto& conf = model::Configuration::instance();
-    boost::asio::ssl::context tls{ boost::asio::ssl::context::tlsv12_server };
+    boost::asio::ssl::context tls{ boost::asio::ssl::context::tlsv13_server };
     tls.load_verify_file( conf.ssl.caCertificate );
     tls.use_certificate_file( conf.ssl.certificate, boost::asio::ssl::context::pem );
     tls.use_private_key_file( conf.ssl.key, boost::asio::ssl::context::pem );

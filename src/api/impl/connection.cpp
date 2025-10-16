@@ -17,36 +17,39 @@ using spt::configdb::api::impl::BaseConnection;
 using spt::configdb::api::impl::Connection;
 using spt::configdb::api::impl::SSLConnection;
 
-namespace spt::configdb::api::pconnection
+namespace
 {
-  struct ApiSettings
+  namespace pconnection
   {
-    static const ApiSettings& instance()
+    struct ApiSettings
     {
-      static ApiSettings s;
-      return s;
-    }
+      static const ApiSettings& instance()
+      {
+        static ApiSettings s;
+        return s;
+      }
 
-    std::mutex mutex{};
-    std::string server{};
-    std::string port{};
-    boost::asio::io_context* ioc{ nullptr };
-    bool ssl{ false };
+      std::mutex mutex{};
+      std::string server{};
+      std::string port{};
+      boost::asio::io_context* ioc{ nullptr };
+      bool ssl{ false };
 
-    ~ApiSettings() = default;
-    ApiSettings(const ApiSettings&) = delete;
-    ApiSettings& operator=(const ApiSettings&) = delete;
+      ~ApiSettings() = default;
+      ApiSettings(const ApiSettings&) = delete;
+      ApiSettings& operator=(const ApiSettings&) = delete;
 
-  private:
-    ApiSettings() = default;
-  };
+    private:
+      ApiSettings() = default;
+    };
+  }
 }
 
 void spt::configdb::api::init( std::string_view server, std::string_view port, bool ssl,
     boost::asio::io_context& ioc )
 {
   auto& s = const_cast<pconnection::ApiSettings&>( pconnection::ApiSettings::instance() );
-  auto lock = std::unique_lock<std::mutex>( s.mutex );
+  auto lock = std::unique_lock( s.mutex );
   if ( s.server.empty() )
   {
     s.server.append( server.data(), server.size() );
@@ -90,6 +93,7 @@ SSLConnection::SSLConnection( std::string_view server, std::string_view port ) :
   s{ *pconnection::ApiSettings::instance().ioc, ctx }, resolver{ *pconnection::ApiSettings::instance().ioc }
 {
   s.set_verify_mode( boost::asio::ssl::verify_none );
+  LOG_INFO << "Resolving server:port.";
   auto endpoints = resolver.resolve( server, port );
   boost::asio::connect( s.lowest_layer(), endpoints );
   boost::system::error_code ec;

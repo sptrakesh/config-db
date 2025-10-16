@@ -16,8 +16,8 @@
 #if defined __has_include
   #if __has_include("../common/contextholder.hpp")
     #include "../common/contextholder.hpp"
-    #include "../common/model/request.h"
-  #elif __has_include("../../src/common/contextholder.hpp")
+    #include "../common/model/request.hpp"
+#elif __has_include("../../src/common/contextholder.hpp")
     #include "../../src/common/contextholder.hpp"
     #include "../../src/common/model/request.h"
   #else
@@ -29,7 +29,7 @@
   #elif __has_include("../../src/log/NanoLog.hpp")
     #include "../../src/log/NanoLog.hpp"
   #else
-    #include <log/NanoLog.h>
+    #include <log/NanoLog.hpp>
   #endif
 #endif
 #include "../../src/common/model/response_generated.h"

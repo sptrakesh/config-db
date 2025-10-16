@@ -12,7 +12,7 @@
 #include <tuple>
 #include <vector>
 
-#include "../../common/model/request.h"
+#include "../../common/model/request.hpp"
 
 namespace spt::configdb::db
 {

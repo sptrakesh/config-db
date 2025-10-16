@@ -269,7 +269,7 @@ namespace
       {
         auto ks = getKey( key );
 
-        const auto fn = [this, ks]()
+        const auto fn = [this, &ks]()
         {
           std::string value;
           if ( const auto s = db->Get( rocksdb::ReadOptions{}, handles[3], rocksdb::Slice{ ks }, &value ); s.ok() )
@@ -754,10 +754,7 @@ namespace
         if ( key.empty() ) return "/"s;
         if ( key[0] == '/' ) return { key.data(), key.size() };
 
-        auto ks = std::string{};
-        ks.reserve( key.size() + 1 );
-        ks.push_back( '/' );
-        ks.append( key.data(), key.size() );
+        auto ks = std::format( "/{}", key);
         LOG_DEBUG << "Corrected key " << ks;
         return ks;
       }

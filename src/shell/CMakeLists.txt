@@ -1,4 +1,4 @@
-file(GLOB_RECURSE configdb_SRCS *.cpp *.h)
+file(GLOB_RECURSE configdb_SRCS *.cpp *.hpp)
 add_executable(configdb-shell ${configdb_SRCS} )
 
 if (APPLE)

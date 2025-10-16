@@ -9,6 +9,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <boost/process.hpp>
+#include <boost/asio/io_context.hpp>
 
 #include "../../src/api/impl/connection.hpp"
 
@@ -29,11 +30,15 @@ namespace spt::configdb::itest::mmaster
 
     ~Cluster()
     {
-      boost::system::error_code ec;
-      g.terminate( ec );
-      if ( ec ) LOG_CRIT << "Error terminating processes group. " << ec.message();
+      try
+      {
+        for ( auto& c : children ) c.request_exit();
+        for ( auto& c : children ) c.wait();
+      }
+      catch ( const std::exception& e ) { LOG_CRIT << "Error exiting child task. " << e.what(); }
 
-      for ( auto& c : children ) c.wait();
+      ioc.stop();
+      boost::system::error_code ec;
       auto path = std::filesystem::path{ "/tmp/configdb" };
       std::filesystem::remove_all( path, ec );
       if ( ec ) LOG_CRIT << "Error deleting directory tree. " << ec.message();
@@ -79,7 +84,7 @@ namespace spt::configdb::itest::mmaster
   "threads": 2
 })"s;
       auto file = "/tmp/configdb/server1.json"sv;
-      auto os = std::ofstream{ file };
+      auto os = std::ofstream{ std::string{ file } };
       os << config;
       os.close();
       start( std::filesystem::path{ "/tmp/configdb/server1/"sv }, file );
@@ -117,7 +122,7 @@ namespace spt::configdb::itest::mmaster
   "threads": 2
 })"s;
       auto file = "/tmp/configdb/server2.json"sv;
-      auto os = std::ofstream{ file };
+      auto os = std::ofstream{ std::string{ file } };
       os << config;
       os.close();
       start( std::filesystem::path{ "/tmp/configdb/server2/"sv }, file );
@@ -155,7 +160,7 @@ namespace spt::configdb::itest::mmaster
   "threads": 2
 })"s;
       auto file = "/tmp/configdb/server3.json"sv;
-      auto os = std::ofstream{ file };
+      auto os = std::ofstream{ std::string{ file } };
       os << config;
       os.close();
       start( std::filesystem::path{ "/tmp/configdb/server3/"sv }, file );
@@ -172,11 +177,11 @@ namespace spt::configdb::itest::mmaster
       auto command = std::string{};
       command.reserve( cmd.size() + 16 );
       command.append( cmd ).append( " -f ").append( path );
-      children.emplace_back( cmd, "-f", std::string{ path }, g );
+      children.push_back( boost::process::process( ioc, cmd.c_str(), { "-f", std::string{ path }.c_str() } ) );
     }
 
-    boost::process::group g;
-    std::vector<boost::process::child> children;
+    boost::asio::io_context ioc;
+    std::vector<boost::process::process> children;
     // Assuming current working directory is same as integration test executable location.
     std::string cmd{ "../../src/service/configdb"s };
   };
