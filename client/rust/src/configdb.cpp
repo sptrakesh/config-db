@@ -138,15 +138,36 @@ rust::Vec<rust::String> list( rust::Str key )
 uint32_t ttl( rust::Str key )
 {
   auto ks = std::string_view( key.data(), key.size() );
-  const auto result = spt::configdb::api::ttl( ks );
+  if ( ks.front() == '/' )
+  {
+    const auto result = spt::configdb::api::ttl( ks );
+    return result.count();
+  }
+
+  const auto str = std::format( "/{}", ks );
+  const auto result = spt::configdb::api::ttl( str );
   return result.count();
 }
 
 rust::Vec<TTL> ttl_multiple( const rust::Vec<rust::String>& keys )
 {
+  auto strings = std::vector<std::string>{};
+  strings.reserve( keys.size() );
+
   auto vec = std::vector<std::string_view>{};
   vec.reserve( keys.size() );
-  for ( const auto& key : keys ) vec.emplace_back( key.data(), key.size() );
+
+  for ( const auto& key : keys )
+  {
+    auto ks = std::string_view( key.data(), key.size() );
+    if ( ks.front() == '/' ) vec.emplace_back( ks.data(), ks.size() );
+    else
+    {
+      strings.emplace_back( std::format( "/{}", ks ) );
+      vec.emplace_back( strings.back() );
+    }
+  }
+
   const auto result = spt::configdb::api::ttl( vec );
 
   auto out = rust::Vec<TTL>{};

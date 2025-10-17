@@ -752,9 +752,9 @@ namespace
       static std::string getKey( std::string_view key )
       {
         if ( key.empty() ) return "/"s;
-        if ( key[0] == '/' ) return { key.data(), key.size() };
+        if ( key.front() == '/' ) return { key.data(), key.size() };
 
-        auto ks = std::format( "/{}", key);
+        auto ks = std::format( "/{}", key );
         LOG_DEBUG << "Corrected key " << ks;
         return ks;
       }

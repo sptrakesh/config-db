@@ -131,6 +131,16 @@ namespace spt::configdb::api
    */
   std::vector<KeyValue> get( const std::vector<std::string_view>& keys );
 
+  /**
+   * Batch retrieve values for the specified keys.
+   *
+   * Delegates to the function that takes a vector of `std::string_view`.
+   *
+   * @param keys The keys to retrieve
+   * @return  Vector of *key-value* pairs.
+   */
+  std::vector<KeyValue> get( const std::vector<std::string>& keys );
+
   using Pair = std::pair<std::string_view, std::string_view>;
   /**
    * Set a batch of *key-value* pairs in a single transaction.
@@ -199,6 +209,16 @@ namespace spt::configdb::api
    * @return Pairs of `key-ttl` values.  Returns 0 for keys that does not have TTL set.
    */
   std::vector<TTLPair> ttl( const std::vector<std::string_view>& keys );
+
+  /**
+   * Retrieve the TTL values from current time for the specified keys.
+   *
+   * Delegates to the function that takes a vector of `std::string_view`.
+   *
+   * @param keys The batch of keys to retrieve TTL values for.
+   * @return Pairs of `key-ttl` values.  Returns 0 for keys that does not have TTL set.
+   */
+  std::vector<TTLPair> ttl( const std::vector<std::string>& keys );
 
   /**
    * Tuple holding the response along with the number of records imported out

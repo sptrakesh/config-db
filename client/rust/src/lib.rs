@@ -172,8 +172,9 @@ mod configdb
     /// - `true` if all the `key`s were removed.
     pub fn remove_multiple(keys: &Vec<String>) -> bool;
 
-    /// List child nodes (single level only) for the specified *root* path.  **Note:** paths
-    /// are split on the `/` character.  See [documentation](https://sptrakesh.github.io/config-db.html#keys).
+    /// List child nodes (single level only) for the specified *root* path.
+    ///
+    ///  **Note:** paths are split on the `/` character.  See [documentation](https://sptrakesh.github.io/config-db.html#keys).
     ///
     /// # Arguments
     ///
@@ -185,7 +186,8 @@ mod configdb
 
     /// Retrieve the time till expiration in seconds for the specified key.
     ///
-    /// **Note:** Unlike with the C++ API, the `key` should start with a leading `/` character.
+    /// **Note:** The returned value is not the original TTL value that was set,
+    /// but the number of seconds till expiration at this instant.
     ///
     /// # Arguments
     ///
@@ -196,8 +198,6 @@ mod configdb
     pub fn ttl(key: &str) -> u32;
 
     /// Retrieve the TTL values for a batch of keys.
-    ///
-    /// **Note:** Unlike with the C++ API, the `key`s should start with a leading `/` character.
     ///
     /// # Arguments
     ///
@@ -272,12 +272,14 @@ mod tests
     assert!(result.is_ok());
     assert_eq!(result.unwrap(), rd.value);
 
-    let keys = vec![format!("/{}", rd.key)];
+    let keys = vec![rd.key.clone()];
     let result = get_multiple(&keys);
     assert_eq!(result.len(), 1);
     assert_eq!(result.get(0).unwrap().value, rd.value);
 
     let result = ttl(format!("/{}", rd.key).as_str());
+    assert_ne!(result, 0);
+    let result = ttl(rd.key.as_str());
     assert_ne!(result, 0);
 
     let result = ttl_multiple(&keys);

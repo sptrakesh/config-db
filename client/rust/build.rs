@@ -2,6 +2,7 @@ fn main() {
   if cfg!(target_os = "macos")
   {
     cxx_build::bridge("src/lib.rs")
+        .cpp(true)
         .include("/usr/local/spt/include")
         .include("/usr/local/boost/include")
         .file("src/configdb.cpp")
@@ -14,6 +15,7 @@ fn main() {
   else
   {
     cxx_build::bridge("src/lib.rs")
+        .cpp(true)
         .include("/opt/spt/include")
         .include("/opt/local/include")
         .file("src/configdb.cpp")
@@ -21,6 +23,8 @@ fn main() {
         .compile("configdb");
     println!("cargo::rustc-link-search=/opt/spt/lib");
   }
+
+  if cfg!(target_os = "linux") { println!("cargo::rustc-link-lib=gcc_eh"); }
 
   println!("cargo::rustc-link-lib=nanolog");
   println!("cargo::rustc-link-lib=configcommon");

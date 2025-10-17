@@ -297,6 +297,14 @@ auto spt::configdb::api::get( const std::vector<std::string_view>& keys ) -> std
   return results;
 }
 
+auto spt::configdb::api::get( const std::vector<std::string>& keys ) -> std::vector<KeyValue>
+{
+  auto vec = std::vector<std::string_view>{};
+  vec.reserve( keys.size() );
+  for ( const auto& key : keys ) vec.emplace_back( key );
+  return get( vec );
+}
+
 bool spt::configdb::api::set( const std::vector<Pair>& kvs )
 {
   auto vec = std::vector<model::RequestData>{};
@@ -503,6 +511,14 @@ auto spt::configdb::api::ttl( const std::vector<std::string_view>& keys ) -> std
 
   LOG_DEBUG << "Retrieved TTL values for " << int(size(keys)) << " keys";
   return results;
+}
+
+auto spt::configdb::api::ttl( const std::vector<std::string>& keys ) -> std::vector<TTLPair>
+{
+  auto vec = std::vector<std::string_view>{};
+  vec.reserve( keys.size() );
+  for ( const auto& key : keys ) vec.emplace_back( key );
+  return ttl( vec );
 }
 
 auto spt::configdb::api::import( const std::string& file ) -> ImportResponse
